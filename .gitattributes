@@ -1,0 +1,11 @@
+# Help GitHub Linguist classify this repo as C++.
+*.cpp linguist-language=C++
+*.cc linguist-language=C++
+*.cxx linguist-language=C++
+*.h linguist-language=C++
+*.hpp linguist-language=C++
+
+# Ignore generated/build outputs in language stats.
+build/** linguist-generated
+dist/** linguist-generated
+out/** linguist-generated
