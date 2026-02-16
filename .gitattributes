@@ -4,6 +4,7 @@
 *.cxx linguist-language=C++
 *.h linguist-language=C++
 *.hpp linguist-language=C++
+*.bas linguist-detectable=false
 
 # Ignore generated/build outputs in language stats.
 build/** linguist-generated
