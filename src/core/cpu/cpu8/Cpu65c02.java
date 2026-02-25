@@ -43,6 +43,7 @@ public class Cpu65c02 extends HardwareManager {
 	private int idleCycle;
 	private int lastCycleCount;
 	private int lastInstructionCycleCount;
+	private long totalCycleCount;
 	private int pendingInstructionCyclesConsumed;
 	private final Deque<CpuExecutionEvent> executionQueue = new ArrayDeque<CpuExecutionEvent>();
 	private final CpuExecutionPlanner executionPlanner;
@@ -487,6 +488,7 @@ public class Cpu65c02 extends HardwareManager {
 		resetYOverride = null;
 		resetSOverride = null;
 		pendingInstructionCyclesConsumed = 0;
+		totalCycleCount = 0L;
 		executionQueue.clear();
 		enqueueNextInstructionEvents();
 		verifyExecutionQueueInvariant("cold_reset");
@@ -1271,6 +1273,7 @@ public class Cpu65c02 extends HardwareManager {
 	
 		lastInstructionCycleCount = cycleCount;
 		lastCycleCount = idleCycle+cycleCount;
+		totalCycleCount += cycleCount;
 		int cyclesRemaining = cycleCount-pendingInstructionCyclesConsumed;
 		if( cyclesRemaining<1 )
 			cyclesRemaining = 1;
@@ -1502,6 +1505,10 @@ public class Cpu65c02 extends HardwareManager {
 
 	public int getLastInstructionCycleCount() {
 		return lastInstructionCycleCount;
+	}
+
+	public long getTotalCycleCount() {
+		return totalCycleCount;
 	}
 
 }

@@ -222,6 +222,8 @@ public class Emulator8Coordinator {
 		Integer resetYValue = null;
 		Integer resetSValue = null;
 		boolean floatingBusOpcodeTiming = false;
+		Integer floatingBusPhaseCycles = null;
+		Integer vblBarOffsetCycles = null;
 		Integer dumpPageAddress = null;
 		int dumpRangeStart = -1;
 		int dumpRangeEnd = -1;
@@ -365,6 +367,22 @@ public class Emulator8Coordinator {
 			else if( "--floating-bus-opcode-timing".equals(arg) ) {
 				floatingBusOpcodeTiming = true;
 			}
+			else if( "--floating-bus-phase-cycles".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --floating-bus-phase-cycles");
+				floatingBusPhaseCycles = Integer.parseInt(argList[++i]);
+			}
+			else if( arg.startsWith("--floating-bus-phase-cycles=") ) {
+				floatingBusPhaseCycles = Integer.parseInt(arg.substring("--floating-bus-phase-cycles=".length()));
+			}
+			else if( "--vblbar-offset-cycles".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --vblbar-offset-cycles");
+				vblBarOffsetCycles = Integer.parseInt(argList[++i]);
+			}
+			else if( arg.startsWith("--vblbar-offset-cycles=") ) {
+				vblBarOffsetCycles = Integer.parseInt(arg.substring("--vblbar-offset-cycles=".length()));
+			}
 			else if( "--dump-page".equals(arg) ) {
 				if( i+1>=argList.length )
 					throw new IllegalArgumentException("Missing value for --dump-page");
@@ -448,6 +466,14 @@ public class Emulator8Coordinator {
 		tracePhase = tracePhase.trim().toLowerCase();
 		if( !"pre".equals(tracePhase) && !"post".equals(tracePhase) )
 			throw new IllegalArgumentException("Unsupported --trace-phase value: "+tracePhase+" (expected pre or post)");
+		if( floatingBusPhaseCycles!=null && vblBarOffsetCycles!=null )
+			throw new IllegalArgumentException("Use either --floating-bus-phase-cycles or --vblbar-offset-cycles, not both");
+		Integer phaseOverride = vblBarOffsetCycles!=null ? vblBarOffsetCycles : floatingBusPhaseCycles;
+		if( phaseOverride!=null ) {
+			if( phaseOverride.intValue()<0 )
+				throw new IllegalArgumentException("--floating-bus-phase-cycles/--vblbar-offset-cycles must be >= 0");
+			System.setProperty("ever2e.headless.vbl.phaseCycles", Integer.toString(phaseOverride.intValue()));
+		}
 		System.out.println("Loading \""+propertiesFile+"\" into memory");
 		VirtualMachineProperties properties = new VirtualMachineProperties(propertiesFile);
 
@@ -636,7 +662,7 @@ public class Emulator8Coordinator {
 	   		PrintWriter traceWriter = null;
 	   		if( traceFile!=null ) {
 	   			traceWriter = new PrintWriter(new FileWriter(traceFile));
-	   			traceWriter.println("step,event_type,event,pc,opcode,a,x,y,p,s,mnemonic,mode");
+	   			traceWriter.println("step,event_type,event,pc,opcode,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles");
 	   		}
 	   		final PrintWriter finalTraceWriter = traceWriter;
 	   		final String finalTracePhase = tracePhase;
@@ -724,7 +750,9 @@ public class Emulator8Coordinator {
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "," +
 	   						opcode.getMnemonic() + "," +
-	   						opcode.getAddressMode()
+	   						opcode.getAddressMode() + "," +
+	   						cpu.getTotalCycleCount() + "," +
+	   						cpu.getLastInstructionCycleCount()
 	   				);
 	   				haltedAtAddress[0] = true;
 	   				haltedAtPc[0] = pendingPc;
@@ -780,7 +808,9 @@ public class Emulator8Coordinator {
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "," +
 	   						opcode.getMnemonic() + "," +
-	   						opcode.getAddressMode()
+	   						opcode.getAddressMode() + "," +
+	   						cpu.getTotalCycleCount() + "," +
+	   						cpu.getLastInstructionCycleCount()
 	   				);
 	   			}
 	   			return true;
