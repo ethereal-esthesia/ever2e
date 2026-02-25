@@ -71,6 +71,9 @@ Windowed run (SDL test backend):
   - Do not emit trace rows until this PC is reached (inclusive), then continue tracing normally.
 - `--reset-pflag-value <value>`
   - Override reset-time `P` policy (hex `0x..` or decimal). Bits `0x20` and `0x10` stay asserted.
+- `--monitor-seq-write <addr:byte[,addr:byte...]>`
+  - Apply monitor-style startup memory writes before execution. Useful for parity tests that need fixed bytes
+    (for example `--monitor-seq-write 0x01FD:0xFF,0x01FF:0xFF`).
 - `--halt-execution <addr[,addr...]>`
   - Stop execution when PC reaches any provided address (hex `0x....` or decimal). May be repeated.
 - `--paste-file <path>`

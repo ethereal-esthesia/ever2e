@@ -10,8 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.awt.GraphicsEnvironment;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 
@@ -92,6 +94,38 @@ public class Emulator8Coordinator {
 		}
 		if( out.isEmpty() )
 			throw new IllegalArgumentException("Missing value for "+argName);
+	}
+
+	private static void parseMonitorSequenceWriteArg(String value, String argName, List<int[]> out) {
+		String raw = value==null ? "" : value.trim();
+		if( raw.isEmpty() )
+			throw new IllegalArgumentException("Missing value for "+argName);
+		for( String token : raw.split(",") ) {
+			String t = token.trim();
+			if( t.isEmpty() )
+				continue;
+			String[] parts = t.split(":");
+			if( parts.length!=2 )
+				throw new IllegalArgumentException(argName+" expects ADDR:BYTE pairs, got '"+t+"'");
+			int addr = parseWordArg(parts[0].trim(), argName);
+			int val = parseByteArg(parts[1].trim(), argName);
+			out.add(new int[] { addr&0xffff, val&0xff });
+		}
+		if( out.isEmpty() )
+			throw new IllegalArgumentException("Missing value for "+argName);
+	}
+
+	private static String formatMonitorSequenceWrites(List<int[]> writes) {
+		if( writes==null || writes.isEmpty() )
+			return "";
+		StringBuilder out = new StringBuilder();
+		for( int i = 0; i<writes.size(); i++ ) {
+			if( i>0 )
+				out.append(", ");
+			int[] pair = writes.get(i);
+			out.append(Cpu65c02.getHexString(pair[0], 4)).append(":").append(Cpu65c02.getHexString(pair[1], 2));
+		}
+		return out.toString();
 	}
 
 	private static int[] parseWordRangeArg(String value, String argName) {
@@ -192,6 +226,7 @@ public class Emulator8Coordinator {
 		int dumpRangeStart = -1;
 		int dumpRangeEnd = -1;
 		boolean dumpAll = false;
+		List<int[]> monitorSequenceWrites = new ArrayList<>();
 		Set<Integer> haltExecutions = new LinkedHashSet<>();
 		Set<Integer> requireHaltPcs = new LinkedHashSet<>();
 			String pasteFile = null;
@@ -352,6 +387,14 @@ public class Emulator8Coordinator {
 			}
 			else if( "--dump-all".equals(arg) ) {
 				dumpAll = true;
+			}
+			else if( "--monitor-seq-write".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --monitor-seq-write");
+				parseMonitorSequenceWriteArg(argList[++i], "--monitor-seq-write", monitorSequenceWrites);
+			}
+			else if( arg.startsWith("--monitor-seq-write=") ) {
+				parseMonitorSequenceWriteArg(arg.substring("--monitor-seq-write=".length()), "--monitor-seq-write", monitorSequenceWrites);
 			}
 			else if( "--halt-execution".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -584,6 +627,11 @@ public class Emulator8Coordinator {
 	   		cpu.setResetYOverride(resetYValue);
 	   	if( resetSValue!=null )
 	   		cpu.setResetSOverride(resetSValue);
+	   	if( !monitorSequenceWrites.isEmpty() ) {
+	   		for( int[] write : monitorSequenceWrites )
+	   			bus.setByte(write[0], write[1]);
+	   		System.out.println("Applied monitor sequence write(s): "+formatMonitorSequenceWrites(monitorSequenceWrites));
+	   	}
 	   	if( maxCpuSteps>=0 ) {
 	   		PrintWriter traceWriter = null;
 	   		if( traceFile!=null ) {
