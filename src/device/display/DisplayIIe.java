@@ -2521,6 +2521,12 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		return memory.getByte(tracer.getAddress());
 	}
 
+	@Override
+	public int getHScan() {
+		return tracer.getHScan();
+	}
+
+	@Override
 	public boolean isVbl() {
 		return tracer.isVbl();
 	}

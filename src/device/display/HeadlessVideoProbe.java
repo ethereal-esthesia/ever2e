@@ -23,7 +23,7 @@ public class HeadlessVideoProbe extends HardwareManager implements VideoSignalSo
 		this.memoryBus = memoryBus;
 		this.memory = memoryBus.getMemory();
 		this.tracer = new ScanlineTracer8();
-		this.resetPhaseCycles = Integer.getInteger("ever2e.headless.vbl.phaseCycles", 11);
+		this.resetPhaseCycles = Integer.getInteger("ever2e.headless.vbl.phaseCycles", 0);
 		tracer.setScanStart(25, 70);
 		tracer.setScanSize(65, 262);
 		coldResetNoThrow();
@@ -79,6 +79,11 @@ public class HeadlessVideoProbe extends HardwareManager implements VideoSignalSo
 			evaluateSwitchChange();
 		}
 		return memory.getByte(tracer.getAddress());
+	}
+
+	@Override
+	public int getHScan() {
+		return tracer.getHScan();
 	}
 
 	@Override

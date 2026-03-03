@@ -224,6 +224,7 @@ public class Emulator8Coordinator {
 		boolean floatingBusOpcodeTiming = false;
 		Integer floatingBusPhaseCycles = null;
 		Integer vblBarOffsetCycles = null;
+		long startupCpuManagerCalls = 0L;
 		Integer dumpPageAddress = null;
 		int dumpRangeStart = -1;
 		int dumpRangeEnd = -1;
@@ -383,6 +384,14 @@ public class Emulator8Coordinator {
 			else if( arg.startsWith("--vblbar-offset-cycles=") ) {
 				vblBarOffsetCycles = Integer.parseInt(arg.substring("--vblbar-offset-cycles=".length()));
 			}
+			else if( "--startup-cpu-manager-calls".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --startup-cpu-manager-calls");
+				startupCpuManagerCalls = Long.parseLong(argList[++i]);
+			}
+			else if( arg.startsWith("--startup-cpu-manager-calls=") ) {
+				startupCpuManagerCalls = Long.parseLong(arg.substring("--startup-cpu-manager-calls=".length()));
+			}
 			else if( "--dump-page".equals(arg) ) {
 				if( i+1>=argList.length )
 					throw new IllegalArgumentException("Missing value for --dump-page");
@@ -466,6 +475,8 @@ public class Emulator8Coordinator {
 		tracePhase = tracePhase.trim().toLowerCase();
 		if( !"pre".equals(tracePhase) && !"post".equals(tracePhase) )
 			throw new IllegalArgumentException("Unsupported --trace-phase value: "+tracePhase+" (expected pre or post)");
+		if( startupCpuManagerCalls<0L )
+			throw new IllegalArgumentException("--startup-cpu-manager-calls must be >= 0");
 		if( floatingBusPhaseCycles!=null && vblBarOffsetCycles!=null )
 			throw new IllegalArgumentException("Use either --floating-bus-phase-cycles or --vblbar-offset-cycles, not both");
 		Integer phaseOverride = vblBarOffsetCycles!=null ? vblBarOffsetCycles : floatingBusPhaseCycles;
@@ -658,11 +669,15 @@ public class Emulator8Coordinator {
 	   			bus.setByte(write[0], write[1]);
 	   		System.out.println("Applied monitor sequence write(s): "+formatMonitorSequenceWrites(monitorSequenceWrites));
 	   	}
+	   	if( startupCpuManagerCalls>0L ) {
+	   		long warmed = emulator.start(startupCpuManagerCalls, cpu, null);
+	   		System.out.println("Startup pre-run: "+warmed+" CPU manager calls");
+	   	}
 	   	if( maxCpuSteps>=0 ) {
 	   		PrintWriter traceWriter = null;
 	   		if( traceFile!=null ) {
 	   			traceWriter = new PrintWriter(new FileWriter(traceFile));
-	   			traceWriter.println("step,event_type,event,pc,opcode,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles");
+	   			traceWriter.println("step,event_type,event,pc,opcode,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl");
 	   		}
 	   		final PrintWriter finalTraceWriter = traceWriter;
 	   		final String finalTracePhase = tracePhase;
@@ -752,7 +767,10 @@ public class Emulator8Coordinator {
 	   						opcode.getMnemonic() + "," +
 	   						opcode.getAddressMode() + "," +
 	   						cpu.getTotalCycleCount() + "," +
-	   						cpu.getLastInstructionCycleCount()
+	   						cpu.getLastInstructionCycleCount() + "," +
+	   						getDisplayHScan(bus) + "," +
+	   						getDisplayVScan(bus) + "," +
+	   						getDisplayVblBit(bus)
 	   				);
 	   				haltedAtAddress[0] = true;
 	   				haltedAtPc[0] = pendingPc;
@@ -810,7 +828,10 @@ public class Emulator8Coordinator {
 	   						opcode.getMnemonic() + "," +
 	   						opcode.getAddressMode() + "," +
 	   						cpu.getTotalCycleCount() + "," +
-	   						cpu.getLastInstructionCycleCount()
+	   						cpu.getLastInstructionCycleCount() + "," +
+	   						getDisplayHScan(bus) + "," +
+	   						getDisplayVScan(bus) + "," +
+	   						getDisplayVblBit(bus)
 	   				);
 	   			}
 	   			return true;
@@ -912,6 +933,27 @@ public class Emulator8Coordinator {
 				printTextScreen((MemoryBusIIe) bus, memory);
 	   	}
 
+	}
+
+	private static int getDisplayHScan(MemoryBus8 bus) {
+		if( !(bus instanceof MemoryBusIIe) )
+			return -1;
+		VideoSignalSource display = ((MemoryBusIIe) bus).getDisplay();
+		return display==null ? -1 : display.getHScan();
+	}
+
+	private static int getDisplayVScan(MemoryBus8 bus) {
+		if( !(bus instanceof MemoryBusIIe) )
+			return -1;
+		VideoSignalSource display = ((MemoryBusIIe) bus).getDisplay();
+		return display==null ? -1 : display.getVScan();
+	}
+
+	private static int getDisplayVblBit(MemoryBus8 bus) {
+		if( !(bus instanceof MemoryBusIIe) )
+			return 0;
+		VideoSignalSource display = ((MemoryBusIIe) bus).getDisplay();
+		return display!=null && display.isVbl() ? 1 : 0;
 	}
 
 	private static boolean isHeadlessMode(String windowBackend) {

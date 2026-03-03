@@ -53,6 +53,11 @@ public class EmulatorSchedulerIntegrationTest {
         }
 
         @Override
+        public int getHScan() {
+            return vScan & 0x3F;
+        }
+
+        @Override
         public boolean isVbl() {
             return vbl;
         }
