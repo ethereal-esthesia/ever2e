@@ -224,6 +224,7 @@ public class Emulator8Coordinator {
 		boolean floatingBusOpcodeTiming = false;
 		Integer floatingBusPhaseCycles = null;
 		Integer vblBarOffsetCycles = null;
+		Integer displayPhaseCycles = null;
 		long startupCpuManagerCalls = 0L;
 		Integer dumpPageAddress = null;
 		int dumpRangeStart = -1;
@@ -384,6 +385,14 @@ public class Emulator8Coordinator {
 			else if( arg.startsWith("--vblbar-offset-cycles=") ) {
 				vblBarOffsetCycles = Integer.parseInt(arg.substring("--vblbar-offset-cycles=".length()));
 			}
+			else if( "--display-phase-cycles".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --display-phase-cycles");
+				displayPhaseCycles = Integer.parseInt(argList[++i]);
+			}
+			else if( arg.startsWith("--display-phase-cycles=") ) {
+				displayPhaseCycles = Integer.parseInt(arg.substring("--display-phase-cycles=".length()));
+			}
 			else if( "--startup-cpu-manager-calls".equals(arg) ) {
 				if( i+1>=argList.length )
 					throw new IllegalArgumentException("Missing value for --startup-cpu-manager-calls");
@@ -477,12 +486,21 @@ public class Emulator8Coordinator {
 			throw new IllegalArgumentException("Unsupported --trace-phase value: "+tracePhase+" (expected pre or post)");
 		if( startupCpuManagerCalls<0L )
 			throw new IllegalArgumentException("--startup-cpu-manager-calls must be >= 0");
-		if( floatingBusPhaseCycles!=null && vblBarOffsetCycles!=null )
-			throw new IllegalArgumentException("Use either --floating-bus-phase-cycles or --vblbar-offset-cycles, not both");
-		Integer phaseOverride = vblBarOffsetCycles!=null ? vblBarOffsetCycles : floatingBusPhaseCycles;
+		int phaseArgCount = 0;
+		if( floatingBusPhaseCycles!=null )
+			phaseArgCount++;
+		if( vblBarOffsetCycles!=null )
+			phaseArgCount++;
+		if( displayPhaseCycles!=null )
+			phaseArgCount++;
+		if( phaseArgCount>1 )
+			throw new IllegalArgumentException("Use only one of --display-phase-cycles, --floating-bus-phase-cycles, or --vblbar-offset-cycles");
+		Integer phaseOverride =
+				displayPhaseCycles!=null ? displayPhaseCycles :
+				(vblBarOffsetCycles!=null ? vblBarOffsetCycles : floatingBusPhaseCycles);
 		if( phaseOverride!=null ) {
 			if( phaseOverride.intValue()<0 )
-				throw new IllegalArgumentException("--floating-bus-phase-cycles/--vblbar-offset-cycles must be >= 0");
+				throw new IllegalArgumentException("Display phase cycles must be >= 0");
 			System.setProperty("ever2e.headless.vbl.phaseCycles", Integer.toString(phaseOverride.intValue()));
 		}
 		System.out.println("Loading \""+propertiesFile+"\" into memory");
@@ -677,7 +695,7 @@ public class Emulator8Coordinator {
 	   		PrintWriter traceWriter = null;
 	   		if( traceFile!=null ) {
 	   			traceWriter = new PrintWriter(new FileWriter(traceFile));
-	   			traceWriter.println("step,event_type,event,pc,opcode,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl");
+	   			traceWriter.println("step,retired_step,event_type,event,pc,opcode,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl");
 	   		}
 	   		final PrintWriter finalTraceWriter = traceWriter;
 	   		final String finalTracePhase = tracePhase;
@@ -690,6 +708,9 @@ public class Emulator8Coordinator {
 	   		final int[] haltedAtPc = new int[] { -1 };
 	   		final boolean[] traceStarted = new boolean[] { finalTraceStartPc==null };
 	   		final long[] traceStepBase = new long[] { -1L };
+	   		final long[] traceRowStep = new long[] { 0L };
+	   		final long[] retiredInstructionStep = new long[] { 0L };
+	   		final String[] lastRetiredSignature = new String[] { null };
 	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
 	   		final String finalPasteFile = pasteFile;
 	   		final String finalPasteText = pasteText;
@@ -752,9 +773,24 @@ public class Emulator8Coordinator {
 	   				Integer machineCode = opcode.getMachineCode();
 	   				String mnemonic = opcode.getMnemonic()==null ? "" : opcode.getMnemonic().toString().trim();
 	   				boolean isResetEvent = "RES".equals(mnemonic);
-	   				long outStep = traceStepBase[0]>=0 ? (step-traceStepBase[0]+1L) : step;
+	   				String retiredSig =
+	   						Cpu65c02.getHexString(cpu.getPendingPC(), 4) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "|" +
+	   						cpu.getTotalCycleCount() + "|" +
+	   						cpu.getLastInstructionCycleCount() + "|" +
+	   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
+	   				traceRowStep[0]++;
+	   				if( !isResetEvent && !retiredSig.equals(lastRetiredSignature[0]) ) {
+	   					retiredInstructionStep[0]++;
+	   					lastRetiredSignature[0] = retiredSig;
+	   				}
 	   				finalTraceWriter.println(
-	   						outStep + "," +
+	   						traceRowStep[0] + "," +
+	   						retiredInstructionStep[0] + "," +
 	   						(isResetEvent ? "event":"instr") + "," +
 	   						(isResetEvent ? "RESET":"") + "," +
 	   						Cpu65c02.getHexString(cpu.getPendingPC(), 4) + "," +
@@ -782,6 +818,11 @@ public class Emulator8Coordinator {
 	   				return false;
 	   			}
 	   			if( !traceStarted[0] )
+	   				return true;
+	   			// Trace rows should represent CPU instruction phases only.
+	   			// Non-CPU managers can run between instruction boundaries and would
+	   			// otherwise inflate step counts with duplicate CPU state rows.
+	   			if( manager!=cpu )
 	   				return true;
 	   			if( "pre".equals(finalTracePhase) && !preCycle )
 	   				return true;
@@ -813,9 +854,24 @@ public class Emulator8Coordinator {
 	   				String eventType = isResetEvent ? "event":"instr";
 	   				String event = isResetEvent ? "RESET":"";
 	   				Integer machineCode = opcode.getMachineCode();
-	   				long outStep = traceStepBase[0]>=0 ? (step-traceStepBase[0]+1L) : step;
+	   				String retiredSig =
+	   						Cpu65c02.getHexString(pc, 4) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "|" +
+	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "|" +
+	   						cpu.getTotalCycleCount() + "|" +
+	   						cpu.getLastInstructionCycleCount() + "|" +
+	   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
+	   				traceRowStep[0]++;
+	   				if( "instr".equals(eventType) && !retiredSig.equals(lastRetiredSignature[0]) ) {
+	   					retiredInstructionStep[0]++;
+	   					lastRetiredSignature[0] = retiredSig;
+	   				}
 	   				finalTraceWriter.println(
-	   						outStep + "," +
+	   						traceRowStep[0] + "," +
+	   						retiredInstructionStep[0] + "," +
 	   						eventType + "," +
 	   						event + "," +
 	   						Cpu65c02.getHexString(pc, 4) + "," +

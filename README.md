@@ -74,6 +74,12 @@ Windowed run (SDL test backend):
 - `--monitor-seq-write <addr:byte[,addr:byte...]>`
   - Apply monitor-style startup memory writes before execution. Useful for parity tests that need fixed bytes
     (for example `--monitor-seq-write 0x01FD:0xFF,0x01FF:0xFF`).
+- `--floating-bus-phase-cycles <n>`
+  - Override headless floating-bus phase offset (startup tracer pre-advance cycles, default `0`). Useful for MAME timing alignment sweeps.
+- `--vblbar-offset-cycles <n>`
+  - Alias for VBLBAR/read-phase offset tuning in headless mode (same startup tracer phase control as `--floating-bus-phase-cycles`, default `0`).
+- `--display-phase-cycles <n>`
+  - Alias for startup display beam phase offset in headless mode (same phase control as `--floating-bus-phase-cycles`/`--vblbar-offset-cycles`, default `0`).
 - `--halt-execution <addr[,addr...]>`
   - Stop execution when PC reaches any provided address (hex `0x....` or decimal). May be repeated.
 - `--paste-file <path>`
