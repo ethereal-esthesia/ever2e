@@ -695,7 +695,7 @@ public class Emulator8Coordinator {
 	   		PrintWriter traceWriter = null;
 	   		if( traceFile!=null ) {
 	   			traceWriter = new PrintWriter(new FileWriter(traceFile));
-	   			traceWriter.println("step,retired_step,event_type,event,pc,opcode,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl");
+	   			traceWriter.println("step,retired_step,event_type,event,pc,opcode,opc1,opc2,opc3,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl,scan_h,scan_v,scan_x,scan_y,scan_cycles_desc,frame_cycle");
 	   		}
 	   		final PrintWriter finalTraceWriter = traceWriter;
 	   		final String finalTracePhase = tracePhase;
@@ -771,6 +771,9 @@ public class Emulator8Coordinator {
 	   			if( hitStopAddress && finalTraceWriter!=null && "pre".equals(finalTracePhase) ) {
 	   				Opcode opcode = cpu.getPendingOpcode();
 	   				Integer machineCode = opcode.getMachineCode();
+	   				String opc1 = getTraceByteHex(bus, cpu.getPendingPC() & 0xffff);
+	   				String opc2 = getTraceByteHex(bus, (cpu.getPendingPC()+1) & 0xffff);
+	   				String opc3 = getTraceByteHex(bus, (cpu.getPendingPC()+2) & 0xffff);
 	   				String mnemonic = opcode.getMnemonic()==null ? "" : opcode.getMnemonic().toString().trim();
 	   				boolean isResetEvent = "RES".equals(mnemonic);
 	   				String retiredSig =
@@ -795,6 +798,9 @@ public class Emulator8Coordinator {
 	   						(isResetEvent ? "RESET":"") + "," +
 	   						Cpu65c02.getHexString(cpu.getPendingPC(), 4) + "," +
 	   						(machineCode==null?"--":Cpu65c02.getHexString(machineCode, 2)) + "," +
+	   						opc1 + "," +
+	   						opc2 + "," +
+	   						opc3 + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "," +
@@ -806,7 +812,13 @@ public class Emulator8Coordinator {
 	   						cpu.getLastInstructionCycleCount() + "," +
 	   						getDisplayHScan(bus) + "," +
 	   						getDisplayVScan(bus) + "," +
-	   						getDisplayVblBit(bus)
+	   						getDisplayVblBit(bus) + "," +
+	   						getDisplayHScan(bus) + "," +
+	   						getDisplayVScan(bus) + "," +
+	   						getDisplayScanX(bus) + "," +
+	   						getDisplayScanY(bus) + "," +
+	   						getDisplayScanCyclesDesc(bus) + "," +
+	   						getDisplayFrameCycle(bus)
 	   				);
 	   				haltedAtAddress[0] = true;
 	   				haltedAtPc[0] = pendingPc;
@@ -854,6 +866,9 @@ public class Emulator8Coordinator {
 	   				String eventType = isResetEvent ? "event":"instr";
 	   				String event = isResetEvent ? "RESET":"";
 	   				Integer machineCode = opcode.getMachineCode();
+	   				String opc1 = getTraceByteHex(bus, pc & 0xffff);
+	   				String opc2 = getTraceByteHex(bus, (pc+1) & 0xffff);
+	   				String opc3 = getTraceByteHex(bus, (pc+2) & 0xffff);
 	   				String retiredSig =
 	   						Cpu65c02.getHexString(pc, 4) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "|" +
@@ -876,6 +891,9 @@ public class Emulator8Coordinator {
 	   						event + "," +
 	   						Cpu65c02.getHexString(pc, 4) + "," +
 	   						(machineCode==null?"--":Cpu65c02.getHexString(machineCode, 2)) + "," +
+	   						opc1 + "," +
+	   						opc2 + "," +
+	   						opc3 + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "," +
@@ -887,7 +905,13 @@ public class Emulator8Coordinator {
 	   						cpu.getLastInstructionCycleCount() + "," +
 	   						getDisplayHScan(bus) + "," +
 	   						getDisplayVScan(bus) + "," +
-	   						getDisplayVblBit(bus)
+	   						getDisplayVblBit(bus) + "," +
+	   						getDisplayHScan(bus) + "," +
+	   						getDisplayVScan(bus) + "," +
+	   						getDisplayScanX(bus) + "," +
+	   						getDisplayScanY(bus) + "," +
+	   						getDisplayScanCyclesDesc(bus) + "," +
+	   						getDisplayFrameCycle(bus)
 	   				);
 	   			}
 	   			return true;
@@ -1010,6 +1034,41 @@ public class Emulator8Coordinator {
 			return 0;
 		VideoSignalSource display = ((MemoryBusIIe) bus).getDisplay();
 		return display!=null && display.isVbl() ? 1 : 0;
+	}
+
+	private static int getDisplayScanX(MemoryBus8 bus) {
+		int h = getDisplayHScan(bus);
+		if( h<0 )
+			return -1;
+		return h * 14;
+	}
+
+	private static int getDisplayScanY(MemoryBus8 bus) {
+		return getDisplayVScan(bus);
+	}
+
+	private static int getDisplayScanCyclesDesc(MemoryBus8 bus) {
+		int h = getDisplayHScan(bus);
+		if( h<0 )
+			return -1;
+		return 64 - h;
+	}
+
+	private static int getDisplayFrameCycle(MemoryBus8 bus) {
+		int h = getDisplayHScan(bus);
+		int v = getDisplayVScan(bus);
+		if( h<0 || v<0 )
+			return -1;
+		return v * 65 + h;
+	}
+
+	private static String getTraceByteHex(MemoryBus8 bus, int address) {
+		int value;
+		if( bus instanceof MemoryBusIIe )
+			value = ((MemoryBusIIe) bus).peekByteNoSideEffects(address & 0xffff);
+		else
+			value = bus.getByte(address & 0xffff);
+		return Cpu65c02.getHexString(value, 2);
 	}
 
 	private static boolean isHeadlessMode(String windowBackend) {
