@@ -23,3 +23,7 @@ DISKS/*.NIB
 
 # Logs
 *.log
+
+# Local runtime state
+cfg/apple2ep.cfg
+nvram/apple2ep/nsc
