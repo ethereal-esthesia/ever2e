@@ -47,6 +47,9 @@ public class Emulator8Coordinator {
 	private static final boolean ENABLE_STARTUP_JIT_PRIME = true;
 	private static final int STARTUP_JIT_PRIME_STEPS = 300000;
 	private static final long MONITOR_BLOCKING_DEBUG_THRESHOLD_NS = 2_000_000L; // 2ms
+	private static final int DISPLAY_HSCAN_CYCLES = 65;
+	private static final int DISPLAY_VSCAN_LINES = 262;
+	private static final int DISPLAY_VBL_LINES = 70;
 
 	private static int parseByteArg(String value, String argName) {
 		String raw = value.trim();
@@ -787,11 +790,18 @@ public class Emulator8Coordinator {
 	   						cpu.getLastInstructionCycleCount() + "|" +
 	   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
 	   				traceRowStep[0]++;
-	   				if( !isResetEvent && !retiredSig.equals(lastRetiredSignature[0]) ) {
-	   					retiredInstructionStep[0]++;
-	   					lastRetiredSignature[0] = retiredSig;
-	   				}
-	   				finalTraceWriter.println(
+		   				if( !isResetEvent && !retiredSig.equals(lastRetiredSignature[0]) ) {
+		   					retiredInstructionStep[0]++;
+		   					lastRetiredSignature[0] = retiredSig;
+		   				}
+		   				int frameCycle = getDisplayFrameCycle(bus);
+		   				int displayHScan = deriveDisplayHScan(frameCycle);
+		   				int displayVScan = deriveDisplayVScan(frameCycle);
+		   				int displayVbl = deriveDisplayVblBit(frameCycle);
+		   				int scanX = deriveDisplayScanX(frameCycle);
+		   				int scanY = deriveDisplayScanY(frameCycle);
+		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
+		   				finalTraceWriter.println(
 	   						traceRowStep[0] + "," +
 	   						retiredInstructionStep[0] + "," +
 	   						(isResetEvent ? "event":"instr") + "," +
@@ -807,19 +817,19 @@ public class Emulator8Coordinator {
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "," +
 	   						opcode.getMnemonic() + "," +
-	   						opcode.getAddressMode() + "," +
-	   						cpu.getTotalCycleCount() + "," +
-	   						cpu.getLastInstructionCycleCount() + "," +
-	   						getDisplayHScan(bus) + "," +
-	   						getDisplayVScan(bus) + "," +
-	   						getDisplayVblBit(bus) + "," +
-	   						getDisplayHScan(bus) + "," +
-	   						getDisplayVScan(bus) + "," +
-	   						getDisplayScanX(bus) + "," +
-	   						getDisplayScanY(bus) + "," +
-	   						getDisplayScanCyclesDesc(bus) + "," +
-	   						getDisplayFrameCycle(bus)
-	   				);
+		   						opcode.getAddressMode() + "," +
+		   						cpu.getTotalCycleCount() + "," +
+		   						cpu.getLastInstructionCycleCount() + "," +
+		   						displayHScan + "," +
+		   						displayVScan + "," +
+		   						displayVbl + "," +
+		   						displayHScan + "," +
+		   						displayVScan + "," +
+		   						scanX + "," +
+		   						scanY + "," +
+		   						scanCyclesDesc + "," +
+		   						frameCycle
+		   				);
 	   				haltedAtAddress[0] = true;
 	   				haltedAtPc[0] = pendingPc;
 	   				return false;
@@ -880,11 +890,18 @@ public class Emulator8Coordinator {
 	   						cpu.getLastInstructionCycleCount() + "|" +
 	   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
 	   				traceRowStep[0]++;
-	   				if( "instr".equals(eventType) && !retiredSig.equals(lastRetiredSignature[0]) ) {
-	   					retiredInstructionStep[0]++;
-	   					lastRetiredSignature[0] = retiredSig;
-	   				}
-	   				finalTraceWriter.println(
+		   				if( "instr".equals(eventType) && !retiredSig.equals(lastRetiredSignature[0]) ) {
+		   					retiredInstructionStep[0]++;
+		   					lastRetiredSignature[0] = retiredSig;
+		   				}
+		   				int frameCycle = getDisplayFrameCycle(bus);
+		   				int displayHScan = deriveDisplayHScan(frameCycle);
+		   				int displayVScan = deriveDisplayVScan(frameCycle);
+		   				int displayVbl = deriveDisplayVblBit(frameCycle);
+		   				int scanX = deriveDisplayScanX(frameCycle);
+		   				int scanY = deriveDisplayScanY(frameCycle);
+		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
+		   				finalTraceWriter.println(
 	   						traceRowStep[0] + "," +
 	   						retiredInstructionStep[0] + "," +
 	   						eventType + "," +
@@ -900,19 +917,19 @@ public class Emulator8Coordinator {
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "," +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "," +
 	   						opcode.getMnemonic() + "," +
-	   						opcode.getAddressMode() + "," +
-	   						cpu.getTotalCycleCount() + "," +
-	   						cpu.getLastInstructionCycleCount() + "," +
-	   						getDisplayHScan(bus) + "," +
-	   						getDisplayVScan(bus) + "," +
-	   						getDisplayVblBit(bus) + "," +
-	   						getDisplayHScan(bus) + "," +
-	   						getDisplayVScan(bus) + "," +
-	   						getDisplayScanX(bus) + "," +
-	   						getDisplayScanY(bus) + "," +
-	   						getDisplayScanCyclesDesc(bus) + "," +
-	   						getDisplayFrameCycle(bus)
-	   				);
+		   						opcode.getAddressMode() + "," +
+		   						cpu.getTotalCycleCount() + "," +
+		   						cpu.getLastInstructionCycleCount() + "," +
+		   						displayHScan + "," +
+		   						displayVScan + "," +
+		   						displayVbl + "," +
+		   						displayHScan + "," +
+		   						displayVScan + "," +
+		   						scanX + "," +
+		   						scanY + "," +
+		   						scanCyclesDesc + "," +
+		   						frameCycle
+		   				);
 	   			}
 	   			return true;
 	   		});
@@ -1015,51 +1032,54 @@ public class Emulator8Coordinator {
 
 	}
 
-	private static int getDisplayHScan(MemoryBus8 bus) {
+	private static int getDisplayFrameCycle(MemoryBus8 bus) {
 		if( !(bus instanceof MemoryBusIIe) )
 			return -1;
 		VideoSignalSource display = ((MemoryBusIIe) bus).getDisplay();
-		return display==null ? -1 : display.getHScan();
-	}
-
-	private static int getDisplayVScan(MemoryBus8 bus) {
-		if( !(bus instanceof MemoryBusIIe) )
+		if( display==null )
 			return -1;
-		VideoSignalSource display = ((MemoryBusIIe) bus).getDisplay();
-		return display==null ? -1 : display.getVScan();
+		int h = display.getHScan();
+		int v = display.getVScan();
+		if( h<0 || v<0 )
+			return -1;
+		return v * DISPLAY_HSCAN_CYCLES + h;
 	}
 
-	private static int getDisplayVblBit(MemoryBus8 bus) {
-		if( !(bus instanceof MemoryBusIIe) )
+	private static int deriveDisplayHScan(int frameCycle) {
+		if( frameCycle<0 )
+			return -1;
+		return frameCycle % DISPLAY_HSCAN_CYCLES;
+	}
+
+	private static int deriveDisplayVScan(int frameCycle) {
+		if( frameCycle<0 )
+			return -1;
+		return (frameCycle / DISPLAY_HSCAN_CYCLES) % DISPLAY_VSCAN_LINES;
+	}
+
+	private static int deriveDisplayVblBit(int frameCycle) {
+		int v = deriveDisplayVScan(frameCycle);
+		if( v<0 )
 			return 0;
-		VideoSignalSource display = ((MemoryBusIIe) bus).getDisplay();
-		return display!=null && display.isVbl() ? 1 : 0;
+		return v<DISPLAY_VBL_LINES ? 1 : 0;
 	}
 
-	private static int getDisplayScanX(MemoryBus8 bus) {
-		int h = getDisplayHScan(bus);
+	private static int deriveDisplayScanX(int frameCycle) {
+		int h = deriveDisplayHScan(frameCycle);
 		if( h<0 )
 			return -1;
 		return h * 14;
 	}
 
-	private static int getDisplayScanY(MemoryBus8 bus) {
-		return getDisplayVScan(bus);
+	private static int deriveDisplayScanY(int frameCycle) {
+		return deriveDisplayVScan(frameCycle);
 	}
 
-	private static int getDisplayScanCyclesDesc(MemoryBus8 bus) {
-		int h = getDisplayHScan(bus);
+	private static int deriveDisplayScanCyclesDesc(int frameCycle) {
+		int h = deriveDisplayHScan(frameCycle);
 		if( h<0 )
 			return -1;
 		return 64 - h;
-	}
-
-	private static int getDisplayFrameCycle(MemoryBus8 bus) {
-		int h = getDisplayHScan(bus);
-		int v = getDisplayVScan(bus);
-		if( h<0 || v<0 )
-			return -1;
-		return v * 65 + h;
 	}
 
 	private static String getTraceByteHex(MemoryBus8 bus, int address) {
