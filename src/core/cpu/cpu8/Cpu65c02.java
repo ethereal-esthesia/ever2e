@@ -1511,4 +1511,9 @@ public class Cpu65c02 extends HardwareManager {
 		return totalCycleCount;
 	}
 
+	public boolean isInstructionEndCyclePending() {
+		CpuExecutionEvent event = executionQueue.peekFirst();
+		return event!=null && event.instructionEnd;
+	}
+
 }

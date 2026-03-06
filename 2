@@ -1,0 +1,40 @@
+#!/bin/bash
+set -euo pipefail
+
+JVM_REPO="${JVM_REPO:-/Users/shane/Project/ever2e-jvm}"
+PY_TOOLS="${PY_TOOLS:-/Users/shane/Project/ever2e-py/tools}"
+GRADLE_USER_HOME="${GRADLE_USER_HOME:-/private/tmp/gradle-home}"
+
+EMU="${EMU:-ROMS/Apple2eForceMemtest.emu}"
+STEPS="${STEPS:-100000}"
+TRACE_PHASE="${TRACE_PHASE:-pre}"
+TRACE_START_PC="${TRACE_START_PC:-0xFA63}"
+DISPLAY_PHASE_CYCLES="${DISPLAY_PHASE_CYCLES:-12489}"
+
+TRACE_OUT="${TRACE_OUT:-/private/tmp/jvm_subinstructions.tr.csv}"
+COMPARE_OUT="${COMPARE_OUT:-/private/tmp/jvm_subinstructions.compare.csv}"
+
+JVM_CYCLE_OFFSET="${JVM_CYCLE_OFFSET:-2}"
+JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-0}"
+
+START_LINE="${START_LINE:-1}"
+END_LINE="${END_LINE:-40}"
+TOP_NAME="${TOP_NAME:-JVM}"
+
+cd "${JVM_REPO}"
+
+GRADLE_USER_HOME="${GRADLE_USER_HOME}" gradle --no-daemon runHeadless --args="${EMU} --steps ${STEPS} --trace-file ${TRACE_OUT} --trace-phase ${TRACE_PHASE} --trace-start-pc ${TRACE_START_PC} --display-phase-cycles ${DISPLAY_PHASE_CYCLES} --trace-subinstructions --no-sound --reset-pflag-value 0x36 --reset-a-value 0x00 --reset-x-value 0x80 --reset-y-value 0x00 --reset-s-value 0xFD"
+
+python3 "${PY_TOOLS}/normalize_compare_csv.py" \
+  --kind jvm \
+  --jvm-cycle-offset "${JVM_CYCLE_OFFSET}" \
+  --jvm-frame-cycle-offset "${JVM_FRAME_CYCLE_OFFSET}" \
+  --input "${TRACE_OUT}" \
+  --output "${COMPARE_OUT}"
+
+python3 "${PY_TOOLS}/compare_csv_side_by_side.py" \
+  --top "${COMPARE_OUT}" \
+  --single-source top \
+  --top-name "${TOP_NAME}" \
+  --start-line "${START_LINE}" \
+  --end-line "${END_LINE}"

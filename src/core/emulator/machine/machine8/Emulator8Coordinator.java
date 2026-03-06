@@ -206,6 +206,7 @@ public class Emulator8Coordinator {
 		long maxCpuSteps = -1;
 		String traceFile = null;
 		String tracePhase = "pre";
+		boolean traceSubinstructions = false;
 		Integer traceStartPc = null;
 			boolean textConsole = false;
 			boolean printTextAtExit = false;
@@ -266,6 +267,9 @@ public class Emulator8Coordinator {
 			}
 			else if( "--post".equals(arg) ) {
 				tracePhase = "post";
+			}
+			else if( "--trace-subinstructions".equals(arg) ) {
+				traceSubinstructions = true;
 			}
 			else if( "--text-console".equals(arg) ) {
 				textConsole = true;
@@ -702,6 +706,7 @@ public class Emulator8Coordinator {
 	   		}
 	   		final PrintWriter finalTraceWriter = traceWriter;
 	   		final String finalTracePhase = tracePhase;
+	   		final boolean finalTraceSubinstructions = traceSubinstructions;
 	   		final Integer finalTraceStartPc = traceStartPc;
 	   		final Set<Integer> finalHaltExecutions = haltExecutions;
 	   		final HeadlessVideoProbe finalHeadlessProbe = headlessProbe;
@@ -715,6 +720,7 @@ public class Emulator8Coordinator {
 	   		final long[] retiredInstructionStep = new long[] { 0L };
 	   		final String[] lastRetiredSignature = new String[] { null };
 	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
+	   		final boolean[] cpuStepPreWasSub = new boolean[] { false };
 	   		final String finalPasteFile = pasteFile;
 	   		final String finalPasteText = pasteText;
 	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
@@ -734,6 +740,8 @@ public class Emulator8Coordinator {
 	   					}
 	   				}
 	   			}
+	   			if( manager==cpu && preCycle )
+	   				cpuStepPreWasSub[0] = cpu.hasPendingInFlightMicroEvent();
 	   			if( finalHeadlessProbe!=null && !preCycle && manager==cpu ) {
 	   				Opcode executed = cpu.getOpcode();
 	   				String mnemonic = executed.getMnemonic()==null ? "" : executed.getMnemonic().toString().trim();
@@ -779,21 +787,30 @@ public class Emulator8Coordinator {
 	   				String opc3 = getTraceByteHex(bus, (cpu.getPendingPC()+2) & 0xffff);
 	   				String mnemonic = opcode.getMnemonic()==null ? "" : opcode.getMnemonic().toString().trim();
 	   				boolean isResetEvent = "RES".equals(mnemonic);
-	   				String retiredSig =
-	   						Cpu65c02.getHexString(cpu.getPendingPC(), 4) + "|" +
-	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "|" +
+		   				String retiredSig =
+		   						Cpu65c02.getHexString(cpu.getPendingPC(), 4) + "|" +
+		   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "|" +
 	   						cpu.getTotalCycleCount() + "|" +
-	   						cpu.getLastInstructionCycleCount() + "|" +
-	   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
-	   				traceRowStep[0]++;
-		   				if( !isResetEvent && !retiredSig.equals(lastRetiredSignature[0]) ) {
+		   						cpu.getLastInstructionCycleCount() + "|" +
+		   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
+		   				boolean isSubinstruction = finalTraceSubinstructions && cpu.hasPendingInFlightMicroEvent();
+		   				String eventType = isSubinstruction ? "sub" : (isResetEvent ? "event":"instr");
+		   				String event = isSubinstruction ? "MICRO" : (isResetEvent ? "RESET":"");
+		   				boolean emitRow = finalTraceSubinstructions || isResetEvent || !retiredSig.equals(lastRetiredSignature[0]);
+		   				if( "instr".equals(eventType) && emitRow )
 		   					retiredInstructionStep[0]++;
+		   				if( ("instr".equals(eventType) || "event".equals(eventType)) && emitRow )
 		   					lastRetiredSignature[0] = retiredSig;
+		   				if( !emitRow ) {
+		   					haltedAtAddress[0] = true;
+		   					haltedAtPc[0] = pendingPc;
+		   					return false;
 		   				}
+		   				traceRowStep[0]++;
 		   				int frameCycle = getDisplayFrameCycle(bus);
 		   				int displayHScan = deriveDisplayHScan(frameCycle);
 		   				int displayVScan = deriveDisplayVScan(frameCycle);
@@ -801,11 +818,12 @@ public class Emulator8Coordinator {
 		   				int scanX = deriveDisplayScanX(frameCycle);
 		   				int scanY = deriveDisplayScanY(frameCycle);
 		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
+		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
 		   				finalTraceWriter.println(
 	   						traceRowStep[0] + "," +
 	   						retiredInstructionStep[0] + "," +
-	   						(isResetEvent ? "event":"instr") + "," +
-	   						(isResetEvent ? "RESET":"") + "," +
+	   						eventType + "," +
+	   						event + "," +
 	   						Cpu65c02.getHexString(cpu.getPendingPC(), 4) + "," +
 	   						(machineCode==null?"--":Cpu65c02.getHexString(machineCode, 2)) + "," +
 	   						opc1 + "," +
@@ -828,7 +846,7 @@ public class Emulator8Coordinator {
 		   						scanX + "," +
 		   						scanY + "," +
 		   						scanCyclesDesc + "," +
-		   						frameCycle
+		   						traceFrameCycle
 		   				);
 	   				haltedAtAddress[0] = true;
 	   				haltedAtPc[0] = pendingPc;
@@ -853,17 +871,24 @@ public class Emulator8Coordinator {
 	   			Opcode opcode;
 	   			int pc;
 	   			boolean isResetEvent;
+	   			boolean isSubinstruction = false;
 	   			if( "pre".equals(finalTracePhase) ) {
 	   				opcode = cpu.getPendingOpcode();
 	   				pc = cpu.getPendingPC();
+	   				isSubinstruction = finalTraceSubinstructions && cpu.hasPendingInFlightMicroEvent();
 	   				String mnemonic = opcode.getMnemonic()==null ? "" : opcode.getMnemonic().toString().trim();
-	   				isResetEvent = "RES".equals(mnemonic);
+	   				isResetEvent = !isSubinstruction && "RES".equals(mnemonic);
 	   			}
 	   			else {
+	   				isSubinstruction = finalTraceSubinstructions && cpuStepPreWasSub[0];
 	   				Opcode executedOpcode = cpu.getOpcode();
 	   				String executedMnemonic = executedOpcode.getMnemonic()==null ? "" : executedOpcode.getMnemonic().toString().trim();
-	   				isResetEvent = "RES".equals(executedMnemonic);
-	   				if( isResetEvent ) {
+	   				isResetEvent = !isSubinstruction && "RES".equals(executedMnemonic);
+	   				if( isSubinstruction ) {
+	   					opcode = cpu.getPendingOpcode();
+	   					pc = cpu.getPendingPC();
+	   				}
+	   				else if( isResetEvent ) {
 	   					opcode = executedOpcode;
 	   					pc = cpu.getRegister().getPC();
 	   				}
@@ -873,27 +898,30 @@ public class Emulator8Coordinator {
 	   				}
 	   			}
 	   			if( finalTraceWriter!=null ) {
-	   				String eventType = isResetEvent ? "event":"instr";
-	   				String event = isResetEvent ? "RESET":"";
+	   				String eventType = isSubinstruction ? "sub" : (isResetEvent ? "event":"instr");
+	   				String event = isSubinstruction ? "MICRO" : (isResetEvent ? "RESET":"");
 	   				Integer machineCode = opcode.getMachineCode();
 	   				String opc1 = getTraceByteHex(bus, pc & 0xffff);
 	   				String opc2 = getTraceByteHex(bus, (pc+1) & 0xffff);
 	   				String opc3 = getTraceByteHex(bus, (pc+2) & 0xffff);
-	   				String retiredSig =
-	   						Cpu65c02.getHexString(pc, 4) + "|" +
+		   				String retiredSig =
+		   						Cpu65c02.getHexString(pc, 4) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "|" +
 	   						cpu.getTotalCycleCount() + "|" +
-	   						cpu.getLastInstructionCycleCount() + "|" +
-	   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
-	   				traceRowStep[0]++;
-		   				if( "instr".equals(eventType) && !retiredSig.equals(lastRetiredSignature[0]) ) {
+		   						cpu.getLastInstructionCycleCount() + "|" +
+		   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
+		   				boolean emitRow = finalTraceSubinstructions || "event".equals(eventType) || !retiredSig.equals(lastRetiredSignature[0]);
+		   				if( "instr".equals(eventType) && emitRow )
 		   					retiredInstructionStep[0]++;
+		   				if( ("instr".equals(eventType) || "event".equals(eventType)) && emitRow )
 		   					lastRetiredSignature[0] = retiredSig;
-		   				}
+		   				if( !emitRow )
+		   					return true;
+		   				traceRowStep[0]++;
 		   				int frameCycle = getDisplayFrameCycle(bus);
 		   				int displayHScan = deriveDisplayHScan(frameCycle);
 		   				int displayVScan = deriveDisplayVScan(frameCycle);
@@ -901,6 +929,7 @@ public class Emulator8Coordinator {
 		   				int scanX = deriveDisplayScanX(frameCycle);
 		   				int scanY = deriveDisplayScanY(frameCycle);
 		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
+		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
 		   				finalTraceWriter.println(
 	   						traceRowStep[0] + "," +
 	   						retiredInstructionStep[0] + "," +
@@ -928,7 +957,7 @@ public class Emulator8Coordinator {
 		   						scanX + "," +
 		   						scanY + "," +
 		   						scanCyclesDesc + "," +
-		   						frameCycle
+		   						traceFrameCycle
 		   				);
 	   			}
 	   			return true;
@@ -1080,6 +1109,11 @@ public class Emulator8Coordinator {
 		if( h<0 )
 			return -1;
 		return 64 - h;
+	}
+
+	private static int deriveTraceFrameCycle(int frameCycle) {
+		// Keep trace field aligned with compare tooling semantics: per-scanline cycle.
+		return deriveDisplayHScan(frameCycle);
 	}
 
 	private static String getTraceByteHex(MemoryBus8 bus, int address) {
