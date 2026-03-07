@@ -1,0 +1,129 @@
+
+Absolute Maximum Ratings: (Note 1)
+
+	Rating			Symbol	Value
+
+	Supply Voltage		 VDD	-0.3V to +7.0V
+	Input Voltage		 Vin	-0.3V to VDD +0.3V
+	Operating Temperature	 TA	 0 °C to +70 °C
+	Storage Temperature	 Ts	-55 °C to +150 °C
+
+This device contains input protection against damage due to high static
+voltages or electric fields; however, precautions should be taken to avoid
+application of voltages higher than the maximum rating.
+
+Notes:
+	1. Exceeding these ratings may cause permanent damage. Functional
+	   operation under these conditions is not implied.
+
+
+
+DC Chararacteristics (All Devices): VDD = 5.0V +-5%, VSS = OV, TA = 0 °C to +70 °C
+
+Parameter					Symbol	Min	Max	Unit
+
+Input High Voltage				 Vih
+/RES, RDY, /IRQ, Data, /SO, BE				2.0	Vdd+0.3	 V
+/ABORT, /NMI, Phi2 (IN)					0.7Vdd	Vdd+0.3	 V
+
+Input Low Voltage				 Vil
+/RES, RDY, /IRQ, Data, /SO, BE				-0.3	0.8	 V
+/ABORT, /NMI, Phi2 (IN)					-0.3	0.2	 V
+
+Input Leakage Current (Vin = 0 to VDD)		 Iin
+/RES, /NMI, /IRQ, /SO, BE
+/ABORT (Internal Pullup)				-100	 1	uA
+RDY (Internal Pullup, Open Drain)			-100	10	uA
+Phi2 (IN)						-1	 1	uA
+Address, Data, R/W (Off State, BE = 0)			-10	10	uA
+
+Output High Voltage (Ioh = -100 uA)		 Voh
+SYNC, Data, Address, R/W, ML, VP, M/X,
+E, VDA, VPA, Phi1 (out), Phi2 (out)			0.7Vdd	-	 V
+
+Output Low Voltage (Ioh = -100 uA)		 Vol
+SYNC, Data, Address, R/W, ML, VP, M/X,
+E, VDA, VPA, Phi1 (out), Phi2 (out)			-	0.4	 V
+
+Supply Current (No Load)			 Idd
+	f = 2 MHz					-	10	mA
+	f = 4 MHz					-	20	mA
+	f = 6 MHz					-	30	mA
+	f = 8 MHz					-	40	mA
+
+Standby Current (No Load; Data Bus = Vss or VDD)
+Phi2 (in) = /ABORT = /RES = /NMI = /IRQ = /SO = BE = VDD)
+						 Isb	-	10	uA
+
+Capasitance (Vin = 0V, TA = 25°C, f = 2 MHz)
+Logic, Phi2 (in)				 Cin	-	10	pF
+Address, Data, R/W (Off State)			 Cts	-	15	pF
+
+
+
+AC Chararacteristics (G65SC802): VDD = 5.0V +-5%, VSS = OV, TA = 0 °C to +70 °C
+
+				  2 MHz      4 MHz      6 MHz      8 MHz
+Parameter		Symbol	Min  Max   Min  Max   Min  Max   Min  Max  Unit
+
+Cycle Time		tCYC    500  DC    250  DC    167  DC    125  DC    nS
+Clock Pulse Width Low	tPWL   0.240 10   0.120 10   0.080 10   0.060 10    uS
+Clock Pulse Width High	tPWH    240  inf   120  inf   80   inf   60   inf   nS
+Fall Time, Rise Time	tF,tR    -   10     -   10     -    5     -    5    nS
+Delay Time, Ph2 to Ph1	tDphi1   -   40     -   40     -   40     -   40    nS
+Delay Time, Ph2 to Ph2	tDphi2   -   40     -   40     -   40     -   40    nS
+A0-A15 Hold Time	tAH     10    -    10    -    10    -    10    -    nS
+A0-A15 Setup Time	tADS     -   100    -   75     -   60     -   40    nS
+Access Time		tACC    365   -    130   -    87    -    70    -    nS
+Read Data Hold Time	tDHR    10    -    10    -    10    -    10    -    nS
+Read Data Setup Time	tDSR    40    -    30    -    20    -    15    -    nS
+Write Data Delay Time	tMDS     -   100    -   70     -   60     -   40    nS
+Write Data Hold Time	tDHW    10    -    10    -    10    -    10    -    nS
+CPU Control Setup Time	tPCS    40    -    30    -    20    -    15    -    nS
+CPU Control Hold Time	tPCH    10    -    10    -    10    -    10    -    nS
+E,MX Output Hold Time	tEH     10    -    10    -     5    -     5    -    nS
+E,MX Output Setup Time	tES     50    -    50    -    25    -    15    -    nS
+Capacitive Load (Address, Data, and R/W)
+			CEXT    -    100    -   100    -   35     -   35    pF
+
+
+Timing Notes:
+	1 Typical output load = 100 pF
+	2 Voltage levels are VL < 0.4V, VH > 2.4V
+	3 Timing measurement points are 0.8V and 2.0V
+
+
+
+AC Chararacteristics (G65SC816): VDD = 5.0V +-5%, VSS = OV, TA = 0 °C to +70 °C
+
+				  2 MHz      4 MHz      6 MHz      8 MHz
+Parameter		Symbol	Min  Max   Min  Max   Min  Max   Min  Max  Unit
+
+Cycle Time		tCYC    500  DC    250  DC    167  DC    125  DC    nS
+Clock Pulse Width Low	tPWL   0.240 10   0.120 10   0.080 10   0.060 10    uS
+Clock Pulse Width High	tPWH    240  inf   120  inf   80   inf   60   inf   nS
+Fall Time, Rise Time	tF,tR    -   10     -   10     -    5     -    5    nS
+A0-A15 Hold Time	tAH     10    -    10    -    10    -    10    -    nS
+A0-A15 Setup Time	tADS     -   100    -   75     -   60     -   40    nS
+BA0-BA7 Hold Time	tBH     10    -    10    -    10    -    10    -    nS
+BA0-BA7 Setup Time	tBAS     -   100    -   90     -   65     -   45    nS
+Access Time		tACC    365   -    130   -    87    -    70    -    nS
+Read Data Hold Time	tDHR    10    -    10    -    10    -    10    -    nS
+Read Data Setup Time	tDSR    40    -    30    -    20    -    15    -    nS
+Write Data Delay Time	tMDS     -   100    -   70     -   60     -   40    nS
+Write Data Hold Time	tDHW    10    -    10    -    10    -    10    -    nS
+CPU Control Setup Time	tPCS    40    -    30    -    20    -    15    -    nS
+CPU Control Hold Time	tPCH    10    -    10    -    10    -    10    -    nS
+E,MX Output Hold Time	tEH     10    -    10    -     5    -     5    -    nS
+E,MX Output Setup Time	tES     50    -    50    -    25    -    15    -    nS
+Capacitive Load (Address, Data, and R/W)
+			CEXT     -   100    -   100    -   35     -   35    pF
+BE to High Imp. State	tBHZ     -   30     -   30     -   30     -   30    nS
+BE to Valid Data	tBVD     -   30     -   30     -   30     -   30    nS
+
+
+Timing Notes:
+	1 Typical output load = 100 pF
+	2 Voltage levels are VL < 0.4V, VH > 2.4V
+	3 Timing measurement points are 0.8V and 2.0V
+

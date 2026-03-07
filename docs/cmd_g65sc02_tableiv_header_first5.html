@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>CMD G65SC02 Table IV (Header + First 5 Rows)</title>
+<style>
+    body {
+      margin: 12px;
+      font-family: "Courier New", Courier, monospace;
+      background: #fff;
+      color: #000;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .note {
+      margin: 0 0 10px;
+      font-size: 12px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+      text-align: center;
+      vertical-align: middle;
+      line-height: 1.1;
+    }
+    thead th {
+      font-weight: 700;
+    }
+    .left {
+      text-align: left;
+    }
+    .tiny {
+      font-size: 10px;
+    }
+    .opcol { width: 133px; }
+    .mnemcol { width: 72px; }
+    .mn2col { width: 58px; }
+    .statcol { width: 130px; }
+    .opn { width: 44px; }
+    .notes {
+      margin-top: 10px;
+      border: 1px solid #000;
+      padding: 8px;
+      font-size: 12px;
+    }
+    .notes h2 {
+      margin: 0 0 6px;
+      font-size: 13px;
+    }
+    .notesgrid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+    .notes ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .notes li { margin: 2px 0; }
+    .defs p { margin: 0 0 3px; }
+  </style>
+</head>
+<body>
+<h1>Table IV Slice (Header + ADC, AND, ASL, BCC, BCS)</h1>
+<p class="note">Compact reconstruction matching the cropped Table IV layout.</p>
+<table>
+<thead>
+<tr>
+<th class="mnemcol" rowspan="3">MNEM-<br/>ONIC</th>
+<th class="opcol" rowspan="3">OPERATION</th>
+<th colspan="3">IMME-<br/>DIATE</th>
+<th colspan="3">ABSO-<br/>LUTE</th>
+<th colspan="3">ZERO<br/>PAGE</th>
+<th colspan="3">(4)<br/>IMPLIED</th>
+<th colspan="3">(INC, X)</th>
+<th colspan="3">(IND), Y</th>
+<th colspan="3">ZPG, X</th>
+<th colspan="3">ABS, X</th>
+<th colspan="3">ABS, Y</th>
+<th colspan="3">RELA-<br/>TIVE</th>
+<th colspan="3">INDI-<br/>RECT</th>
+<th colspan="3">ZPG, Y</th>
+<th class="statcol" rowspan="3">PROCESSOR<br/>STATUS CODE<br/><span class="tiny">N V B D I Z C</span></th>
+<th class="mn2col" rowspan="3">MNE-<br/>MONIC</th>
+</tr>
+<tr>
+<th class="tiny" colspan="36">OP  n  # repeated per addressing-mode column</th>
+</tr>
+<tr>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+<th class="opn">OP n #</th><th class="opn">OP n #</th><th class="opn">OP n #</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADC</td>
+<td class="left">A + M + C -&gt; A<br/>C</td>
+<td>69 2 2</td><td></td><td></td>
+<td>6D 3 4</td><td></td><td></td>
+<td>65 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>61 2 6</td><td></td><td></td>
+<td>71 2 5</td><td></td><td></td>
+<td>75 2 4</td><td></td><td></td>
+<td>7D 3 4</td><td></td><td></td>
+<td>79 3 4</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N V . . . Z C</td>
+<td>ADC</td>
+</tr>
+<tr>
+<td>AND</td>
+<td class="left">A ∧ M -&gt; A</td>
+<td>29 2 2</td><td></td><td></td>
+<td>2D 3 4</td><td></td><td></td>
+<td>25 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>21 2 6</td><td></td><td></td>
+<td>31 2 5</td><td></td><td></td>
+<td>35 2 4</td><td></td><td></td>
+<td>3D 3 4</td><td></td><td></td>
+<td>39 3 4</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>AND</td>
+</tr>
+<tr>
+<td>ASL</td>
+<td class="left">C &lt;- [b7..b0] &lt;- 0</td>
+<td></td><td></td><td></td>
+<td>0E 3 6</td><td></td><td></td>
+<td>06 2 5</td><td></td><td></td>
+<td>0A 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>16 2 6</td><td></td><td></td>
+<td>1E 3 6</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z C</td>
+<td>ASL</td>
+</tr>
+<tr>
+<td>BCC</td>
+<td class="left">C=0 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>90 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BCC</td>
+</tr>
+<tr>
+<td>BCS</td>
+<td class="left">C=1 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>B0 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BCS</td>
+</tr>
+<tr>
+<td>BEQ</td>
+<td class="left">Z=1 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>F0 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BEQ</td>
+</tr>
+<tr>
+<td>BIT</td>
+<td class="left">A ∧ M -&gt; Z<br/>M7 -&gt; N<br/>M6 -&gt; V</td>
+<td>89 2 2</td><td></td><td></td>
+<td>2C 3 4</td><td></td><td></td>
+<td>24 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>34 2 4</td><td></td><td></td>
+<td>3C 3 4</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N V . . . Z .</td>
+<td>BIT</td>
+</tr>
+<tr>
+<td>BMI</td>
+<td class="left">N=1 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>30 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BMI</td>
+</tr>
+<tr>
+<td>BNE</td>
+<td class="left">Z=0 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>D0 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BNE</td>
+</tr>
+<tr>
+<td>BPL</td>
+<td class="left">N=0 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>10 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BPL</td>
+</tr>
+<tr>
+<td>BRA</td>
+<td class="left">1 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>80 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BRA</td>
+</tr>
+<tr>
+<td>BRK</td>
+<td class="left">BRK -&gt; push PC/P<br/>then vector</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>00 2 7</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . 1 0 1 . .</td>
+<td>BRK</td>
+</tr>
+<tr>
+<td>BVC</td>
+<td class="left">V=0 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>50 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BVC</td>
+</tr>
+<tr>
+<td>BVS</td>
+<td class="left">V=1 -&gt; branch</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>70 2 2*</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>BVS</td>
+</tr>
+<tr>
+<td>CLC</td>
+<td class="left">0 -&gt; C</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>18 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . 0</td>
+<td>CLC</td>
+</tr>
+<tr>
+<td>CLD</td>
+<td class="left">0 -&gt; D</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>D8 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . 0 . . .</td>
+<td>CLD</td>
+</tr>
+<tr>
+<td>CLI</td>
+<td class="left">0 -&gt; I</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>58 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . 0 . .</td>
+<td>CLI</td>
+</tr>
+<tr>
+<td>CLV</td>
+<td class="left">0 -&gt; V</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>B8 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>0 0 . . . . .</td>
+<td>CLV</td>
+</tr>
+<tr>
+<td>CMP</td>
+<td class="left">A - M -&gt; N<br/>Z<br/>C</td>
+<td>C9 2 2</td><td></td><td></td>
+<td>CD 3 4</td><td></td><td></td>
+<td>C5 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>C1 2 6</td><td></td><td></td>
+<td>D1 2 5</td><td></td><td></td>
+<td>D5 2 4</td><td></td><td></td>
+<td>DD 3 4</td><td></td><td></td>
+<td>D9 3 4</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>D2 2 5</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z C</td>
+<td>CMP</td>
+</tr>
+<tr>
+<td>CPX</td>
+<td class="left">X - M -&gt; N<br/>Z<br/>C</td>
+<td>E0 2 2</td><td></td><td></td>
+<td>EC 3 4</td><td></td><td></td>
+<td>E4 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z C</td>
+<td>CPX</td>
+</tr>
+<tr>
+<td>CPY</td>
+<td class="left">Y - M -&gt; N<br/>Z<br/>C</td>
+<td>C0 2 2</td><td></td><td></td>
+<td>CC 3 4</td><td></td><td></td>
+<td>C4 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z C</td>
+<td>CPY</td>
+</tr>
+<tr>
+<td>DEC</td>
+<td class="left">M - 1 -&gt; M</td>
+<td></td><td></td><td></td>
+<td>CE 3 6</td><td></td><td></td>
+<td>C6 2 5</td><td></td><td></td>
+<td>3A 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>D6 2 6</td><td></td><td></td>
+<td>DE 3 6</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>DEC</td>
+</tr>
+<tr>
+<td>DEX</td>
+<td class="left">X - 1 -&gt; X</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>CA 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>DEX</td>
+</tr>
+<tr>
+<td>DEY</td>
+<td class="left">Y - 1 -&gt; Y</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>88 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>DEY</td>
+</tr>
+<tr>
+<td>EOR</td>
+<td class="left">A ⊕ M -&gt; A</td>
+<td>49 2 2</td><td></td><td></td>
+<td>4D 3 4</td><td></td><td></td>
+<td>45 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>41 2 6</td><td></td><td></td>
+<td>51 2 5</td><td></td><td></td>
+<td>55 2 4</td><td></td><td></td>
+<td>5D 3 4</td><td></td><td></td>
+<td>59 3 4</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>52 2 5</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>EOR</td>
+</tr>
+<tr>
+<td>INC</td>
+<td class="left">M + 1 -&gt; M</td>
+<td></td><td></td><td></td>
+<td>EE 3 6</td><td></td><td></td>
+<td>E6 2 5</td><td></td><td></td>
+<td>1A 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>F6 2 6</td><td></td><td></td>
+<td>FE 3 6</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>INC</td>
+</tr>
+<tr>
+<td>INX</td>
+<td class="left">X + 1 -&gt; X</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>E8 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>INX</td>
+</tr>
+<tr>
+<td>INY</td>
+<td class="left">Y + 1 -&gt; Y</td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>C8 1 2</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>INY</td>
+</tr>
+<tr>
+<td>JMP</td>
+<td class="left">PC &lt;- target</td>
+<td></td><td></td><td></td>
+<td>4C 3 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>7C 3 6</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>6C 3 6</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>JMP</td>
+</tr>
+<tr>
+<td>JSR</td>
+<td class="left">PC &lt;- subroutine</td>
+<td></td><td></td><td></td>
+<td>20 3 6</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>. . . . . . .</td>
+<td>JSR</td>
+</tr>
+<tr>
+<td>LDA</td>
+<td class="left">M -&gt; A</td>
+<td>A9 2 2</td><td></td><td></td>
+<td>AD 3 4</td><td></td><td></td>
+<td>A5 2 3</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>A1 2 6</td><td></td><td></td>
+<td>B1 2 5</td><td></td><td></td>
+<td>B5 2 4</td><td></td><td></td>
+<td>BD 3 4</td><td></td><td></td>
+<td>B9 3 4</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>B2 2 5</td><td></td><td></td>
+<td></td><td></td><td></td>
+<td>N . . . . Z .</td>
+<td>LDA</td>
+</tr>
+      <tr>
+        <td>LDX</td>
+        <td class="left">M -&gt; X</td>
+        <td>A2 2 2</td><td></td><td></td>
+        <td>AE 3 4</td><td></td><td></td>
+        <td>A6 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>BE 3 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>B6 2 4</td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>LDX</td>
+      </tr>
+      <tr>
+        <td>LDY</td>
+        <td class="left">M -&gt; Y</td>
+        <td>A0 2 2</td><td></td><td></td>
+        <td>AC 3 4</td><td></td><td></td>
+        <td>A4 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>B4 2 4</td><td></td><td></td>
+        <td>BC 3 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>LDY</td>
+      </tr>
+      <tr>
+        <td>LSR</td>
+        <td class="left">0 -&gt; b7, b0 -&gt; C</td>
+        <td></td><td></td><td></td>
+        <td>4E 3 6</td><td></td><td></td>
+        <td>46 2 5</td><td></td><td></td>
+        <td>4A 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>56 2 6</td><td></td><td></td>
+        <td>5E 3 6</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>0 . . . . Z C</td>
+        <td>LSR</td>
+      </tr>
+      <tr>
+        <td>NOP</td>
+        <td class="left">NC OPERATION</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>EA 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>NOP</td>
+      </tr>
+      <tr>
+        <td>ORA</td>
+        <td class="left">A v M -&gt; A</td>
+        <td>09 2 2</td><td></td><td></td>
+        <td>0D 3 4</td><td></td><td></td>
+        <td>05 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>01 2 6</td><td></td><td></td>
+        <td>11 2 5</td><td></td><td></td>
+        <td>15 2 4</td><td></td><td></td>
+        <td>1D 3 4</td><td></td><td></td>
+        <td>19 3 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>12 2 5</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>ORA</td>
+      </tr>
+      <tr>
+        <td>PHA</td>
+        <td class="left">A -&gt; MS, S-1 -&gt; S</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>48 1 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>PHA</td>
+      </tr>
+      <tr>
+        <td>PHP</td>
+        <td class="left">P -&gt; MS, S-1 -&gt; S</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>08 1 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>PHP</td>
+      </tr>
+      <tr>
+        <td>PHX</td>
+        <td class="left">X -&gt; MS, S-1 -&gt; S</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>DA 1 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>PHX</td>
+      </tr>
+      <tr>
+        <td>PHY</td>
+        <td class="left">Y -&gt; MS, S-1 -&gt; S</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>5A 1 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>PHY</td>
+      </tr>
+      <tr>
+        <td>PLA</td>
+        <td class="left">S+1 -&gt; S, MS -&gt; A</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>68 1 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>PLA</td>
+      </tr>
+      <tr>
+        <td>PLP</td>
+        <td class="left">S+1 -&gt; S, MS -&gt; P</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>28 1 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N V 1 D I Z C</td>
+        <td>PLP</td>
+      </tr>
+      <tr>
+        <td>PLX</td>
+        <td class="left">S+1 -&gt; S, MS -&gt; X</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>FA 1 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>PLX</td>
+      </tr>
+      <tr>
+        <td>PLY</td>
+        <td class="left">S+1 -&gt; S, MS -&gt; Y</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>7A 1 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>PLY</td>
+      </tr>
+      <tr>
+        <td>ROL</td>
+        <td class="left">C -&gt; b0, b7 -&gt; C</td>
+        <td></td><td></td><td></td>
+        <td>2E 3 6</td><td></td><td></td>
+        <td>26 2 5</td><td></td><td></td>
+        <td>2A 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>36 2 6</td><td></td><td></td>
+        <td>3E 3 6</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z C</td>
+        <td>ROL</td>
+      </tr>
+      <tr>
+        <td>ROR</td>
+        <td class="left">C -&gt; b7, b0 -&gt; C</td>
+        <td></td><td></td><td></td>
+        <td>6E 3 6</td><td></td><td></td>
+        <td>66 2 5</td><td></td><td></td>
+        <td>6A 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>76 2 6</td><td></td><td></td>
+        <td>7E 3 6</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z C</td>
+        <td>ROR</td>
+      </tr>
+      <tr>
+        <td>RTI</td>
+        <td class="left">RTRN INT</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>40 1 6</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N V 1 D I Z C</td>
+        <td>RTI</td>
+      </tr>
+      <tr>
+        <td>RTS</td>
+        <td class="left">RTRN SUB</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>60 1 6</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>RTS</td>
+      </tr>
+      <tr>
+        <td>SBC</td>
+        <td class="left">A-M-C -&gt; A</td>
+        <td>E9 2 2</td><td></td><td></td>
+        <td>ED 3 4</td><td></td><td></td>
+        <td>E5 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>E1 2 6</td><td></td><td></td>
+        <td>F1 2 5</td><td></td><td></td>
+        <td>F5 2 4</td><td></td><td></td>
+        <td>FD 3 4</td><td></td><td></td>
+        <td>F9 3 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>F2 2 5</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N V . . . Z C</td>
+        <td>SBC</td>
+      </tr>
+      <tr>
+        <td>SEC</td>
+        <td class="left">1 -&gt; C</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>38 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . 1</td>
+        <td>SEC</td>
+      </tr>
+      <tr>
+        <td>SED</td>
+        <td class="left">1 -&gt; D</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>F8 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . 1 . . .</td>
+        <td>SED</td>
+      </tr>
+      <tr>
+        <td>SEI</td>
+        <td class="left">1 -&gt; I</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>78 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . 1 . .</td>
+        <td>SEI</td>
+      </tr>
+      <tr>
+        <td>STA</td>
+        <td class="left">A -&gt; M</td>
+        <td></td><td></td><td></td>
+        <td>8D 3 4</td><td></td><td></td>
+        <td>85 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>81 2 6</td><td></td><td></td>
+        <td>91 2 6</td><td></td><td></td>
+        <td>95 2 4</td><td></td><td></td>
+        <td>9D 3 5</td><td></td><td></td>
+        <td>99 3 5</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>92 2 5</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>STA</td>
+      </tr>
+      <tr>
+        <td>STX</td>
+        <td class="left">X -&gt; M</td>
+        <td></td><td></td><td></td>
+        <td>8E 3 4</td><td></td><td></td>
+        <td>86 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>96 2 4</td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>STX</td>
+      </tr>
+      <tr>
+        <td>STY</td>
+        <td class="left">Y -&gt; M</td>
+        <td></td><td></td><td></td>
+        <td>8C 3 4</td><td></td><td></td>
+        <td>84 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>94 2 4</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>STY</td>
+      </tr>
+      <tr>
+        <td>STZ</td>
+        <td class="left">00 -&gt; M</td>
+        <td></td><td></td><td></td>
+        <td>9C 3 4</td><td></td><td></td>
+        <td>64 2 3</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>74 2 4</td><td></td><td></td>
+        <td>9E 3 5</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>STZ</td>
+      </tr>
+      <tr>
+        <td>TAX</td>
+        <td class="left">A -&gt; X</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>AA 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>TAX</td>
+      </tr>
+      <tr>
+        <td>TAY</td>
+        <td class="left">A -&gt; Y</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>A8 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>TAY</td>
+      </tr>
+      <tr>
+        <td>TRB</td>
+        <td class="left">A &and; M -&gt; M</td>
+        <td></td><td></td><td></td>
+        <td>1C 3 6</td><td></td><td></td>
+        <td>14 2 5</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . Z .</td>
+        <td>TRB</td>
+      </tr>
+      <tr>
+        <td>TSB</td>
+        <td class="left">A v M -&gt; M</td>
+        <td></td><td></td><td></td>
+        <td>0C 3 6</td><td></td><td></td>
+        <td>04 2 5</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . Z .</td>
+        <td>TSB</td>
+      </tr>
+      <tr>
+        <td>TSX</td>
+        <td class="left">S -&gt; X</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>BA 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>TSX</td>
+      </tr>
+      <tr>
+        <td>TXA</td>
+        <td class="left">X -&gt; A</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>8A 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>TXA</td>
+      </tr>
+      <tr>
+        <td>TXS</td>
+        <td class="left">X -&gt; S</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>9A 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>. . . . . . .</td>
+        <td>TXS</td>
+      </tr>
+      <tr>
+        <td>TYA</td>
+        <td class="left">Y -&gt; A</td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>98 1 2</td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td></td><td></td><td></td>
+        <td>N . . . . Z .</td>
+        <td>TYA</td>
+      </tr>
+    </tbody>
+</table>
+<div class="notes">
+<h2>NOTES</h2>
+<div class="notesgrid">
+<ol>
+<li>Add 1 to “n” if page boundary is crossed, except STA and STZ.</li>
+<li>Add 1 to “n” if branch occurs to same page; add 2 to “n” if branch occurs to different page.</li>
+<li>Add 1 to “n” in decimal mode.</li>
+<li>Accumulator address is included as implied address.</li>
+<li>“N” and “V” flags are unchanged in immediate mode.</li>
+<li>“-” flag indicates A ∧ M result (same as BIT instruction).</li>
+</ol>
+<div class="defs">
+<p><b>X</b> index X</p>
+<p><b>Y</b> index Y</p>
+        <p><b>A</b> accumulator</p>
+        <p><b>M</b> memory per effective address</p>
+        <p><b>MS</b> memory per stack pointer</p>
+        <p><b>M6</b> memory bit #6</p>
+        <p><b>M7</b> memory bit #7</p>
+      </div>
+<div class="defs">
+<p><b>+</b> add</p>
+<p><b>-</b> subtract</p>
+<p><b>^</b> and</p>
+<p><b>v</b> or</p>
+<p><b>⊕</b> exclusive or</p>
+<p><b>n</b> no. cycles</p>
+<p><b>#</b> no. bytes</p>
+</div>
+</div>
+</div>
+</body>
+</html>

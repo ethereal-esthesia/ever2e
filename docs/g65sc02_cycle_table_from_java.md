@@ -1,0 +1,264 @@
+# G65SC02 Full Cycle Table (JVM Model)
+
+Source: `/Users/shane/Project/ever2e-jvm/src/core/cpu/cpu8/Cpu65c02.java` plus estimator rules from `Cpu65c02CycleEstimator`.
+
+Generated CSV: `/Users/shane/Project/ever2e-jvm/docs/g65sc02_cycle_table_from_java.csv`
+
+| Opcode | Mnemonic | Mode | Bytes | Base | Page Cross | Branch | Decimal | Total |
+|---|---|---|---:|---:|---|---|---|---|
+| 00 | BRK | IMP | 2 | 7 | 0 | 0 | 0 | base |
+| 01 | ORA | IND_X | 2 | 6 | 0 | 0 | 0 | base |
+| 02 | NOP | IMP | 2 | 2 | 0 | 0 | 0 | base |
+| 03 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 04 | TSB | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| 05 | ORA | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 06 | ASL | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| 07 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 08 | PHP | IMP | 1 | 3 | 0 | 0 | 0 | base |
+| 09 | ORA | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| 0A | ASL | ACC | 1 | 2 | 0 | 0 | 0 | base |
+| 0B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 0C | TSB | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| 0D | ORA | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 0E | ASL | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| 0F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 10 | BPL | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| 11 | ORA | IND_Y | 2 | 5 | +1 on page cross | 0 | 0 | base + page-cross |
+| 12 | ORA | ZPG_IND | 2 | 5 | 0 | 0 | 0 | base |
+| 13 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 14 | TRB | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| 15 | ORA | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| 16 | ASL | ZPG_X | 2 | 6 | 0 | 0 | 0 | base |
+| 17 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 18 | CLC | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 19 | ORA | ABS_Y | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| 1A | INA | ACC | 1 | 2 | 0 | 0 | 0 | base |
+| 1B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 1C | TRB | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| 1D | ORA | ABS_X | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| 1E | ASL | ABS_X | 3 | 6 | 0 | 0 | 0 | base |
+| 1F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 20 | JSR | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| 21 | AND | IND_X | 2 | 6 | 0 | 0 | 0 | base |
+| 22 | NOP | IMP | 2 | 2 | 0 | 0 | 0 | base |
+| 23 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 24 | BIT | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 25 | AND | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 26 | ROL | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| 27 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 28 | PLP | IMP | 1 | 4 | 0 | 0 | 0 | base |
+| 29 | AND | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| 2A | ROL | ACC | 1 | 2 | 0 | 0 | 0 | base |
+| 2B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 2C | BIT | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 2D | AND | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 2E | ROL | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| 2F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 30 | BMI | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| 31 | AND | IND_Y | 2 | 5 | +1 on page cross | 0 | 0 | base + page-cross |
+| 32 | AND | ZPG_IND | 2 | 5 | 0 | 0 | 0 | base |
+| 33 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 34 | BIT | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| 35 | AND | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| 36 | ROL | ZPG_X | 2 | 6 | 0 | 0 | 0 | base |
+| 37 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 38 | SEC | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 39 | AND | ABS_Y | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| 3A | DEA | ACC | 1 | 2 | 0 | 0 | 0 | base |
+| 3B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 3C | BIT | ABS_X | 3 | 4 | 0 | 0 | 0 | base |
+| 3D | AND | ABS_X | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| 3E | ROL | ABS_X | 3 | 6 | 0 | 0 | 0 | base |
+| 3F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 40 | RTI | IMP | 1 | 6 | 0 | 0 | 0 | base |
+| 41 | EOR | IND_X | 2 | 6 | 0 | 0 | 0 | base |
+| 42 | NOP | IMP | 2 | 2 | 0 | 0 | 0 | base |
+| 43 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 44 | NOP | IMP | 2 | 3 | 0 | 0 | 0 | base |
+| 45 | EOR | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 46 | LSR | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| 47 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 48 | PHA | IMP | 1 | 3 | 0 | 0 | 0 | base |
+| 49 | EOR | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| 4A | LSR | ACC | 1 | 2 | 0 | 0 | 0 | base |
+| 4B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 4C | JMP | ABS | 3 | 3 | 0 | 0 | 0 | base |
+| 4D | EOR | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 4E | LSR | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| 4F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 50 | BVC | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| 51 | EOR | IND_Y | 2 | 5 | +1 on page cross | 0 | 0 | base + page-cross |
+| 52 | EOR | ZPG_IND | 2 | 5 | 0 | 0 | 0 | base |
+| 53 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 54 | NOP | IMP | 2 | 4 | 0 | 0 | 0 | base |
+| 55 | EOR | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| 56 | LSR | ZPG_X | 2 | 6 | 0 | 0 | 0 | base |
+| 57 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 58 | CLI | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 59 | EOR | ABS_Y | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| 5A | PHY | IMP | 1 | 3 | 0 | 0 | 0 | base |
+| 5B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 5C | NOP | IMP | 3 | 8 | 0 | 0 | 0 | base |
+| 5D | EOR | ABS_X | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| 5E | LSR | ABS_X | 3 | 6 | 0 | 0 | 0 | base |
+| 5F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 60 | RTS | IMP | 1 | 6 | 0 | 0 | 0 | base |
+| 61 | ADC | IND_X | 2 | 6 | 0 | 0 | +1 in decimal mode | base + decimal |
+| 62 | NOP | IMP | 2 | 2 | 0 | 0 | 0 | base |
+| 63 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 64 | STZ | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 65 | ADC | ZPG | 2 | 3 | 0 | 0 | +1 in decimal mode | base + decimal |
+| 66 | ROR | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| 67 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 68 | PLA | IMP | 1 | 4 | 0 | 0 | 0 | base |
+| 69 | ADC | IMM | 2 | 2 | 0 | 0 | +1 in decimal mode | base + decimal |
+| 6A | ROR | ACC | 1 | 2 | 0 | 0 | 0 | base |
+| 6B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 6C | JMP | ABS_IND | 3 | 6 | 0 | 0 | 0 | base |
+| 6D | ADC | ABS | 3 | 4 | 0 | 0 | +1 in decimal mode | base + decimal |
+| 6E | ROR | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| 6F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 70 | BVS | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| 71 | ADC | IND_Y | 2 | 5 | +1 on page cross | 0 | +1 in decimal mode | base + page-cross + decimal |
+| 72 | ADC | ZPG_IND | 2 | 5 | 0 | 0 | +1 in decimal mode | base + decimal |
+| 73 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 74 | STZ | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| 75 | ADC | ZPG_X | 2 | 4 | 0 | 0 | +1 in decimal mode | base + decimal |
+| 76 | ROR | ZPG_X | 2 | 6 | 0 | 0 | 0 | base |
+| 77 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 78 | SEI | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 79 | ADC | ABS_Y | 3 | 4 | +1 on page cross | 0 | +1 in decimal mode | base + page-cross + decimal |
+| 7A | PLY | IMP | 1 | 4 | 0 | 0 | 0 | base |
+| 7B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 7C | JMP | ABS_IND_X | 3 | 6 | 0 | 0 | 0 | base |
+| 7D | ADC | ABS_X | 3 | 4 | +1 on page cross | 0 | +1 in decimal mode | base + page-cross + decimal |
+| 7E | ROR | ABS_X | 3 | 6 | 0 | 0 | 0 | base |
+| 7F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 80 | BRA | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| 81 | STA | IND_X | 2 | 6 | 0 | 0 | 0 | base |
+| 82 | NOP | IMP | 2 | 2 | 0 | 0 | 0 | base |
+| 83 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 84 | STY | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 85 | STA | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 86 | STX | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| 87 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 88 | DEY | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 89 | BIT | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| 8A | TXA | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 8B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 8C | STY | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 8D | STA | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 8E | STX | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 8F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 90 | BCC | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| 91 | STA | IND_Y | 2 | 6 | 0 | 0 | 0 | base |
+| 92 | STA | ZPG_IND | 2 | 5 | 0 | 0 | 0 | base |
+| 93 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 94 | STY | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| 95 | STA | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| 96 | STX | ZPG_Y | 2 | 4 | 0 | 0 | 0 | base |
+| 97 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 98 | TYA | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 99 | STA | ABS_Y | 3 | 5 | 0 | 0 | 0 | base |
+| 9A | TXS | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| 9B | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| 9C | STZ | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| 9D | STA | ABS_X | 3 | 5 | 0 | 0 | 0 | base |
+| 9E | STZ | ABS_X | 3 | 5 | 0 | 0 | 0 | base |
+| 9F | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| A0 | LDY | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| A1 | LDA | IND_X | 2 | 6 | 0 | 0 | 0 | base |
+| A2 | LDX | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| A3 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| A4 | LDY | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| A5 | LDA | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| A6 | LDX | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| A7 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| A8 | TAY | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| A9 | LDA | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| AA | TAX | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| AB | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| AC | LDY | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| AD | LDA | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| AE | LDX | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| AF | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| B0 | BCS | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| B1 | LDA | IND_Y | 2 | 5 | +1 on page cross | 0 | 0 | base + page-cross |
+| B2 | LDA | ZPG_IND | 2 | 5 | 0 | 0 | 0 | base |
+| B3 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| B4 | LDY | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| B5 | LDA | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| B6 | LDX | ZPG_Y | 2 | 4 | 0 | 0 | 0 | base |
+| B7 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| B8 | CLV | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| B9 | LDA | ABS_Y | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| BA | TSX | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| BB | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| BC | LDY | ABS_X | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| BD | LDA | ABS_X | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| BE | LDX | ABS_Y | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| BF | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| C0 | CPY | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| C1 | CMP | IND_X | 2 | 6 | 0 | 0 | 0 | base |
+| C2 | NOP | IMP | 2 | 2 | 0 | 0 | 0 | base |
+| C3 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| C4 | CPY | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| C5 | CMP | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| C6 | DEC | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| C7 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| C8 | INY | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| C9 | CMP | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| CA | DEX | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| CB | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| CC | CPY | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| CD | CMP | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| CE | DEC | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| CF | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| D0 | BNE | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| D1 | CMP | IND_Y | 2 | 5 | +1 on page cross | 0 | 0 | base + page-cross |
+| D2 | CMP | ZPG_IND | 2 | 5 | 0 | 0 | 0 | base |
+| D3 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| D4 | NOP | IMP | 2 | 4 | 0 | 0 | 0 | base |
+| D5 | CMP | ZPG_X | 2 | 4 | 0 | 0 | 0 | base |
+| D6 | DEC | ZPG_X | 2 | 6 | 0 | 0 | 0 | base |
+| D7 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| D8 | CLD | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| D9 | CMP | ABS_Y | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| DA | PHX | IMP | 1 | 3 | 0 | 0 | 0 | base |
+| DB | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| DC | NOP | IMP | 3 | 4 | 0 | 0 | 0 | base |
+| DD | CMP | ABS_X | 3 | 4 | +1 on page cross | 0 | 0 | base + page-cross |
+| DE | DEC | ABS_X | 3 | 6 | 0 | 0 | 0 | base |
+| DF | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| E0 | CPX | IMM | 2 | 2 | 0 | 0 | 0 | base |
+| E1 | SBC | IND_X | 2 | 6 | 0 | 0 | +1 in decimal mode | base + decimal |
+| E2 | NOP | IMP | 2 | 2 | 0 | 0 | 0 | base |
+| E3 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| E4 | CPX | ZPG | 2 | 3 | 0 | 0 | 0 | base |
+| E5 | SBC | ZPG | 2 | 3 | 0 | 0 | +1 in decimal mode | base + decimal |
+| E6 | INC | ZPG | 2 | 5 | 0 | 0 | 0 | base |
+| E7 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| E8 | INX | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| E9 | SBC | IMM | 2 | 2 | 0 | 0 | +1 in decimal mode | base + decimal |
+| EA | NOP | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| EB | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| EC | CPX | ABS | 3 | 4 | 0 | 0 | 0 | base |
+| ED | SBC | ABS | 3 | 4 | 0 | 0 | +1 in decimal mode | base + decimal |
+| EE | INC | ABS | 3 | 6 | 0 | 0 | 0 | base |
+| EF | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| F0 | BEQ | REL | 2 | 2 | 0 | +1 taken, +2 if taken across page | 0 | base + branch |
+| F1 | SBC | IND_Y | 2 | 5 | +1 on page cross | 0 | +1 in decimal mode | base + page-cross + decimal |
+| F2 | SBC | ZPG_IND | 2 | 5 | 0 | 0 | +1 in decimal mode | base + decimal |
+| F3 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| F4 | NOP | IMP | 2 | 4 | 0 | 0 | 0 | base |
+| F5 | SBC | ZPG_X | 2 | 4 | 0 | 0 | +1 in decimal mode | base + decimal |
+| F6 | INC | ZPG_X | 2 | 6 | 0 | 0 | 0 | base |
+| F7 | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| F8 | SED | IMP | 1 | 2 | 0 | 0 | 0 | base |
+| F9 | SBC | ABS_Y | 3 | 4 | +1 on page cross | 0 | +1 in decimal mode | base + page-cross + decimal |
+| FA | PLX | IMP | 1 | 4 | 0 | 0 | 0 | base |
+| FB | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |
+| FC | NOP | IMP | 3 | 4 | 0 | 0 | 0 | base |
+| FD | SBC | ABS_X | 3 | 4 | +1 on page cross | 0 | +1 in decimal mode | base + page-cross + decimal |
+| FE | INC | ABS_X | 3 | 6 | 0 | 0 | 0 | base |
+| FF | NOP | IMP | 1 | 1 | 0 | 0 | 0 | base |

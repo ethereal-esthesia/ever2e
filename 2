@@ -11,7 +11,7 @@ TRACE_PHASE="${TRACE_PHASE:-pre}"
 TRACE_START_PC="${TRACE_START_PC:-0xFA63}"
 DISPLAY_PHASE_CYCLES="${DISPLAY_PHASE_CYCLES:-12489}"
 
-TRACE_OUT="${TRACE_OUT:-/private/tmp/jvm_subinstructions.tr.csv}"
+TRACE_OUT="${TRACE_OUT:-/private/tmp/jvm_subinstructions.tr.log}"
 COMPARE_OUT="${COMPARE_OUT:-/private/tmp/jvm_subinstructions.compare.csv}"
 
 JVM_CYCLE_OFFSET="${JVM_CYCLE_OFFSET:-2}"
@@ -23,7 +23,7 @@ TOP_NAME="${TOP_NAME:-JVM}"
 
 cd "${JVM_REPO}"
 
-GRADLE_USER_HOME="${GRADLE_USER_HOME}" gradle --no-daemon runHeadless --args="${EMU} --steps ${STEPS} --trace-file ${TRACE_OUT} --trace-phase ${TRACE_PHASE} --trace-start-pc ${TRACE_START_PC} --display-phase-cycles ${DISPLAY_PHASE_CYCLES} --trace-subinstructions --no-sound --reset-pflag-value 0x36 --reset-a-value 0x00 --reset-x-value 0x80 --reset-y-value 0x00 --reset-s-value 0xFD"
+GRADLE_USER_HOME="${GRADLE_USER_HOME}" gradle --no-daemon runHeadless --args="${EMU} --steps ${STEPS} --trace-file ${TRACE_OUT} --trace-phase ${TRACE_PHASE} --trace-start-pc ${TRACE_START_PC} --trace-kv --display-phase-cycles ${DISPLAY_PHASE_CYCLES} --trace-subinstructions --no-sound --reset-pflag-value 0x36 --reset-a-value 0x00 --reset-x-value 0x80 --reset-y-value 0x00 --reset-s-value 0xFD"
 
 python3 "${PY_TOOLS}/normalize_compare_csv.py" \
   --kind jvm \

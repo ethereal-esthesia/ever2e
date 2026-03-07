@@ -207,6 +207,7 @@ public class Emulator8Coordinator {
 		String traceFile = null;
 		String tracePhase = "pre";
 		boolean traceSubinstructions = false;
+		boolean traceKeyValue = false;
 		Integer traceStartPc = null;
 			boolean textConsole = false;
 			boolean printTextAtExit = false;
@@ -270,6 +271,9 @@ public class Emulator8Coordinator {
 			}
 			else if( "--trace-subinstructions".equals(arg) ) {
 				traceSubinstructions = true;
+			}
+			else if( "--trace-kv".equals(arg) ) {
+				traceKeyValue = true;
 			}
 			else if( "--text-console".equals(arg) ) {
 				textConsole = true;
@@ -702,11 +706,15 @@ public class Emulator8Coordinator {
 	   		PrintWriter traceWriter = null;
 	   		if( traceFile!=null ) {
 	   			traceWriter = new PrintWriter(new FileWriter(traceFile));
-	   			traceWriter.println("step,retired_step,event_type,event,pc,opcode,opc1,opc2,opc3,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl,scan_h,scan_v,scan_x,scan_y,scan_cycles_desc,frame_cycle");
+	   			if( traceKeyValue )
+	   				traceWriter.println("# trace_kv step retired_step event_type event pc opcode opc1 opc2 opc3 a x y p s mnemonic mode cpu_total_cycles last_instruction_cycles display_hscan display_vscan display_vbl scan_h scan_v scan_x scan_y scan_cycles_desc frame_cycle");
+	   			else
+	   				traceWriter.println("step,retired_step,event_type,event,pc,opcode,opc1,opc2,opc3,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl,scan_h,scan_v,scan_x,scan_y,scan_cycles_desc,frame_cycle");
 	   		}
 	   		final PrintWriter finalTraceWriter = traceWriter;
 	   		final String finalTracePhase = tracePhase;
 	   		final boolean finalTraceSubinstructions = traceSubinstructions;
+	   		final boolean finalTraceKeyValue = traceKeyValue;
 	   		final Integer finalTraceStartPc = traceStartPc;
 	   		final Set<Integer> finalHaltExecutions = haltExecutions;
 	   		final HeadlessVideoProbe finalHeadlessProbe = headlessProbe;
@@ -781,6 +789,7 @@ public class Emulator8Coordinator {
 	   			}
 	   			if( hitStopAddress && finalTraceWriter!=null && "pre".equals(finalTracePhase) ) {
 	   				Opcode opcode = cpu.getPendingOpcode();
+	   				int traceInstructionCycles = opcode.getCycleTime();
 	   				Integer machineCode = opcode.getMachineCode();
 	   				String opc1 = getTraceByteHex(bus, cpu.getPendingPC() & 0xffff);
 	   				String opc2 = getTraceByteHex(bus, (cpu.getPendingPC()+1) & 0xffff);
@@ -795,7 +804,7 @@ public class Emulator8Coordinator {
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "|" +
 	   						cpu.getTotalCycleCount() + "|" +
-		   						cpu.getLastInstructionCycleCount() + "|" +
+		   						traceInstructionCycles + "|" +
 		   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
 		   				boolean isSubinstruction = finalTraceSubinstructions && cpu.hasPendingInFlightMicroEvent();
 		   				String eventType = isSubinstruction ? "sub" : (isResetEvent ? "event":"instr");
@@ -819,34 +828,36 @@ public class Emulator8Coordinator {
 		   				int scanY = deriveDisplayScanY(frameCycle);
 		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
 		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
-		   				finalTraceWriter.println(
-	   						traceRowStep[0] + "," +
-	   						retiredInstructionStep[0] + "," +
-	   						eventType + "," +
-	   						event + "," +
-	   						Cpu65c02.getHexString(cpu.getPendingPC(), 4) + "," +
-	   						(machineCode==null?"--":Cpu65c02.getHexString(machineCode, 2)) + "," +
-	   						opc1 + "," +
-	   						opc2 + "," +
-	   						opc3 + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "," +
-	   						opcode.getMnemonic() + "," +
-		   						opcode.getAddressMode() + "," +
-		   						cpu.getTotalCycleCount() + "," +
-		   						cpu.getLastInstructionCycleCount() + "," +
-		   						displayHScan + "," +
-		   						displayVScan + "," +
-		   						displayVbl + "," +
-		   						displayHScan + "," +
-		   						displayVScan + "," +
-		   						scanX + "," +
-		   						scanY + "," +
-		   						scanCyclesDesc + "," +
-		   						traceFrameCycle
+		   				writeTraceRow(
+		   						finalTraceWriter,
+		   						finalTraceKeyValue,
+		   						Long.toString(traceRowStep[0]),
+		   						Long.toString(retiredInstructionStep[0]),
+		   						eventType,
+		   						event,
+		   						Cpu65c02.getHexString(cpu.getPendingPC(), 4),
+		   						(machineCode==null?"--":Cpu65c02.getHexString(machineCode, 2)),
+		   						opc1,
+		   						opc2,
+		   						opc3,
+		   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2),
+		   						opcode.getMnemonic().toString(),
+		   						opcode.getAddressMode().toString(),
+		   						Long.toString(cpu.getTotalCycleCount()),
+		   						Integer.toString(traceInstructionCycles),
+		   						Integer.toString(displayHScan),
+		   						Integer.toString(displayVScan),
+		   						Integer.toString(displayVbl),
+		   						Integer.toString(displayHScan),
+		   						Integer.toString(displayVScan),
+		   						Integer.toString(scanX),
+		   						Integer.toString(scanY),
+		   						Integer.toString(scanCyclesDesc),
+		   						Integer.toString(traceFrameCycle)
 		   				);
 	   				haltedAtAddress[0] = true;
 	   				haltedAtPc[0] = pendingPc;
@@ -900,6 +911,8 @@ public class Emulator8Coordinator {
 	   			if( finalTraceWriter!=null ) {
 	   				String eventType = isSubinstruction ? "sub" : (isResetEvent ? "event":"instr");
 	   				String event = isSubinstruction ? "MICRO" : (isResetEvent ? "RESET":"");
+	   				int traceInstructionCycles =
+	   						"pre".equals(finalTracePhase) ? opcode.getCycleTime() : cpu.getLastInstructionCycleCount();
 	   				Integer machineCode = opcode.getMachineCode();
 	   				String opc1 = getTraceByteHex(bus, pc & 0xffff);
 	   				String opc2 = getTraceByteHex(bus, (pc+1) & 0xffff);
@@ -912,7 +925,7 @@ public class Emulator8Coordinator {
 	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "|" +
 	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "|" +
 	   						cpu.getTotalCycleCount() + "|" +
-		   						cpu.getLastInstructionCycleCount() + "|" +
+		   						traceInstructionCycles + "|" +
 		   						(machineCode==null ? "--" : Cpu65c02.getHexString(machineCode, 2));
 		   				boolean emitRow = finalTraceSubinstructions || "event".equals(eventType) || !retiredSig.equals(lastRetiredSignature[0]);
 		   				if( "instr".equals(eventType) && emitRow )
@@ -930,34 +943,36 @@ public class Emulator8Coordinator {
 		   				int scanY = deriveDisplayScanY(frameCycle);
 		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
 		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
-		   				finalTraceWriter.println(
-	   						traceRowStep[0] + "," +
-	   						retiredInstructionStep[0] + "," +
-	   						eventType + "," +
-	   						event + "," +
-	   						Cpu65c02.getHexString(pc, 4) + "," +
-	   						(machineCode==null?"--":Cpu65c02.getHexString(machineCode, 2)) + "," +
-	   						opc1 + "," +
-	   						opc2 + "," +
-	   						opc3 + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2) + "," +
-	   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2) + "," +
-	   						opcode.getMnemonic() + "," +
-		   						opcode.getAddressMode() + "," +
-		   						cpu.getTotalCycleCount() + "," +
-		   						cpu.getLastInstructionCycleCount() + "," +
-		   						displayHScan + "," +
-		   						displayVScan + "," +
-		   						displayVbl + "," +
-		   						displayHScan + "," +
-		   						displayVScan + "," +
-		   						scanX + "," +
-		   						scanY + "," +
-		   						scanCyclesDesc + "," +
-		   						traceFrameCycle
+		   				writeTraceRow(
+		   						finalTraceWriter,
+		   						finalTraceKeyValue,
+		   						Long.toString(traceRowStep[0]),
+		   						Long.toString(retiredInstructionStep[0]),
+		   						eventType,
+		   						event,
+		   						Cpu65c02.getHexString(pc, 4),
+		   						(machineCode==null?"--":Cpu65c02.getHexString(machineCode, 2)),
+		   						opc1,
+		   						opc2,
+		   						opc3,
+		   						Cpu65c02.getHexString(cpu.getRegister().getA(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getX(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getY(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getP(), 2),
+		   						Cpu65c02.getHexString(cpu.getRegister().getS(), 2),
+		   						opcode.getMnemonic().toString(),
+		   						opcode.getAddressMode().toString(),
+		   						Long.toString(cpu.getTotalCycleCount()),
+		   						Integer.toString(traceInstructionCycles),
+		   						Integer.toString(displayHScan),
+		   						Integer.toString(displayVScan),
+		   						Integer.toString(displayVbl),
+		   						Integer.toString(displayHScan),
+		   						Integer.toString(displayVScan),
+		   						Integer.toString(scanX),
+		   						Integer.toString(scanY),
+		   						Integer.toString(scanCyclesDesc),
+		   						Integer.toString(traceFrameCycle)
 		   				);
 	   			}
 	   			return true;
@@ -1114,6 +1129,104 @@ public class Emulator8Coordinator {
 	private static int deriveTraceFrameCycle(int frameCycle) {
 		// Keep trace field aligned with compare tooling semantics: per-scanline cycle.
 		return deriveDisplayHScan(frameCycle);
+	}
+
+	private static void writeTraceRow(
+			PrintWriter writer,
+			boolean traceKeyValue,
+			String step,
+			String retiredStep,
+			String eventType,
+			String event,
+			String pc,
+			String opcode,
+			String opc1,
+			String opc2,
+			String opc3,
+			String a,
+			String x,
+			String y,
+			String p,
+			String s,
+			String mnemonic,
+			String mode,
+			String cpuTotalCycles,
+			String lastInstructionCycles,
+			String displayHScan,
+			String displayVScan,
+			String displayVbl,
+			String scanH,
+			String scanV,
+			String scanX,
+			String scanY,
+			String scanCyclesDesc,
+			String frameCycle) {
+		if( !traceKeyValue ) {
+			writer.println(
+					step + "," + retiredStep + "," + eventType + "," + event + "," + pc + "," +
+					opcode + "," + opc1 + "," + opc2 + "," + opc3 + "," + a + "," + x + "," + y + "," +
+					p + "," + s + "," + mnemonic + "," + mode + "," + cpuTotalCycles + "," +
+					lastInstructionCycles + "," + displayHScan + "," + displayVScan + "," + displayVbl + "," +
+					scanH + "," + scanV + "," + scanX + "," + scanY + "," + scanCyclesDesc + "," + frameCycle
+			);
+			return;
+		}
+		String eventText = event==null || event.trim().isEmpty() ? "--" : event.trim();
+		writer.println(
+				"step="+zpadDec(step, 6) +
+				" retired="+zpadDec(retiredStep, 6) +
+				" type="+safeToken(eventType) +
+				" event="+safeToken(eventText) +
+				" pc="+safeToken(pc) +
+				" op="+safeToken(opcode) +
+				" opc1="+safeToken(opc1) +
+				" opc2="+safeToken(opc2) +
+				" opc3="+safeToken(opc3) +
+				" a="+safeToken(a) +
+				" x="+safeToken(x) +
+				" y="+safeToken(y) +
+				" p="+safeToken(p) +
+				" s="+safeToken(s) +
+				" mnem="+safeToken(mnemonic.trim()) +
+				" mode="+safeToken(mode.trim()) +
+				" cpu="+zpadDec(cpuTotalCycles, 8) +
+				" instr="+zpadDec(lastInstructionCycles, 2) +
+				" h="+zpadDec(displayHScan, 2) +
+				" v="+zpadDec(displayVScan, 3) +
+				" vbl="+safeToken(displayVbl) +
+				" scanx="+zpadDec(scanX, 3) +
+				" scany="+zpadDec(scanY, 3) +
+				" desc="+zpadDec(scanCyclesDesc, 2) +
+				" frame="+zpadDec(frameCycle, 5)
+		);
+	}
+
+	private static String safeToken(String value) {
+		String text = value==null ? "" : value.trim();
+		if( text.isEmpty() )
+			return "--";
+		return text.replace(' ', '_');
+	}
+
+	private static String zpadDec(String value, int width) {
+		String text = value==null ? "" : value.trim();
+		if( text.isEmpty() )
+			return "";
+		boolean neg = text.startsWith("-");
+		String digits = neg ? text.substring(1) : text;
+		boolean numeric = !digits.isEmpty();
+		for( int i = 0; i<digits.length(); i++ ) {
+			if( !Character.isDigit(digits.charAt(i)) ) {
+				numeric = false;
+				break;
+			}
+		}
+		if( !numeric )
+			return text;
+		String padded = digits;
+		while( padded.length()<width )
+			padded = "0"+padded;
+		return neg ? "-"+padded : padded;
 	}
 
 	private static String getTraceByteHex(MemoryBus8 bus, int address) {

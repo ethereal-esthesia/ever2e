@@ -1,6 +1,8 @@
 package core.cpu.cpu8;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Byte-indexed microcode data store.
@@ -113,11 +115,8 @@ public final class Cpu65c02Microcode {
 
 	private static MicroInstr[] buildTable() {
 		MicroInstr[] table = new MicroInstr[256];
-		MicroInstr defaultInstr = new MicroInstr(AccessType.AT_NONE,
-				script(MicroOp.M_FETCH_OPCODE),
-				script(MicroOp.M_FETCH_OPCODE));
 		for( int i = 0; i<table.length; i++ )
-			table[i] = defaultInstr;
+			table[i] = buildGenericInstruction(i);
 
 		// LDA family from enum-owned microcode programs.
 		for( Cpu65c02Opcode lda : Cpu65c02Opcode.ldaFamily() ) {
@@ -206,6 +205,199 @@ public final class Cpu65c02Microcode {
 		}
 
 		return table;
+	}
+
+	private static MicroInstr buildGenericInstruction(int opcodeByte) {
+		Opcode opcode = Cpu65c02.OPCODE[opcodeByte & 0xff];
+		if( opcode==null ) {
+			MicroOp[] fallback = script(MicroOp.M_FETCH_OPCODE);
+			return new MicroInstr(AccessType.AT_NONE, fallback, fallback);
+		}
+		AccessType accessType = inferAccessType(opcode);
+		boolean pageCrossVariant = hasPageCrossReadVariant(opcode, accessType);
+		MicroOp[] noCross = buildGenericScript(opcode, accessType, false);
+		MicroOp[] cross = pageCrossVariant ? buildGenericScript(opcode, accessType, true) : noCross;
+		return new MicroInstr(accessType, noCross, cross);
+	}
+
+	private static AccessType inferAccessType(Opcode opcode) {
+		if( opcode==null || opcode.getMnemonic()==null )
+			return AccessType.AT_NONE;
+		switch( opcode.getMnemonic() ) {
+			case STA:
+			case STX:
+			case STY:
+			case STZ:
+				return AccessType.AT_WRITE;
+			case ASL:
+			case LSR:
+			case ROL:
+			case ROR:
+			case INC:
+			case DEC:
+			case TRB:
+			case TSB:
+				return AccessType.AT_RMW;
+			case ADC:
+			case AND:
+			case BIT:
+			case CMP:
+			case CPX:
+			case CPY:
+			case EOR:
+			case LDA:
+			case LDX:
+			case LDY:
+			case ORA:
+			case SBC:
+				return AccessType.AT_READ;
+			default:
+				return AccessType.AT_NONE;
+		}
+	}
+
+	private static boolean hasPageCrossReadVariant(Opcode opcode, AccessType accessType) {
+		if( opcode==null || accessType!=AccessType.AT_READ )
+			return false;
+		switch( opcode.getAddressMode() ) {
+			case ABS_X:
+				switch( opcode.getMnemonic() ) {
+					case ADC:
+					case AND:
+					case CMP:
+					case EOR:
+					case LDA:
+					case LDY:
+					case ORA:
+					case SBC:
+						return true;
+					default:
+						return false;
+				}
+			case ABS_Y:
+				switch( opcode.getMnemonic() ) {
+					case ADC:
+					case AND:
+					case CMP:
+					case EOR:
+					case LDA:
+					case LDX:
+					case ORA:
+					case SBC:
+						return true;
+					default:
+						return false;
+				}
+			case IND_Y:
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	private static MicroOp[] buildGenericScript(Opcode opcode, AccessType accessType, boolean pageCrossed) {
+		List<MicroOp> ops = new ArrayList<MicroOp>();
+		ops.add(MicroOp.M_FETCH_OPCODE);
+
+		switch( opcode.getAddressMode() ) {
+			case IMM:
+				ops.add(MicroOp.M_READ_IMM_DATA);
+				break;
+			case ZPG:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				appendEaAccess(ops, accessType);
+				break;
+			case ZPG_X:
+			case ZPG_Y:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_READ_DUMMY);
+				appendEaAccess(ops, accessType);
+				break;
+			case ABS:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_FETCH_OPERAND_HI);
+				appendEaAccess(ops, accessType);
+				break;
+			case ABS_X:
+			case ABS_Y:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_FETCH_OPERAND_HI);
+				if( accessType==AccessType.AT_WRITE || accessType==AccessType.AT_RMW || pageCrossed )
+					ops.add(MicroOp.M_READ_DUMMY);
+				appendEaAccess(ops, accessType);
+				break;
+			case IND_X:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_READ_DUMMY);
+				ops.add(MicroOp.M_READ_ZP_PTR_LO);
+				ops.add(MicroOp.M_READ_ZP_PTR_HI);
+				appendEaAccess(ops, accessType);
+				break;
+			case IND_Y:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_READ_ZP_PTR_LO);
+				ops.add(MicroOp.M_READ_ZP_PTR_HI);
+				if( accessType==AccessType.AT_WRITE || accessType==AccessType.AT_RMW || pageCrossed )
+					ops.add(MicroOp.M_READ_DUMMY);
+				appendEaAccess(ops, accessType);
+				break;
+			case ZPG_IND:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_READ_ZP_PTR_LO);
+				ops.add(MicroOp.M_READ_ZP_PTR_HI);
+				appendEaAccess(ops, accessType);
+				break;
+			case ABS_IND:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_FETCH_OPERAND_HI);
+				ops.add(MicroOp.M_READ_ZP_PTR_LO);
+				ops.add(MicroOp.M_READ_ZP_PTR_HI);
+				break;
+			case ABS_IND_X:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				ops.add(MicroOp.M_FETCH_OPERAND_HI);
+				ops.add(MicroOp.M_READ_DUMMY);
+				ops.add(MicroOp.M_READ_ZP_PTR_LO);
+				ops.add(MicroOp.M_READ_ZP_PTR_HI);
+				break;
+			case REL:
+				ops.add(MicroOp.M_FETCH_OPERAND_LO);
+				break;
+			case ACC:
+				ops.add(MicroOp.M_INTERNAL);
+				break;
+			case IMP:
+				break;
+			default:
+				break;
+		}
+
+		int targetCycles = Math.max(1, opcode.getCycleTime());
+		while( ops.size()<targetCycles )
+			ops.add(MicroOp.M_INTERNAL);
+		if( ops.size()>targetCycles )
+			return ops.subList(0, targetCycles).toArray(new MicroOp[0]);
+		return ops.toArray(new MicroOp[0]);
+	}
+
+	private static void appendEaAccess(List<MicroOp> ops, AccessType accessType) {
+		switch( accessType ) {
+			case AT_READ:
+				ops.add(MicroOp.M_READ_EA);
+				break;
+			case AT_WRITE:
+				ops.add(MicroOp.M_WRITE_EA);
+				break;
+			case AT_RMW:
+				ops.add(MicroOp.M_READ_EA);
+				ops.add(MicroOp.M_WRITE_EA_DUMMY);
+				ops.add(MicroOp.M_WRITE_EA);
+				break;
+			case AT_NONE:
+			default:
+				ops.add(MicroOp.M_INTERNAL);
+				break;
+		}
 	}
 
 	private static void set(MicroInstr[] table, int opcodeByte, AccessType accessType, MicroOp[] noCross, MicroOp[] cross) {

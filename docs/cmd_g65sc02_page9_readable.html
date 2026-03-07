@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CMD G65SC02 Page 9 Readable View</title>
+  <style>
+    :root {
+      --bg: #101215;
+      --panel: #191d22;
+      --text: #e8edf2;
+      --muted: #9aa6b2;
+      --line: #2a313a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .wrap {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .note {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      overflow: auto;
+    }
+    .title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .img {
+      width: 100%;
+      min-width: 760px;
+      height: auto;
+      image-rendering: auto;
+      border: 1px solid #000;
+      background: #000;
+    }
+    .preset-soft { filter: contrast(1.35) brightness(1.06) saturate(0.92); }
+    .preset-lines { filter: grayscale(1) contrast(1.75) brightness(1.08) saturate(0); }
+    .preset-invert { filter: grayscale(1) contrast(1.65) invert(1); }
+    .zoom-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .crop {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+      height: 260px;
+      position: relative;
+    }
+    .crop img {
+      position: absolute;
+      width: 160%;
+      max-width: none;
+      filter: grayscale(1) contrast(1.8) brightness(1.06);
+    }
+    .top-left img { left: -4%; top: -10%; }
+    .mid img { left: -30%; top: -34%; }
+    .bottom img { left: -9%; top: -65%; }
+    .label {
+      position: absolute;
+      left: 8px;
+      top: 7px;
+      font-size: 11px;
+      color: #e8edf2;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .zoom-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>CMD G65SC02 Page 9 Readable View</h1>
+    <p class="note">
+      CSS readability pass for scanned page 9. Source images are in
+      <code>docs/specs/g65sc02_full_pages/</code>.
+    </p>
+    <div class="grid">
+      <section class="panel">
+        <div class="title">Original</div>
+        <img class="img" src="../docs/specs/g65sc02_full_pages/page_09.png" alt="CMD G65SC02 page 9 original">
+      </section>
+      <section class="panel">
+        <div class="title">Enhanced (Preset Lines)</div>
+        <img class="img preset-lines" src="../docs/specs/g65sc02_full_pages/page_09.png" alt="CMD G65SC02 page 9 enhanced">
+      </section>
+    </div>
+    <div class="grid" style="margin-top:14px;">
+      <section class="panel">
+        <div class="title">Enhanced (Preset Soft)</div>
+        <img class="img preset-soft" src="../docs/specs/g65sc02_full_pages/page_09.png" alt="CMD G65SC02 page 9 soft enhance">
+      </section>
+      <section class="panel">
+        <div class="title">Enhanced (Preset Invert)</div>
+        <img class="img preset-invert" src="../docs/specs/g65sc02_full_pages/page_09.png" alt="CMD G65SC02 page 9 invert enhance">
+      </section>
+    </div>
+    <div class="zoom-row">
+      <div class="crop top-left">
+        <span class="label">Top-Left Zoom</span>
+        <img src="../docs/specs/g65sc02_full_pages/page_09_readable.png" alt="Top left zoom">
+      </div>
+      <div class="crop mid">
+        <span class="label">Center Zoom</span>
+        <img src="../docs/specs/g65sc02_full_pages/page_09_readable.png" alt="Center zoom">
+      </div>
+      <div class="crop bottom">
+        <span class="label">Bottom Zoom</span>
+        <img src="../docs/specs/g65sc02_full_pages/page_09_readable.png" alt="Bottom zoom">
+      </div>
+    </div>
+  </div>
+</body>
+</html>

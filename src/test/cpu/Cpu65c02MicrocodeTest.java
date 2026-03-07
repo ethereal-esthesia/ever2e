@@ -2,10 +2,12 @@ package test.cpu;
 
 import org.junit.Test;
 
+import core.cpu.cpu8.Cpu65c02;
 import core.cpu.cpu8.Cpu65c02Opcode;
 import core.cpu.cpu8.Cpu65c02OpcodeView;
 import core.cpu.cpu8.Cpu65c02Microcode;
 import core.cpu.cpu8.Cpu65c02Microcode.MicroOp;
+import core.cpu.cpu8.Opcode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
@@ -1321,5 +1323,40 @@ public class Cpu65c02MicrocodeTest {
 		assertEquals(0x42, ctx.cpu.a);
 		assertEquals(0xC054, ctx.internal.effectiveAddress);
 		assertTrue(ctx.internal.pageCrossed);
+	}
+
+	@Test
+	public void allOpcodesUseNonFallbackScriptsBeyondSingleCycle() {
+		for( int opcode = 0; opcode<256; opcode++ ) {
+			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(opcode);
+			Opcode cpuOp = entry.getOpcode();
+			MicroOp[] noCross = entry.getExpectedMnemonicOrder(false);
+			MicroOp[] cross = entry.getExpectedMnemonicOrder(true);
+			assertEquals(opcode, entry.getOpcodeByte());
+			assertTrue(noCross.length>0);
+			assertTrue(cross.length>0);
+			if( cpuOp.getCycleTime()>1 ) {
+				assertTrue(!(noCross.length==1 && noCross[0]==MicroOp.M_FETCH_OPCODE));
+			}
+			if( cross.length>noCross.length ) {
+				assertEquals(noCross.length+1, cross.length);
+			}
+		}
+	}
+
+	@Test
+	public void allOpcodesMicrocodeLengthMatchesCpuCycleTable() {
+		for( int opcode = 0; opcode<256; opcode++ ) {
+			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(opcode);
+			Opcode cpuOp = entry.getOpcode();
+			int baseCycles = cpuOp.getCycleTime();
+			MicroOp[] noCross = entry.getExpectedMnemonicOrder(false);
+			MicroOp[] cross = entry.getExpectedMnemonicOrder(true);
+			assertEquals("no-cross length mismatch for opcode " + String.format("%02X", opcode), baseCycles, noCross.length);
+			if( cross.length!=noCross.length ) {
+				assertEquals("cross-path must be exactly one cycle longer for opcode " + String.format("%02X", opcode),
+						noCross.length + 1, cross.length);
+			}
+		}
 	}
 }
