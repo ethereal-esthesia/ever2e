@@ -459,6 +459,10 @@ public class Cpu65c02 extends HardwareManager {
 		this.executionPlanner = new CpuExecutionPlanner(memory, reg);
 	}
 
+	protected Opcode[] getOpcodeTable() {
+		return OPCODE;
+	}
+
 	@Override
 	public void coldReset() throws HardwareException {
 		
@@ -1289,7 +1293,7 @@ public class Cpu65c02 extends HardwareManager {
 		if( interruptPending==null )
 		{
 			// No interrupt pending - get next memory instruction
-			newOpcode = OPCODE[memory.getByte(newPc&0xffff)];
+			newOpcode = getOpcodeTable()[memory.getByte(newPc&0xffff)];
 		} else {
 			newOpcode = interruptPending;
 			// Pending interrupt can only be changed by host
@@ -1331,7 +1335,7 @@ public class Cpu65c02 extends HardwareManager {
 			for( int i = 0; i<3; i++ )
 				mem[i] = memory.getByte((address+i)&0xffff);
 		
-		Opcode op = address==null ? interrupt:OPCODE[mem[0]];
+		Opcode op = address==null ? interrupt:getOpcodeTable()[mem[0]];
 		StringBuffer out = new StringBuffer();
 
 		Integer machineCode = op.getMachineCode();

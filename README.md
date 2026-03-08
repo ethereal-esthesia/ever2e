@@ -80,6 +80,8 @@ Windowed run (SDL test backend):
   - Alias for VBLBAR/read-phase offset tuning in headless mode (same startup tracer phase control as `--floating-bus-phase-cycles`, default `0`).
 - `--display-phase-cycles <n>`
   - Alias for startup display beam phase offset in headless mode (same phase control as `--floating-bus-phase-cycles`/`--vblbar-offset-cycles`, default `0`).
+- `--cpu-profile cmd|wdc`
+  - Select CPU opcode/timing profile. Default is `cmd` (G65SC02-compatible wrapper); use `wdc` for W65C02 behavior.
 - `--halt-execution <addr[,addr...]>`
   - Stop execution when PC reaches any provided address (hex `0x....` or decimal). May be repeated.
 - `--paste-file <path>`

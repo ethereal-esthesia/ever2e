@@ -20,6 +20,7 @@ import java.util.Set;
 
 import peripherals.PeripheralIIe;
 import core.cpu.cpu8.Cpu65c02;
+import core.cpu.cpu8.Cpu65c02Cmd;
 import core.cpu.cpu8.Opcode;
 import core.emulator.HardwareManager;
 import core.emulator.VirtualMachineProperties;
@@ -200,6 +201,12 @@ public class Emulator8Coordinator {
 		}
 	}
 
+	private static Cpu65c02 createCpu(String cpuProfile, MemoryBusIIe bus, long unitsPerCycle) {
+		if( "cmd".equals(cpuProfile) )
+			return new Cpu65c02Cmd(bus, unitsPerCycle);
+		return new Cpu65c02(bus, unitsPerCycle); // wdc
+	}
+
 	public static void main( String[] argList ) throws HardwareException, InterruptedException, IOException {
 
 		String propertiesFile = DEFAULT_MACHINE;
@@ -221,6 +228,7 @@ public class Emulator8Coordinator {
 			String textInputMode = "off";
 			String sdlFullscreenMode = "exclusive";
 			boolean sdlImeUiSelf = false;
+		String cpuProfile = "cmd";
 		Integer resetPFlagValue = null;
 		Integer resetAValue = null;
 		Integer resetXValue = null;
@@ -271,6 +279,14 @@ public class Emulator8Coordinator {
 			}
 			else if( "--trace-subinstructions".equals(arg) ) {
 				traceSubinstructions = true;
+			}
+			else if( "--cpu-profile".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --cpu-profile");
+				cpuProfile = argList[++i].trim().toLowerCase();
+			}
+			else if( arg.startsWith("--cpu-profile=") ) {
+				cpuProfile = arg.substring("--cpu-profile=".length()).trim().toLowerCase();
 			}
 			else if( "--trace-kv".equals(arg) ) {
 				traceKeyValue = true;
@@ -497,6 +513,8 @@ public class Emulator8Coordinator {
 			throw new IllegalArgumentException("Unsupported --trace-phase value: "+tracePhase+" (expected pre or post)");
 		if( startupCpuManagerCalls<0L )
 			throw new IllegalArgumentException("--startup-cpu-manager-calls must be >= 0");
+		if( !"wdc".equals(cpuProfile) && !"cmd".equals(cpuProfile) )
+			throw new IllegalArgumentException("Unsupported --cpu-profile value: "+cpuProfile+" (expected cmd or wdc)");
 		int phaseArgCount = 0;
 		if( floatingBusPhaseCycles!=null )
 			phaseArgCount++;
@@ -531,6 +549,7 @@ public class Emulator8Coordinator {
 		PriorityQueue<HardwareManager> hardwareManagerQueue = new PriorityQueue<>();
 
 		System.out.println(properties);
+		System.out.println("CPU Profile: "+cpuProfile);
 
 		// Set up machine based on layout selection
 		
@@ -545,7 +564,7 @@ public class Emulator8Coordinator {
 			bus.coldReset();
 			cpuMultiplier /= 32d;
 			displayMultiplier = 60d/cpuClock;
-			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = createCpu(cpuProfile, (MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			keyboard = new KeyboardIIe((long) (unitsPerCycle/keyActionMultiplier), cpu);
 			cpu.getRegister().setA(0);
 			cpu.getRegister().setX(0);
@@ -559,7 +578,7 @@ public class Emulator8Coordinator {
 			bus = new MemoryBusDemo8(memory, null);
 			bus.coldReset();
 			cpuMultiplier /= 32d;
-			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = createCpu(cpuProfile, (MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.getRegister().setA(0);
 			cpu.getRegister().setX(0);
 			cpu.getRegister().setY(0);
@@ -569,7 +588,7 @@ public class Emulator8Coordinator {
 		} else if( properties.getLayout()==MachineLayoutType.DEBUG_65C02 ) {
 			bus = new MemoryBusIIe(memory, rom16k);
 			bus.coldReset();
-			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = createCpu(cpuProfile, (MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.coldReset();
 			keyboard = new KeyboardIIe((long) (unitsPerCycle/keyActionMultiplier), cpu);
 			hardwareManagerQueue.add(new DisplayConsoleDebug(cpu, (long) (unitsPerCycle/cpuMultiplier)));
@@ -579,7 +598,7 @@ public class Emulator8Coordinator {
 		} else {
 			bus = new MemoryBusIIe(memory, rom16k);
 			bus.coldReset();
-			hardwareManagerQueue.add(cpu = new Cpu65c02((MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
+			hardwareManagerQueue.add(cpu = createCpu(cpuProfile, (MemoryBusIIe) bus, (long) (unitsPerCycle/cpuMultiplier)));
 			cpu.coldReset();
 			keyboard = new KeyboardIIe((long) (unitsPerCycle/keyActionMultiplier), cpu);
 			VideoSignalSource display = null;
