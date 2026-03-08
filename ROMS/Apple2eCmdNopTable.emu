@@ -1,0 +1,11 @@
+machine.layout=APPLE_IIE
+binary.file=APPLE2E_CMD_NOP_TABLE.ROM
+address.start=0xC000
+machine.cpu.mult=1
+machine.layout.slot.1=
+machine.layout.slot.2=
+machine.layout.slot.3=
+machine.layout.slot.4=
+machine.layout.slot.5=
+machine.layout.slot.6=
+machine.layout.slot.7=

@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -80,30 +82,61 @@ public class Cpu65c02ProfileMicrocodeCoverageTest {
 
 	private static void assertProfileCycleCountMatchesMicrocodeSteps(Cpu65c02 cpu, String profileName, boolean includeNops, boolean requireExplicitMicrocode) {
 		Opcode[] table = opcodeTableFor(cpu);
+		List<String> failures = new ArrayList<String>();
+		int checked = 0;
 		for( int opcodeByte = 0; opcodeByte<256; opcodeByte++ ) {
 			Opcode opcode = table[opcodeByte];
-			assertNotNull(profileName + " missing opcode entry for $" + String.format("%02X", opcodeByte), opcode);
+			if( opcode==null ) {
+				failures.add(String.format("$%02X missing opcode table entry", opcodeByte));
+				continue;
+			}
 			boolean isNop = opcode.getMnemonic()==Cpu65c02.OpcodeMnemonic.NOP;
 			if( isNop!=includeNops )
 				continue;
+			checked++;
 			if( requireExplicitMicrocode ) {
-				assertNotNull(profileName + " planned opcode lacks explicit microcode enum entry for $" + String.format("%02X", opcodeByte),
-						Cpu65c02Opcode.fromOpcodeByte(opcodeByte));
+				if( Cpu65c02Opcode.fromOpcodeByte(opcodeByte)==null ) {
+					failures.add(String.format("$%02X lacks explicit microcode enum entry (%s/%s)",
+							opcodeByte, opcode.getMnemonic(), opcode.getAddressMode()));
+					continue;
+				}
 			}
 
 			Cpu65c02OpcodeView view = Cpu65c02Microcode.opcodeForByte(opcodeByte);
-			assertNotNull(profileName + " missing microcode view for $" + String.format("%02X", opcodeByte), view);
+			if( view==null ) {
+				failures.add(String.format("$%02X missing microcode view", opcodeByte));
+				continue;
+			}
 
 			int baseCycles = opcode.getCycleTime();
 			int noCrossCycles = view.getExpectedMnemonicOrder(false).length;
 			int crossCycles = view.getExpectedMnemonicOrder(true).length;
 
-			assertEquals(profileName + " no-cross microcode steps mismatch for $" + String.format("%02X", opcodeByte),
-					baseCycles, noCrossCycles);
-			if( crossCycles!=noCrossCycles ) {
-				assertEquals(profileName + " cross-path microcode steps mismatch for $" + String.format("%02X", opcodeByte),
-						baseCycles + 1, crossCycles);
+			if( baseCycles!=noCrossCycles ) {
+				failures.add(String.format("$%02X no-cross cycles mismatch exp=%d got=%d (%s/%s)",
+						opcodeByte, baseCycles, noCrossCycles, opcode.getMnemonic(), opcode.getAddressMode()));
+				continue;
 			}
+			if( crossCycles!=noCrossCycles ) {
+				if( (baseCycles+1)!=crossCycles ) {
+					failures.add(String.format("$%02X cross cycles mismatch exp=%d got=%d (%s/%s)",
+							opcodeByte, baseCycles+1, crossCycles, opcode.getMnemonic(), opcode.getAddressMode()));
+				}
+			}
+		}
+		int passed = checked - failures.size();
+		String scope = includeNops ? "nops" : "non_nops";
+		System.out.println(profileName + " microcode cycle coverage (" + scope + "): checked=" + checked + ", passed=" + passed + ", failed=" + failures.size());
+		if( !failures.isEmpty() ) {
+			StringBuilder sample = new StringBuilder();
+			int limit = Math.min(12, failures.size());
+			for( int i = 0; i<limit; i++ ) {
+				if( i>0 )
+					sample.append("; ");
+				sample.append(failures.get(i));
+			}
+			assertTrue(profileName + " microcode cycle coverage: checked=" + checked + ", passed=" + passed + ", failed=" + failures.size()
+					+ " opcode failures. Sample: " + sample, false);
 		}
 	}
 

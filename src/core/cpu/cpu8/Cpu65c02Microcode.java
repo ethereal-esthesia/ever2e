@@ -203,6 +203,10 @@ public final class Cpu65c02Microcode {
 			Cpu65c02Opcode.MicroCycleProgram program = cpy.microcode();
 			set(table, cpy.opcodeByte(), program.accessType(), program.noCrossScript(), program.crossScript());
 		}
+		for( Cpu65c02Opcode jsr : Cpu65c02Opcode.jsrFamily() ) {
+			Cpu65c02Opcode.MicroCycleProgram program = jsr.microcode();
+			set(table, jsr.opcodeByte(), program.accessType(), program.noCrossScript(), program.crossScript());
+		}
 
 		return table;
 	}

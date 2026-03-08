@@ -1,6 +1,6 @@
-# CMD G65SC02 Table V vs JVM Opcode Table
+# NMOS Table V Invalid Opcodes vs JVM Opcode Table
 
-Source: `cmd_g65sc02_mpu_mar2000.pdf` page 10, Table V (invalid opcode bytes/cycles) and JVM `Cpu65c02.OPCODE`.
+Source: legacy Table-V invalid-opcode mapping (moved from the old `cmd_g65sc02_tablev_vs_java.*` label) and JVM `Cpu65c02.OPCODE`.
 
 - Invalid-opcode entries compared: 87
 - Mismatches: 9

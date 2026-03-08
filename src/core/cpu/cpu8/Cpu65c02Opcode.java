@@ -203,7 +203,15 @@ public enum Cpu65c02Opcode {
 
 	CPY_IMM(0xC0, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA))),
 	CPY_ZPG(0xC4, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_READ_EA))),
-	CPY_ABS(0xCC, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_EA)));
+	CPY_ABS(0xCC, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_EA))),
+
+	JSR_ABS(0x20, MicroCycleProgram.internalShared(cycles(
+			MicroOp.M_FETCH_OPCODE,
+			MicroOp.M_FETCH_OPERAND_LO,
+			MicroOp.M_INTERNAL,
+			MicroOp.M_INTERNAL,
+			MicroOp.M_INTERNAL,
+			MicroOp.M_FETCH_OPERAND_HI)));
 
 	private final int opcodeByte;
 	private final MicroCycleProgram microcode;
@@ -252,6 +260,8 @@ public enum Cpu65c02Opcode {
 			CPX_IMM, CPX_ZPG, CPX_ABS);
 	private static final EnumSet<Cpu65c02Opcode> CPY_FAMILY = EnumSet.of(
 			CPY_IMM, CPY_ZPG, CPY_ABS);
+	private static final EnumSet<Cpu65c02Opcode> JSR_FAMILY = EnumSet.of(
+			JSR_ABS);
 
 	Cpu65c02Opcode(int opcodeByte, MicroCycleProgram microcode) {
 		this.opcodeByte = opcodeByte & 0xff;
@@ -438,6 +448,14 @@ public enum Cpu65c02Opcode {
 		return buildCpyOpcodeBytes();
 	}
 
+	public static EnumSet<Cpu65c02Opcode> jsrFamily() {
+		return EnumSet.copyOf(JSR_FAMILY);
+	}
+
+	public static int[] jsrOpcodeBytes() {
+		return buildJsrOpcodeBytes();
+	}
+
 	private static int[] buildLdaOpcodeBytes() {
 		Cpu65c02Opcode[] ops = LDA_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
@@ -600,6 +618,14 @@ public enum Cpu65c02Opcode {
 
 	private static int[] buildCpyOpcodeBytes() {
 		Cpu65c02Opcode[] ops = CPY_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildJsrOpcodeBytes() {
+		Cpu65c02Opcode[] ops = JSR_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
 		for( int i = 0; i<ops.length; i++ )
 			bytes[i] = ops[i].opcodeByte();

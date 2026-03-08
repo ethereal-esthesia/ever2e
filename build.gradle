@@ -144,3 +144,11 @@ tasks.register('runSdlImeProbe', JavaExec) {
         jvmArgs '-XstartOnFirstThread'
     }
 }
+
+tasks.register('runAsmToBasicLoader', JavaExec) {
+    group = 'application'
+    description = 'Convert byte-oriented asm/listing text into an Applesoft BASIC DATA loader.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'tools.AsmToBasicLoader'
+    workingDir = projectDir
+}

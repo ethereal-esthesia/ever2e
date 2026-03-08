@@ -1,0 +1,80 @@
+opcode_hex,source,nop_kind,mnemonic,mode,bytes,cycles,notes
+02,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+03,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+07,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+0B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+0F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+13,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+17,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+1B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+1F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+22,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+23,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+27,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+2B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+2F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+33,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+37,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+3B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+3F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+42,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+43,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+44,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+47,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+4B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+4F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+53,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+54,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+57,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+5B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+5C,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+5F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+62,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+63,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+67,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+6B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+6F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+73,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+77,page9_compat,implied,RMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+7B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+7F,page9_compat,implied,BBR,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+82,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+83,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+87,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+8B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+8F,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+93,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+97,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+9B,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+9F,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+A3,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+A7,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+AB,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+AF,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+B3,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+B7,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+BB,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+BF,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+C2,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+C3,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+C7,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+CB,page9_compat,implied,WAI,,1,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+CF,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+D3,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+D4,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+D7,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+DB,page9_compat,implied,STP,,1,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+DC,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+DF,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+E2,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+E3,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+E7,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+EA,page9_explicit,explicit,NOP,imp,1,2,Explicit NOP cell in page-9 table.
+EB,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+EF,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+F3,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+F4,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+F7,page9_compat,implied,SMB,zpg,2,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.
+FB,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+FC,page9_blank,implied,,,,,Blank cell in page-9 table; implied NOP placeholder with unknown timing.
+FF,page9_compat,implied,BBS,"zpg,rel",3,,Compatibility opcode treated as implied NOP for CMD profile; cycle intentionally blank.

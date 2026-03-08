@@ -52,6 +52,6 @@ This note captures the minimum external documentation set to drive cycle/micro-s
   - non-terminating lockups: `N+`
 
 ## Immediate Priorities
-- Fill control-flow/stack families not yet micro-queued (JSR/RTS/JMP/branches/interrupt sequences).
+- Fill control-flow/stack families not yet micro-queued (RTS/JMP/branches/interrupt sequences).
 - Keep one micro-step = one CPU cycle in scheduler semantics.
 - Explicitly tag pre/post trace interpretation so cycle fields are unambiguous.

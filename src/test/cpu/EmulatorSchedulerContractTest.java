@@ -135,6 +135,10 @@ public class EmulatorSchedulerContractTest {
             case 0xC0: // CPY #imm
                 loadProgram(env, PROG_PC, opcodeByte, 0x42, 0xEA);
                 break;
+            case 0x20: // JSR abs
+                loadProgram(env, PROG_PC, opcodeByte, 0x00, 0x03, 0xEA);
+                loadProgram(env, 0x0300, 0x60); // RTS
+                break;
             case 0x85: // STA zpg
                 loadProgram(env, PROG_PC, opcodeByte, 0x10, 0xEA);
                 env.cpu.getRegister().setA(0x77);
@@ -269,7 +273,8 @@ public class EmulatorSchedulerContractTest {
                 0x86, // STX
                 0x84, // STY
                 0xE0, // CPX
-                0xC0  // CPY
+                0xC0, // CPY
+                0x20  // JSR
         };
 
         for (int opcodeByte : representatives) {
