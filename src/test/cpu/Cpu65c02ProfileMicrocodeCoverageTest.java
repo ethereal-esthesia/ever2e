@@ -78,6 +78,35 @@ public class Cpu65c02ProfileMicrocodeCoverageTest {
 		}
 	}
 
+	private static void assertProfileCycleCountMatchesMicrocodeSteps(Cpu65c02 cpu, String profileName, boolean includeNops, boolean requireExplicitMicrocode) {
+		Opcode[] table = opcodeTableFor(cpu);
+		for( int opcodeByte = 0; opcodeByte<256; opcodeByte++ ) {
+			Opcode opcode = table[opcodeByte];
+			assertNotNull(profileName + " missing opcode entry for $" + String.format("%02X", opcodeByte), opcode);
+			boolean isNop = opcode.getMnemonic()==Cpu65c02.OpcodeMnemonic.NOP;
+			if( isNop!=includeNops )
+				continue;
+			if( requireExplicitMicrocode ) {
+				assertNotNull(profileName + " planned opcode lacks explicit microcode enum entry for $" + String.format("%02X", opcodeByte),
+						Cpu65c02Opcode.fromOpcodeByte(opcodeByte));
+			}
+
+			Cpu65c02OpcodeView view = Cpu65c02Microcode.opcodeForByte(opcodeByte);
+			assertNotNull(profileName + " missing microcode view for $" + String.format("%02X", opcodeByte), view);
+
+			int baseCycles = opcode.getCycleTime();
+			int noCrossCycles = view.getExpectedMnemonicOrder(false).length;
+			int crossCycles = view.getExpectedMnemonicOrder(true).length;
+
+			assertEquals(profileName + " no-cross microcode steps mismatch for $" + String.format("%02X", opcodeByte),
+					baseCycles, noCrossCycles);
+			if( crossCycles!=noCrossCycles ) {
+				assertEquals(profileName + " cross-path microcode steps mismatch for $" + String.format("%02X", opcodeByte),
+						baseCycles + 1, crossCycles);
+			}
+		}
+	}
+
 	@Test
 	public void wdcProfileHasCompleteOpcodeTableAndMicrocodeCoverage() {
 		Cpu65c02 cpu = newWdcCpu();
@@ -90,5 +119,29 @@ public class Cpu65c02ProfileMicrocodeCoverageTest {
 		Cpu65c02 cpu = newCmdCpu();
 		assertProfileOpcodeTableHasAllSlots(cpu, "cmd");
 		assertProfileMicrocodeCoverage(cpu, "cmd");
+	}
+
+	@Test
+	public void wdcProfileAllNonNopOpcodesMatchMicrocodeCycleCount() {
+		Cpu65c02 cpu = newWdcCpu();
+		assertProfileCycleCountMatchesMicrocodeSteps(cpu, "wdc", false, true);
+	}
+
+	@Test
+	public void cmdProfileAllNonNopOpcodesMatchMicrocodeCycleCount() {
+		Cpu65c02 cpu = newCmdCpu();
+		assertProfileCycleCountMatchesMicrocodeSteps(cpu, "cmd", false, true);
+	}
+
+	@Test
+	public void wdcProfileNopOpcodesMatchMicrocodeCycleCount() {
+		Cpu65c02 cpu = newWdcCpu();
+		assertProfileCycleCountMatchesMicrocodeSteps(cpu, "wdc", true, false);
+	}
+
+	@Test
+	public void cmdProfileNopOpcodesMatchMicrocodeCycleCount() {
+		Cpu65c02 cpu = newCmdCpu();
+		assertProfileCycleCountMatchesMicrocodeSteps(cpu, "cmd", true, false);
 	}
 }
