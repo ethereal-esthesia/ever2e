@@ -1,11 +1,11 @@
 # G65SC02 vs Current JVM Opcode Table
 
-Source compare: JVM `Cpu65c02.OPCODE` vs MAME Rockwell `dr65c02.lst` (proxy for G65SC02-era CMOS behavior).
+Source compare: JVM `Cpu65c02.OPCODE` vs MAME WDC `dw65c02s.lst` (default microcode baseline).
 
 - Opcode slots compared: 256
 - Mnemonic mismatch candidates: 36
 
-| Opcode | JVM | Rockwell Token | Rockwell Guess |
+| Opcode | JVM | WDC Token | WDC Guess |
 |---|---|---|---|
 | 07 | NOP | rmb_bzp | RMB |
 | 0F | NOP | bbr_zpb | BBR |
