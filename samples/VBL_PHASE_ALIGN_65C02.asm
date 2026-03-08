@@ -1,4 +1,4 @@
-; VBL_ALIGN_17029_65C02.asm
+; VBL_PHASE_ALIGN_65C02.asm
 ;
 ; Goal:
 ; 1) Poll retrace (VBL) ON->OFF with a 7-cycle taken-loop check:
@@ -6,7 +6,7 @@
 ;      BMI loop    (3 taken, 2 final)
 ;    => 7 cycles/iteration while VBL is ON.
 ;
-; 2) After OFF edge, wait exactly 17029 cycles and test for VBL ON again.
+; 2) After OFF edge, wait exactly 17009 cycles and test for VBL ON again.
 ;    Retry up to 7 times to force phase alignment.
 ;
 ; Apple IIe NTSC frame = 17030 CPU cycles.
@@ -18,6 +18,7 @@
 ;   C=0 if not aligned after 7 retries
 
         * = $3000
+        .align 256, $00
 
 ALIGN_VBL_PHASE:
 ; Optional pre-sync: ensure we start from VBL ON.
@@ -34,7 +35,7 @@ WAIT_OFF:
         STA $08                 ; retry counter in ZP
 
 RETRY_LOOP:
-        JSR WAIT_17029
+        JSR WAIT_17009
         BIT $C019
         BMI ALIGNED             ; saw retrace ON again -> aligned
 
@@ -49,28 +50,28 @@ ALIGNED:
         RTS
 
 ; -----------------------------------------------------------------------------
-; WAIT_17029
-; Exact 17029-cycle delay from entry to RTS.
+; WAIT_17009
+; Exact 17009-cycle delay from entry to RTS.
 ;
 ; Built from DLY_DELAY2 plus fixed tail:
 ;   Preload/stores             10
 ;   JSR DLY_DELAY2             6
 ;   DLY_DELAY2 body            16676   (LO=255, HI=13)
-;   Tail (LDX/DEX/BNE/BIT/NOP) 331
+;   Tail (LDX/DEX/BNE/BIT/NOP) 311
 ;   RTS                         6
-; Total                     = 17029
+; Total                     = 17009
 ; -----------------------------------------------------------------------------
-WAIT_17029:
+WAIT_17009:
         LDA #$FF
         STA $06
         LDA #$0D
         STA $07
         JSR DLY_DELAY2
 
-        LDX #$41              ; 65
-W17029_TAIL_LOOP:
+        LDX #$3D              ; 61
+W17010_TAIL_LOOP:
         DEX
-        BNE W17029_TAIL_LOOP
+        BNE W17010_TAIL_LOOP
         BIT $00
         NOP
         RTS

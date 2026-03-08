@@ -80,7 +80,7 @@ if cmp -s "$tmp_exp" "$tmp_dump"; then
   exit 0
 fi
 
-first_off_1based=$(cmp -l "$tmp_exp" "$tmp_dump" | awk 'NR==1{print $1}')
+first_off_1based=$( (cmp -l "$tmp_exp" "$tmp_dump" || true) | awk 'NR==1{print $1}' )
 if [[ -z "$first_off_1based" ]]; then
   echo "error: mismatch found but could not locate first differing byte" >&2
   exit 1

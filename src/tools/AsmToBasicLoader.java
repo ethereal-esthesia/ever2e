@@ -45,7 +45,7 @@ public final class AsmToBasicLoader {
 		int ln = loaderLineStart;
 		out.add(ln + " A=" + baseAddress + ":I=0");
 		ln += 10;
-		out.add(ln + " READ B:IF B<0 THEN " + (ln + 30));
+		out.add(ln + " READ B:IF B<0 THEN " + (ln + 20));
 		ln += 10;
 		out.add(ln + " POKE A+I,B:I=I+1:GOTO " + (ln - 10));
 		ln += 10;

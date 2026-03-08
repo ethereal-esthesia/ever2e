@@ -25,12 +25,15 @@ if [[ ! -x "$MAME_BIN" ]]; then
   exit 2
 fi
 
-# Build CR-delimited typed input from BASIC source.
-cmd=""
-while IFS= read -r line || [[ -n "$line" ]]; do
-  cmd+="${line}"$'\r'
-done <"$BAS_FILE"
-cmd+="RUN"$'\r'
+# Build \r-delimited typed input from BASIC source.
+# - Normalize any host line endings to '\n'
+# - Drop remaining control chars (except '\n')
+# - Escape literal backslashes so they survive Lua parsing
+# - Convert '\n' to literal "\r"
+normalized_bas="$(
+  perl -0777 -pe 's/\r\n|\n\r|\r/\n/g; s/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]//g; s/\\/\\\\/g; s/\n/\\r/g' "$BAS_FILE"
+)"
+cmd="${normalized_bas}\\rRUN\\r"
 
 exec "$MAME_BIN" "$MACHINE" \
   -window -video soft -sound none -skip_gameinfo \
