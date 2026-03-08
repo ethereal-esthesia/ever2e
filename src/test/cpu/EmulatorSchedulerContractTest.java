@@ -1,6 +1,7 @@
 package test.cpu;
 
 import core.cpu.cpu8.Cpu65c02;
+import core.cpu.cpu8.Cpu65c02Cmd;
 import core.cpu.cpu8.Cpu65c02CycleEstimator;
 import core.cpu.cpu8.Opcode;
 import core.emulator.HardwareManager;
@@ -22,6 +23,7 @@ public class EmulatorSchedulerContractTest {
     private static final int MEM_SIZE = 0x20000;
     private static final int ROM_SIZE = 0x4000;
     private static final int PROG_PC = 0x0200;
+    private static final String[] CPU_PROFILES = new String[] { "wdc", "cmd" };
 
     private static final class Env {
         final MemoryBusIIe bus;
@@ -91,11 +93,11 @@ public class EmulatorSchedulerContractTest {
         }
     }
 
-    private Env createEnv(HardwareManager... extraManagers) throws HardwareException {
+    private Env createEnv(String profile, HardwareManager... extraManagers) throws HardwareException {
         Memory8 mem = new Memory8(MEM_SIZE);
         byte[] rom = new byte[ROM_SIZE];
         MemoryBusIIe bus = new MemoryBusIIe(mem, rom);
-        Cpu65c02 cpu = new Cpu65c02(bus, 1);
+        Cpu65c02 cpu = "cmd".equals(profile) ? new Cpu65c02Cmd(bus, 1) : new Cpu65c02(bus, 1);
 
         PriorityQueue<HardwareManager> queue = new PriorityQueue<HardwareManager>();
         queue.add(cpu);
@@ -191,51 +193,57 @@ public class EmulatorSchedulerContractTest {
 
     @Test
     public void cpuMaintainsInstructionEndEventInExecutionQueue() throws Exception {
-        Env env = createEnv();
+        for (String profile : CPU_PROFILES) {
+            Env env = createEnv(profile);
 
-        setVector(env.rom, 0xFFFC, PROG_PC);
-        loadProgram(env, PROG_PC, 0xEA, 0xEA, 0x4C, 0x00, 0x02);
+            setVector(env.rom, 0xFFFC, PROG_PC);
+            loadProgram(env, PROG_PC, 0xEA, 0xEA, 0x4C, 0x00, 0x02);
 
-        assertEquals(1, env.cpu.getPendingExecutionEventCount());
-        assertTrue(env.cpu.hasPendingInstructionEndEvent());
+            assertEquals(1, env.cpu.getPendingExecutionEventCount());
+            assertTrue(env.cpu.hasPendingInstructionEndEvent());
 
-        env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
-        assertEquals(1, env.cpu.getPendingExecutionEventCount());
-        assertTrue(env.cpu.hasPendingInstructionEndEvent());
+            env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
+            assertEquals(1, env.cpu.getPendingExecutionEventCount());
+            assertTrue(env.cpu.hasPendingInstructionEndEvent());
+        }
     }
 
     @Test
     public void resetLeavesStackPointerAtFdByDefault() throws Exception {
-        Env env = createEnv();
-        setVector(env.rom, 0xFFFC, PROG_PC);
-        loadProgram(env, PROG_PC, 0xEA); // NOP
+        for (String profile : CPU_PROFILES) {
+            Env env = createEnv(profile);
+            setVector(env.rom, 0xFFFC, PROG_PC);
+            loadProgram(env, PROG_PC, 0xEA); // NOP
 
-        // Execute only RES.
-        env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
+            // Execute only RES.
+            env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
 
-        assertEquals(0xFD, env.cpu.getRegister().getS());
+            assertEquals(0xFD, env.cpu.getRegister().getS());
+        }
     }
 
     @Test
     public void ldaUsesPendingCycleEventsBeforeInstructionEndEvent() throws Exception {
-        Env env = createEnv();
+        for (String profile : CPU_PROFILES) {
+            Env env = createEnv(profile);
 
-        setVector(env.rom, 0xFFFC, PROG_PC);
-        loadProgram(env, PROG_PC,
-                0xA9, 0x42,       // LDA #$42 (2 cycles)
-                0xEA,             // NOP
-                0x4C, 0x02, 0x02  // JMP $0202
-        );
+            setVector(env.rom, 0xFFFC, PROG_PC);
+            loadProgram(env, PROG_PC,
+                    0xA9, 0x42,       // LDA #$42 (2 cycles)
+                    0xEA,             // NOP
+                    0x4C, 0x02, 0x02  // JMP $0202
+            );
 
-        // Execute RES; queue should now represent LDA micro-events.
-        env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
-        assertEquals(2, env.cpu.getPendingExecutionEventCount());
-        assertTrue(env.cpu.hasPendingInFlightMicroEvent());
+            // Execute RES; queue should now represent LDA micro-events.
+            env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
+            assertEquals(2, env.cpu.getPendingExecutionEventCount());
+            assertTrue(env.cpu.hasPendingInFlightMicroEvent());
 
-        // Execute one pending cycle, leaving final instruction-end event.
-        env.emulator.startWithStepPhases(2, env.cpu, (step, manager, preCycle) -> true);
-        assertEquals(1, env.cpu.getPendingExecutionEventCount());
-        assertTrue(env.cpu.hasPendingInstructionEndEvent());
+            // Execute one pending cycle, leaving final instruction-end event.
+            env.emulator.startWithStepPhases(2, env.cpu, (step, manager, preCycle) -> true);
+            assertEquals(1, env.cpu.getPendingExecutionEventCount());
+            assertTrue(env.cpu.hasPendingInstructionEndEvent());
+        }
     }
 
     @Test
@@ -265,112 +273,120 @@ public class EmulatorSchedulerContractTest {
         };
 
         for (int opcodeByte : representatives) {
-            Env env = createEnv();
-            env.cpu.setResetXOverride(0x00);
-            env.cpu.setResetYOverride(0x00);
-            setVector(env.rom, 0xFFFC, PROG_PC);
-            prepareRepresentativeProgram(env, opcodeByte);
+            for (String profile : CPU_PROFILES) {
+                Env env = createEnv(profile);
+                env.cpu.setResetXOverride(0x00);
+                env.cpu.setResetYOverride(0x00);
+                setVector(env.rom, 0xFFFC, PROG_PC);
+                prepareRepresentativeProgram(env, opcodeByte);
 
-            env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true); // RES
+                env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true); // RES
 
-            int expectedCycles = Cpu65c02CycleEstimator.predictInstructionCycles(
-                    env.bus, env.cpu.getRegister(), Cpu65c02.OPCODE[opcodeByte & 0xFF], PROG_PC);
-            assertEquals(expectedCycles, env.cpu.getPendingExecutionEventCount());
-            if (expectedCycles > 1) {
-                assertTrue(env.cpu.hasPendingInFlightMicroEvent());
-            } else {
-                assertTrue(env.cpu.hasPendingInstructionEndEvent());
+                int expectedCycles = Cpu65c02CycleEstimator.predictInstructionCycles(
+                        env.bus, env.cpu.getRegister(), Cpu65c02.OPCODE[opcodeByte & 0xFF], PROG_PC);
+                assertEquals(expectedCycles, env.cpu.getPendingExecutionEventCount());
+                if (expectedCycles > 1) {
+                    assertTrue(env.cpu.hasPendingInFlightMicroEvent());
+                } else {
+                    assertTrue(env.cpu.hasPendingInstructionEndEvent());
+                }
+
+                env.emulator.startWithStepPhases(expectedCycles + 1L, env.cpu, (step, manager, preCycle) -> true);
+                assertTrue(env.cpu.getPendingExecutionEventCount() >= 1);
             }
-
-            env.emulator.startWithStepPhases(expectedCycles + 1L, env.cpu, (step, manager, preCycle) -> true);
-            assertTrue(env.cpu.getPendingExecutionEventCount() >= 1);
         }
     }
 
     @Test
     public void irqFromManagerIsSuppressedWhileInterruptDisableSet() throws Exception {
-        Env env = createEnv();
-        InterruptAtTickManager irq = new InterruptAtTickManager(env.cpu, Cpu65c02.INTERRUPT_IRQ, 30);
-        PriorityQueue<HardwareManager> queue = new PriorityQueue<HardwareManager>();
-        queue.add(env.cpu);
-        queue.add(irq);
-        env = new Env(env.bus, env.rom, env.cpu, new Emulator(queue, 0));
+        for (String profile : CPU_PROFILES) {
+            Env env = createEnv(profile);
+            InterruptAtTickManager irq = new InterruptAtTickManager(env.cpu, Cpu65c02.INTERRUPT_IRQ, 30);
+            PriorityQueue<HardwareManager> queue = new PriorityQueue<HardwareManager>();
+            queue.add(env.cpu);
+            queue.add(irq);
+            env = new Env(env.bus, env.rom, env.cpu, new Emulator(queue, 0));
 
-        setVector(env.rom, 0xFFFC, PROG_PC);
-        setVector(env.rom, 0xFFFE, 0x0300);
-        loadProgram(env, PROG_PC,
-                0xEA,
-                0x4C, 0x00, 0x02
-        );
-        loadProgram(env, 0x0300,
-                0xE6, 0x20,
-                0x40
-        );
-        env.bus.setByte(0x0020, 0x00);
+            setVector(env.rom, 0xFFFC, PROG_PC);
+            setVector(env.rom, 0xFFFE, 0x0300);
+            loadProgram(env, PROG_PC,
+                    0xEA,
+                    0x4C, 0x00, 0x02
+            );
+            loadProgram(env, 0x0300,
+                    0xE6, 0x20,
+                    0x40
+            );
+            env.bus.setByte(0x0020, 0x00);
 
-        env.emulator.startWithStepPhases(140, env.cpu, (step, manager, preCycle) -> true);
+            env.emulator.startWithStepPhases(140, env.cpu, (step, manager, preCycle) -> true);
 
-        assertEquals(0, env.bus.getByte(0x0020));
+            assertEquals(0, env.bus.getByte(0x0020));
+        }
     }
 
     @Test
     public void nmiFromManagerIsTakenEvenWhenInterruptDisableSet() throws Exception {
-        Env env = createEnv();
-        InterruptAtTickManager nmi = new InterruptAtTickManager(env.cpu, Cpu65c02.INTERRUPT_NMI, 30);
-        PriorityQueue<HardwareManager> queue = new PriorityQueue<HardwareManager>();
-        queue.add(env.cpu);
-        queue.add(nmi);
-        env = new Env(env.bus, env.rom, env.cpu, new Emulator(queue, 0));
+        for (String profile : CPU_PROFILES) {
+            Env env = createEnv(profile);
+            InterruptAtTickManager nmi = new InterruptAtTickManager(env.cpu, Cpu65c02.INTERRUPT_NMI, 30);
+            PriorityQueue<HardwareManager> queue = new PriorityQueue<HardwareManager>();
+            queue.add(env.cpu);
+            queue.add(nmi);
+            env = new Env(env.bus, env.rom, env.cpu, new Emulator(queue, 0));
 
-        setVector(env.rom, 0xFFFC, PROG_PC);
-        setVector(env.rom, 0xFFFA, 0x0310);
-        loadProgram(env, PROG_PC,
-                0xEA,
-                0x4C, 0x00, 0x02
-        );
-        loadProgram(env, 0x0310,
-                0xE6, 0x21,
-                0x40
-        );
-        env.bus.setByte(0x0021, 0x00);
+            setVector(env.rom, 0xFFFC, PROG_PC);
+            setVector(env.rom, 0xFFFA, 0x0310);
+            loadProgram(env, PROG_PC,
+                    0xEA,
+                    0x4C, 0x00, 0x02
+            );
+            loadProgram(env, 0x0310,
+                    0xE6, 0x21,
+                    0x40
+            );
+            env.bus.setByte(0x0021, 0x00);
 
-        env.emulator.startWithStepPhases(140, env.cpu, (step, manager, preCycle) -> true);
+            env.emulator.startWithStepPhases(140, env.cpu, (step, manager, preCycle) -> true);
 
-        assertEquals(1, env.bus.getByte(0x0021));
+            assertEquals(1, env.bus.getByte(0x0021));
+        }
     }
 
     @Test
     public void pendingIrqStartsAfterCurrentInstructionCompletes() throws Exception {
-        Env env = createEnv();
+        for (String profile : CPU_PROFILES) {
+            Env env = createEnv(profile);
 
-        setVector(env.rom, 0xFFFC, PROG_PC);
-        setVector(env.rom, 0xFFFE, 0x0300);
+            setVector(env.rom, 0xFFFC, PROG_PC);
+            setVector(env.rom, 0xFFFE, 0x0300);
 
-        loadProgram(env, PROG_PC,
-                0x58,             // CLI
-                0xE6, 0x30,       // INC $30
-                0x4C, 0x01, 0x02  // JMP $0201
-        );
+            loadProgram(env, PROG_PC,
+                    0x58,             // CLI
+                    0xE6, 0x30,       // INC $30
+                    0x4C, 0x01, 0x02  // JMP $0201
+            );
 
-        loadProgram(env, 0x0300,
-                0xE6, 0x20,       // INC $20
-                0x40              // RTI
-        );
+            loadProgram(env, 0x0300,
+                    0xE6, 0x20,       // INC $20
+                    0x40              // RTI
+            );
 
-        env.bus.setByte(0x0020, 0x00);
-        env.bus.setByte(0x0030, 0x00);
+            env.bus.setByte(0x0020, 0x00);
+            env.bus.setByte(0x0030, 0x00);
 
-        env.emulator.startWithStepPhases(200, env.cpu, (step, manager, preCycle) -> {
-            if (preCycle && step == 3) {
-                env.cpu.setInterruptPending(Cpu65c02.INTERRUPT_IRQ);
-            }
-            if (!preCycle && env.bus.getByte(0x0030) == 1 && env.bus.getByte(0x0020) == 1) {
-                return false;
-            }
-            return true;
-        });
+            env.emulator.startWithStepPhases(200, env.cpu, (step, manager, preCycle) -> {
+                if (preCycle && step == 3) {
+                    env.cpu.setInterruptPending(Cpu65c02.INTERRUPT_IRQ);
+                }
+                if (!preCycle && env.bus.getByte(0x0030) == 1 && env.bus.getByte(0x0020) == 1) {
+                    return false;
+                }
+                return true;
+            });
 
-        assertEquals(1, env.bus.getByte(0x0030));
-        assertEquals(1, env.bus.getByte(0x0020));
+            assertEquals(1, env.bus.getByte(0x0030));
+            assertEquals(1, env.bus.getByte(0x0020));
+        }
     }
 }
