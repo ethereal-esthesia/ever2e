@@ -235,8 +235,8 @@ Defaults used by `smoke`:
 - `smokeRequireHaltPc` is optional (unset by default)
 - `--no-sound` is enabled by default for silent headless smoke runs
 
-The 32k opcode long-run scenario now runs under `gradlew test` via
-`test.cpu.Cpu32kLongRunIntegrationTest` (default halt list `0x6A45,0x6A33`).
+The 32k opcode long-run CMD scenario now runs under `gradlew test` via
+`test.cpu.Cpu32kLongRunCmdIntegrationTest` (default halt list `0x6A45,0x6A33`).
 It reads `ever2e.long32k.*` system properties (`emu`, `pasteFile`, `steps`, `haltExecution`)
 and also accepts legacy `ever2e.smoke32k.*` names for compatibility.
 

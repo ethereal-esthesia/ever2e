@@ -10,7 +10,7 @@ import core.emulator.machine.machine8.Emulator8Coordinator;
 
 import static org.junit.Assert.assertTrue;
 
-public class Cpu32kLongRunIntegrationTest {
+public class Cpu32kLongRunCmdIntegrationTest {
 
 	@Test
 	public void opcodeLongRun32kReachesPassLoop() throws Exception {
