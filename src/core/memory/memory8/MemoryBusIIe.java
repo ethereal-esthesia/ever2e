@@ -116,11 +116,25 @@ public class MemoryBusIIe extends MemoryBus8 {
 	private SwitchIIe cassetteInSwitch = new SwitchIIe(null) {
 		@Override
 		public int readMem( int address ) {
-			// STUB
-			return super.readMem(address)&0x7f;
+			// Apple IIe cassette input softswitch defaults high on bit 7 when the
+			// input line is idle; preserve floating-bus bits 0-6.
+			return (super.readMem(address)&0x7f) | 0x80;
 		}
 		@Override
 		public void writeMem( int address, int value ) {
+		}
+	};
+
+	private SwitchIIe paddleTimerSwitch = new SwitchIIe(null) {
+		@Override
+		public int readMem(int address) {
+			// With no active paddle countdown, Apple IIe reads return bit 7 high.
+			// Keep floating-bus bits 0-6 to match MAME readback shape.
+			return (super.readMem(address)&0x7f) | 0x80;
+		}
+
+		@Override
+		public void writeMem(int address, int value) {
 		}
 	};
 	
@@ -971,6 +985,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc05e, new SwitchClearRWIIe(switchAn3));
 		ioSwitches.assignBlock(0xc05f, new SwitchSetRWIIe(switchAn3));
 		// c060 - cassette in
+		ioSwitches.assignBlock(0xc060, cassetteInSwitch);
 		ioSwitches.assignBlock(0xc061, stateOpenApple);
 		ioSwitches.assignBlock(0xc062, stateOptionKey);
 		ioSwitches.assignBlock(0xc063, stateShiftKey);
@@ -978,6 +993,10 @@ public class MemoryBusIIe extends MemoryBus8 {
 		// c065 PADDL1 Analog Input 1
 		// c066 PADDL2 Analog Input 2
 		// c067 PADDL3 Analog Input 3
+		ioSwitches.assignBlock(0xc064, paddleTimerSwitch);
+		ioSwitches.assignBlock(0xc065, paddleTimerSwitch);
+		ioSwitches.assignBlock(0xc066, paddleTimerSwitch);
+		ioSwitches.assignBlock(0xc067, paddleTimerSwitch);
 		// c068 - cassette in
 		ioSwitches.assignBlock(0xc068, cassetteInSwitch);
 		ioSwitches.assignBlock(0xc069, stateOpenApple);
@@ -987,6 +1006,10 @@ public class MemoryBusIIe extends MemoryBus8 {
 		// c06d PADDL1 Analog Input 1
 		// c06e PADDL2 Analog Input 2
 		// c06f PADDL3 Analog Input 3
+		ioSwitches.assignBlock(0xc06c, paddleTimerSwitch);
+		ioSwitches.assignBlock(0xc06d, paddleTimerSwitch);
+		ioSwitches.assignBlock(0xc06e, paddleTimerSwitch);
+		ioSwitches.assignBlock(0xc06f, paddleTimerSwitch);
 		// c070 - Paddle strobe, likely - c07f as well
 		ioSwitches.assignBlock(0xc080, switchIo_c080_c084);
 		ioSwitches.assignBlock(0xc081, switchIo_c081_c085);
@@ -1139,8 +1162,21 @@ public class MemoryBusIIe extends MemoryBus8 {
 				case 0xc06b: {
 					return (keyboard!=null && keyboard.isShiftKey()) ? 0x80 : 0x00;
 				}
+				case 0xc060:
 				case 0xc068: {
-					return 0x00;
+					// Mirror default cassette idle behavior used by MAME: high bit set.
+					return 0x80;
+				}
+				case 0xc064:
+				case 0xc065:
+				case 0xc066:
+				case 0xc067:
+				case 0xc06c:
+				case 0xc06d:
+				case 0xc06e:
+				case 0xc06f: {
+					// With no active paddle timer event, reads default to bit 7 high.
+					return 0x80;
 				}
 				default:
 					return 0x00;
