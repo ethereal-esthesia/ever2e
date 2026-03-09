@@ -726,9 +726,9 @@ public class Emulator8Coordinator {
 	   		if( traceFile!=null ) {
 	   			traceWriter = new PrintWriter(new FileWriter(traceFile));
 	   			if( traceKeyValue )
-	   				traceWriter.println("# trace_kv step retired_step event_type event pc opcode opc1 opc2 opc3 a x y p s mnemonic mode cpu_total_cycles last_instruction_cycles display_hscan display_vscan display_vbl scan_h scan_v scan_x scan_y scan_cycles_desc frame_cycle");
+	   				traceWriter.println("# trace_kv step retired_step event_type event pc opcode opc1 opc2 opc3 a x y p s mnemonic mode cpu_total_cycles cpu_micro_total_cycles subcycle_index last_instruction_cycles display_hscan display_vscan display_vbl scan_h scan_v scan_x scan_y scan_cycles_desc frame_cycle");
 	   			else
-	   				traceWriter.println("step,retired_step,event_type,event,pc,opcode,opc1,opc2,opc3,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,last_instruction_cycles,display_hscan,display_vscan,display_vbl,scan_h,scan_v,scan_x,scan_y,scan_cycles_desc,frame_cycle");
+	   				traceWriter.println("step,retired_step,event_type,event,pc,opcode,opc1,opc2,opc3,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,cpu_micro_total_cycles,subcycle_index,last_instruction_cycles,display_hscan,display_vscan,display_vbl,scan_h,scan_v,scan_x,scan_y,scan_cycles_desc,frame_cycle");
 	   		}
 	   		final PrintWriter finalTraceWriter = traceWriter;
 	   		final String finalTracePhase = tracePhase;
@@ -745,9 +745,11 @@ public class Emulator8Coordinator {
 	   		final long[] traceStepBase = new long[] { -1L };
 	   		final long[] traceRowStep = new long[] { 0L };
 	   		final long[] retiredInstructionStep = new long[] { 0L };
+	   		final int[] subCycleIndex = new int[] { 0 };
 	   		final String[] lastRetiredSignature = new String[] { null };
 	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
 	   		final boolean[] cpuStepPreWasSub = new boolean[] { false };
+	   		final long[] lastCpuClockCycles = new long[] { -1L };
 	   		final String finalPasteFile = pasteFile;
 	   		final String finalPasteText = pasteText;
 	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
@@ -775,7 +777,11 @@ public class Emulator8Coordinator {
 	   				int preAdvancedCycles = pendingPreAdvancedCycles[0];
 	   				pendingPreAdvancedCycles[0] = 0;
 	   				if( !"RES".equals(mnemonic) ) {
-	   					int monitorCycles = cpu.getLastInstructionCycleCount()-preAdvancedCycles;
+	   					long currentClockCycles = cpu.getTotalCycleCount();
+	   					if( lastCpuClockCycles[0]<0L )
+	   						lastCpuClockCycles[0] = currentClockCycles;
+	   					int monitorCycles = (int) (currentClockCycles-lastCpuClockCycles[0]) - preAdvancedCycles;
+	   					lastCpuClockCycles[0] = currentClockCycles;
 	   					if( monitorCycles<0 )
 	   						monitorCycles = 0;
 	   					if( finalDebugLogging ) {
@@ -847,6 +853,9 @@ public class Emulator8Coordinator {
 		   				int scanY = deriveDisplayScanY(frameCycle);
 		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
 		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
+		   				int rowSubCycleIndex = "sub".equals(eventType) ? (++subCycleIndex[0]) : ("instr".equals(eventType) ? (subCycleIndex[0] + 1) : 0);
+		   				if( !"sub".equals(eventType) )
+		   					subCycleIndex[0] = 0;
 		   				writeTraceRow(
 		   						finalTraceWriter,
 		   						finalTraceKeyValue,
@@ -867,6 +876,8 @@ public class Emulator8Coordinator {
 		   						opcode.getMnemonic().toString(),
 		   						opcode.getAddressMode().toString(),
 		   						Long.toString(cpu.getTotalCycleCount()),
+		   						Long.toString(step),
+		   						Integer.toString(rowSubCycleIndex),
 		   						Integer.toString(traceInstructionCycles),
 		   						Integer.toString(displayHScan),
 		   						Integer.toString(displayVScan),
@@ -962,6 +973,9 @@ public class Emulator8Coordinator {
 		   				int scanY = deriveDisplayScanY(frameCycle);
 		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
 		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
+		   				int rowSubCycleIndex = "sub".equals(eventType) ? (++subCycleIndex[0]) : ("instr".equals(eventType) ? (subCycleIndex[0] + 1) : 0);
+		   				if( !"sub".equals(eventType) )
+		   					subCycleIndex[0] = 0;
 		   				writeTraceRow(
 		   						finalTraceWriter,
 		   						finalTraceKeyValue,
@@ -982,6 +996,8 @@ public class Emulator8Coordinator {
 		   						opcode.getMnemonic().toString(),
 		   						opcode.getAddressMode().toString(),
 		   						Long.toString(cpu.getTotalCycleCount()),
+		   						Long.toString(step),
+		   						Integer.toString(rowSubCycleIndex),
 		   						Integer.toString(traceInstructionCycles),
 		   						Integer.toString(displayHScan),
 		   						Integer.toString(displayVScan),
@@ -1044,6 +1060,7 @@ public class Emulator8Coordinator {
 	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
 	   		final boolean finalDebugLogging = debugLogging;
 	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
+	   		final long[] lastCpuClockCycles = new long[] { -1L };
 	   		emulator.startWithStepPhases(-1, cpu, (step, manager, preCycle) -> {
 	   			if( !basicQueued[0] && manager==cpu && preCycle ) {
 	   				queueBasicText(finalKeyboard, finalPasteFile, finalPasteText);
@@ -1065,7 +1082,11 @@ public class Emulator8Coordinator {
 	   				int preAdvancedCycles = pendingPreAdvancedCycles[0];
 	   				pendingPreAdvancedCycles[0] = 0;
 	   				if( !"RES".equals(mnemonic) ) {
-	   					int monitorCycles = cpu.getLastInstructionCycleCount()-preAdvancedCycles;
+	   					long currentClockCycles = cpu.getTotalCycleCount();
+	   					if( lastCpuClockCycles[0]<0L )
+	   						lastCpuClockCycles[0] = currentClockCycles;
+	   					int monitorCycles = (int) (currentClockCycles-lastCpuClockCycles[0]) - preAdvancedCycles;
+	   					lastCpuClockCycles[0] = currentClockCycles;
 	   					if( monitorCycles<0 )
 	   						monitorCycles = 0;
 	   					if( finalDebugLogging ) {
@@ -1170,6 +1191,8 @@ public class Emulator8Coordinator {
 			String mnemonic,
 			String mode,
 			String cpuTotalCycles,
+			String cpuMicroTotalCycles,
+			String subCycleIndex,
 			String lastInstructionCycles,
 			String displayHScan,
 			String displayVScan,
@@ -1185,6 +1208,7 @@ public class Emulator8Coordinator {
 					step + "," + retiredStep + "," + eventType + "," + event + "," + pc + "," +
 					opcode + "," + opc1 + "," + opc2 + "," + opc3 + "," + a + "," + x + "," + y + "," +
 					p + "," + s + "," + mnemonic + "," + mode + "," + cpuTotalCycles + "," +
+					cpuMicroTotalCycles + "," + subCycleIndex + "," +
 					lastInstructionCycles + "," + displayHScan + "," + displayVScan + "," + displayVbl + "," +
 					scanH + "," + scanV + "," + scanX + "," + scanY + "," + scanCyclesDesc + "," + frameCycle
 			);
@@ -1209,6 +1233,8 @@ public class Emulator8Coordinator {
 				" mnem="+safeToken(mnemonic.trim()) +
 				" mode="+safeToken(mode.trim()) +
 				" cpu="+zpadDec(cpuTotalCycles, 8) +
+				" micro_total="+zpadDec(cpuMicroTotalCycles, 8) +
+				" subidx="+zpadDec(subCycleIndex, 2) +
 				" instr="+zpadDec(lastInstructionCycles, 2) +
 				" h="+zpadDec(displayHScan, 2) +
 				" v="+zpadDec(displayVScan, 3) +
