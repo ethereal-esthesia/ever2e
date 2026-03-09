@@ -39,7 +39,7 @@ This is the CMD-only microcode coverage/status document.
 - Overall status: `PASS` for CMD profile microcode-cycle parity checks.
 
 ## Explicit Family Buckets (Progress)
-- `implemented`: `lda`, `sta`, `inc`, `dec`, `asl`, `lsr`, `rol`, `ror`, `ora`, `and`, `eor`, `adc`, `sbc`, `cmp`, `bit`, `ldx`, `ldy`, `stx`, `sty`, `cpx`, `cpy`, `jsr`, `branch`, `control_misc`, `stack`, `flags`, `jump`, `bit_test_set`
+- `implemented`: `lda`, `sta`, `inc`, `dec`, `asl`, `lsr`, `rol`, `ror`, `ora`, `and`, `eor`, `adc`, `sbc`, `cmp`, `bit`, `ldx`, `ldy`, `stx`, `sty`, `cpx`, `cpy`, `jsr`, `branch`, `control_misc`, `stack`, `flags`, `jump`, `bit_test_set`, `transfer`, `index_incdec`
 - `note`: Some buckets intentionally overlap (for example `jump` includes `JSR`; `bit_test_set` includes `BIT/TSB/TRB`) to keep reporting and rollout by intent.
 
 ## Focused Matrix (Source + Tests + Status + Cycles + Bytes)

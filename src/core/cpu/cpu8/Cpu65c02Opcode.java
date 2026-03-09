@@ -377,6 +377,10 @@ public enum Cpu65c02Opcode {
 			JMP_ABS, JMP_ABS_IND, JMP_ABS_IND_X, JSR_ABS);
 	private static final EnumSet<Cpu65c02Opcode> BIT_TEST_SET_FAMILY = EnumSet.of(
 			BIT_IMM, BIT_ZPG, BIT_ZPG_X, BIT_ABS, BIT_ABS_X, TSB_ZPG, TSB_ABS, TRB_ZPG, TRB_ABS);
+	private static final EnumSet<Cpu65c02Opcode> TRANSFER_FAMILY = EnumSet.of(
+			TAX_IMP, TAY_IMP, TXA_IMP, TYA_IMP, TSX_IMP, TXS_IMP);
+	private static final EnumSet<Cpu65c02Opcode> INDEX_INCDEC_FAMILY = EnumSet.of(
+			INX_IMP, INY_IMP, DEX_IMP, DEY_IMP, INA_ACC, DEA_ACC);
 	private static final EnumSet<Cpu65c02Opcode> STACK_FAMILY = EnumSet.of(
 			BRK_IMP, PHP_IMP, PLP_IMP, RTI_IMP, PHA_IMP, PLA_IMP, RTS_IMP, PHY_IMP, PLY_IMP, PHX_IMP, PLX_IMP);
 	private static final EnumSet<Cpu65c02Opcode> FLAGS_FAMILY = EnumSet.of(
@@ -591,6 +595,22 @@ public enum Cpu65c02Opcode {
 
 	public static int[] bitTestSetOpcodeBytes() {
 		return buildBitTestSetOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> transferFamily() {
+		return EnumSet.copyOf(TRANSFER_FAMILY);
+	}
+
+	public static int[] transferOpcodeBytes() {
+		return buildTransferOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> indexIncDecFamily() {
+		return EnumSet.copyOf(INDEX_INCDEC_FAMILY);
+	}
+
+	public static int[] indexIncDecOpcodeBytes() {
+		return buildIndexIncDecOpcodeBytes();
 	}
 
 	public static EnumSet<Cpu65c02Opcode> stackFamily() {
@@ -811,6 +831,22 @@ public enum Cpu65c02Opcode {
 
 	private static int[] buildBitTestSetOpcodeBytes() {
 		Cpu65c02Opcode[] ops = BIT_TEST_SET_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildTransferOpcodeBytes() {
+		Cpu65c02Opcode[] ops = TRANSFER_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildIndexIncDecOpcodeBytes() {
+		Cpu65c02Opcode[] ops = INDEX_INCDEC_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
 		for( int i = 0; i<ops.length; i++ )
 			bytes[i] = ops[i].opcodeByte();

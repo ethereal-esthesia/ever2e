@@ -986,6 +986,44 @@ public class Cpu65c02MicrocodeTest {
 	}
 
 	@Test
+	public void transferOpcodeEnumMatchesOpcodeByteList() {
+		Cpu65c02Opcode[] ops = Cpu65c02Opcode.transferFamily().toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = Cpu65c02Opcode.transferOpcodeBytes();
+		assertEquals(ops.length, bytes.length);
+		for( int i = 0; i<ops.length; i++ )
+			assertEquals(ops[i].opcodeByte(), bytes[i]);
+	}
+
+	@Test
+	public void transferOpcodeEnumProgramsDriveResolvedMicrocode() {
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.transferFamily() ) {
+			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(opcode.opcodeByte());
+			assertEquals(opcode.microcode().accessType(), entry.getAccessType());
+			assertArrayEquals(opcode.microcode().noCrossScript(), entry.getExpectedMnemonicOrder(false));
+			assertArrayEquals(opcode.microcode().crossScript(), entry.getExpectedMnemonicOrder(true));
+		}
+	}
+
+	@Test
+	public void indexIncDecOpcodeEnumMatchesOpcodeByteList() {
+		Cpu65c02Opcode[] ops = Cpu65c02Opcode.indexIncDecFamily().toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = Cpu65c02Opcode.indexIncDecOpcodeBytes();
+		assertEquals(ops.length, bytes.length);
+		for( int i = 0; i<ops.length; i++ )
+			assertEquals(ops[i].opcodeByte(), bytes[i]);
+	}
+
+	@Test
+	public void indexIncDecOpcodeEnumProgramsDriveResolvedMicrocode() {
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.indexIncDecFamily() ) {
+			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(opcode.opcodeByte());
+			assertEquals(opcode.microcode().accessType(), entry.getAccessType());
+			assertArrayEquals(opcode.microcode().noCrossScript(), entry.getExpectedMnemonicOrder(false));
+			assertArrayEquals(opcode.microcode().crossScript(), entry.getExpectedMnemonicOrder(true));
+		}
+	}
+
+	@Test
 	public void stackOpcodeEnumMatchesOpcodeByteList() {
 		Cpu65c02Opcode[] ops = Cpu65c02Opcode.stackFamily().toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = Cpu65c02Opcode.stackOpcodeBytes();
@@ -1108,6 +1146,10 @@ public class Cpu65c02MicrocodeTest {
 		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.jumpFamily() )
 			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
 		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.bitTestSetFamily() )
+			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.transferFamily() )
+			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.indexIncDecFamily() )
 			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
 		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.stackFamily() )
 			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
