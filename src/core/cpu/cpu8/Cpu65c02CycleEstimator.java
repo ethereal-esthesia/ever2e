@@ -39,6 +39,10 @@ public final class Cpu65c02CycleEstimator {
 			default:
 				break;
 		}
+		OpcodeMnemonic mnemonic = op.getMnemonic();
+		if( reg.getP(Register.StatusRegister.D) &&
+				(mnemonic==OpcodeMnemonic.ADC || mnemonic==OpcodeMnemonic.SBC) )
+			cycles++;
 		return cycles;
 	}
 

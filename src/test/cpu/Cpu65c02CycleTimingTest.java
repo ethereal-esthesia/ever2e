@@ -238,4 +238,34 @@ public class Cpu65c02CycleTimingTest {
                     width, actual.getInstrSize());
         }
     }
+
+    @Test
+    public void decimalAdcZeroPageTakesFourCycles() throws Exception {
+        for( String profile : CPU_PROFILES ) {
+            CpuEnv env = createEnv(profile);
+            loadProgram(env, 0x65, 0x10); // ADC $10
+            runInstruction(env); // reset
+            env.reg.setA(0x45);
+            env.reg.setP(0x3C | 0x01); // R,B,D,I + carry-in
+            env.bus.setByte(0x0010, 0x55);
+            runInstruction(env);
+            assertEquals("ADC decimal cycle count mismatch for profile " + profile, 4, env.cpu.getLastInstructionCycleCount());
+            assertEquals(0x01, env.reg.getA()); // 45 + 55 + carry(1) = 01 with BCD carry out
+        }
+    }
+
+    @Test
+    public void decimalSbcZeroPageTakesFourCycles() throws Exception {
+        for( String profile : CPU_PROFILES ) {
+            CpuEnv env = createEnv(profile);
+            loadProgram(env, 0xE5, 0x10); // SBC $10
+            runInstruction(env); // reset
+            env.reg.setA(0x45);
+            env.reg.setP(0x3C | 0x01); // R,B,D,I + no borrow
+            env.bus.setByte(0x0010, 0x12);
+            runInstruction(env);
+            assertEquals("SBC decimal cycle count mismatch for profile " + profile, 4, env.cpu.getLastInstructionCycleCount());
+            assertEquals(0x33, env.reg.getA()); // 45 - 12 = 33 in BCD
+        }
+    }
 }

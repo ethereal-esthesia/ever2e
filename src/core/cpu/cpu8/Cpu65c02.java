@@ -702,7 +702,8 @@ public class Cpu65c02 extends HardwareManager {
 				// A + M + C . A
 				value = memory.getByte(operandPtr);
 				if( reg.getP(StatusRegister.D) ) {
-					throw new RuntimeException("Dec mode not yet implemented"); /// TODO: Dec mode not yet implemented ///
+					cycleCount++;
+					applyAdcDecimal(reg, value);
 				}
 				else {
 					int regA = reg.getA();
@@ -1088,25 +1089,8 @@ public class Cpu65c02 extends HardwareManager {
 				value = memory.getByte(operandPtr);
 				if( reg.getP(StatusRegister.D) ) {
 					// A - M - !C . A
-					throw new RuntimeException("Dec mode not yet implemented"); /// TODO: Dec mode not yet implemented ///
-/*				
-					// Add 1 cycle for decimal mode
 					cycleCount++;
-					short val;
-					byte ah = a&0xf0;
-					byte al = a&0x0f;
-					byte vh = operandValue&0xf0;
-					byte vl = operandValue&0x0f;
-					val = al + vl + (reg.getP()&StatusRegister.C.value);
-					if( val>=0xa0 )
-						val += 0x06;
-						val &= 0x0f;
-						val |= 0x10;
-					}
-					val += ah;
-					val += vh;
-					val += al;
-*/
+					applySbcDecimal(reg, value);
 				}
 				else {
 					int regA = reg.getA();
@@ -1303,6 +1287,62 @@ public class Cpu65c02 extends HardwareManager {
 		}
 		enqueueNextInstructionEvents();
 		
+	}
+
+	static void applyAdcDecimal(Register reg, int value) {
+		int a = reg.getA() & 0xff;
+		int val = value & 0xff;
+		int carryIn = reg.getP(StatusRegister.C) ? 1 : 0;
+		int p = reg.getP() & 0xff;
+		p &= ~(StatusRegister.N.value | StatusRegister.V.value | StatusRegister.Z.value | StatusRegister.C.value);
+
+		int al = (a & 0x0f) + (val & 0x0f) + carryIn;
+		if( al>9 )
+			al += 6;
+		int ah = (a >> 4) + (val >> 4) + (al>0x0f ? 1 : 0);
+
+		if( ((a + val + carryIn) & 0xff)==0 )
+			p |= StatusRegister.Z.value;
+		else if( (ah & 0x08)!=0 )
+			p |= StatusRegister.N.value;
+		if( ((~(a ^ val)) & (a ^ (ah << 4)) & 0x80)!=0 )
+			p |= StatusRegister.V.value;
+
+		if( ah>9 )
+			ah += 6;
+		if( ah>15 )
+			p |= StatusRegister.C.value;
+
+		reg.setA(((ah << 4) | (al & 0x0f)) & 0xff);
+		reg.setP(p);
+	}
+
+	static void applySbcDecimal(Register reg, int value) {
+		int a = reg.getA() & 0xff;
+		int val = value & 0xff;
+		int borrowIn = reg.getP(StatusRegister.C) ? 0 : 1;
+		int p = reg.getP() & 0xff;
+		p &= ~(StatusRegister.N.value | StatusRegister.V.value | StatusRegister.Z.value | StatusRegister.C.value);
+
+		int diff = a - val - borrowIn;
+		int al = (a & 0x0f) - (val & 0x0f) - borrowIn;
+		if( al<0 )
+			al -= 6;
+		int ah = (a >> 4) - (val >> 4) - (al<0 ? 1 : 0);
+
+		if( (diff & 0xff)==0 )
+			p |= StatusRegister.Z.value;
+		else if( (diff & 0x80)!=0 )
+			p |= StatusRegister.N.value;
+		if( ((a ^ val) & (a ^ diff) & 0x80)!=0 )
+			p |= StatusRegister.V.value;
+		if( (diff & 0xff00)==0 )
+			p |= StatusRegister.C.value;
+		if( ah<0 )
+			ah -= 6;
+
+		reg.setA(((ah << 4) | (al & 0x0f)) & 0xff);
+		reg.setP(p);
 	}
 
 	public void cycleSteal( int cycles )
