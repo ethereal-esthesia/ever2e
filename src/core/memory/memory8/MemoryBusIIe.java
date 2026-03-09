@@ -42,6 +42,9 @@ public class MemoryBusIIe extends MemoryBus8 {
 	private SwitchState switchSpeakerToggle = new SwitchState();
 
 	private int switchIteration;
+	// MAME/IIe behavior at boot shows PB2 high unless a game IO device drives it low.
+	// We do not yet model game IO buttons here, so keep the default asserted.
+	private boolean pb2DefaultHigh = true;
 
 	public class SwitchState {
 
@@ -550,7 +553,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 	// Bit 7 is used to indicate if open apple or PB0 game button is pressed
 	private SwitchIIe stateShiftKey = new SwitchReadOnlyIIe(null) {
 		public int readMem( int address ) {
-			return (keyboard!=null && keyboard.isShiftKey() /* || joystick.getButton(2) */ ) ?
+			return ((keyboard!=null && keyboard.isShiftKey()) || pb2DefaultHigh /* || joystick.getButton(2) */ ) ?
 					super.readMem(address)|0x80 : super.readMem(address)&0x7f; }
 	};
 
@@ -1160,7 +1163,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 				}
 				case 0xc063:
 				case 0xc06b: {
-					return (keyboard!=null && keyboard.isShiftKey()) ? 0x80 : 0x00;
+					return ((keyboard!=null && keyboard.isShiftKey()) || pb2DefaultHigh) ? 0x80 : 0x00;
 				}
 				case 0xc060:
 				case 0xc068: {
