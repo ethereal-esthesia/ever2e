@@ -86,6 +86,19 @@ public class Cpu65c02CycleTimingTest {
         }
     }
 
+    private int runInstructionAndCountSubcycles(CpuEnv env) throws Exception {
+        int subcycles = 0;
+        while (true) {
+            boolean instructionEndsThisCycle = env.cpu.hasPendingInstructionEndEvent();
+            boolean subcycleThisCycle = env.cpu.hasPendingInFlightMicroEvent();
+            env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
+            if (subcycleThisCycle)
+                subcycles++;
+            if (instructionEndsThisCycle)
+                return subcycles;
+        }
+    }
+
     private int estimateCycles(CpuEnv env, int opcodeByte) {
         return Cpu65c02CycleEstimator.predictInstructionCycles(env.bus, env.reg, Cpu65c02.OPCODE[opcodeByte & 0xFF], PROG_PC);
     }
@@ -266,6 +279,54 @@ public class Cpu65c02CycleTimingTest {
             runInstruction(env);
             assertEquals("SBC decimal cycle count mismatch for profile " + profile, 4, env.cpu.getLastInstructionCycleCount());
             assertEquals(0x33, env.reg.getA()); // 45 - 12 = 33 in BCD
+        }
+    }
+
+    @Test
+    public void decimalModeAddsOneQueuedSubcycleForAdcAndSbc() throws Exception {
+        for( String profile : CPU_PROFILES ) {
+            // ADC zpg: binary=3 cycles (2 subs), decimal=4 cycles (3 subs)
+            CpuEnv env = createEnv(profile);
+            loadProgram(env, 0x65, 0x10); // ADC $10
+            runInstruction(env); // reset
+            env.reg.setA(0x21);
+            env.reg.setP(0x34); // binary mode
+            env.bus.setByte(0x0010, 0x11);
+            int adcBinarySubcycles = runInstructionAndCountSubcycles(env);
+            assertEquals(2, adcBinarySubcycles);
+            assertEquals(3, env.cpu.getLastInstructionCycleCount());
+
+            env = createEnv(profile);
+            loadProgram(env, 0xF8, 0x65, 0x10); // SED ; ADC $10
+            runInstruction(env); // reset
+            runInstruction(env); // SED, so ADC is planned with D=1
+            env.reg.setA(0x21);
+            env.bus.setByte(0x0010, 0x11);
+            int adcDecimalSubcycles = runInstructionAndCountSubcycles(env);
+            assertEquals(3, adcDecimalSubcycles);
+            assertEquals(4, env.cpu.getLastInstructionCycleCount());
+
+            // SBC zpg: binary=3 cycles (2 subs), decimal=4 cycles (3 subs)
+            env = createEnv(profile);
+            loadProgram(env, 0xE5, 0x10); // SBC $10
+            runInstruction(env); // reset
+            env.reg.setA(0x54);
+            env.reg.setP(0x35); // binary mode + carry set
+            env.bus.setByte(0x0010, 0x12);
+            int sbcBinarySubcycles = runInstructionAndCountSubcycles(env);
+            assertEquals(2, sbcBinarySubcycles);
+            assertEquals(3, env.cpu.getLastInstructionCycleCount());
+
+            env = createEnv(profile);
+            loadProgram(env, 0xF8, 0xE5, 0x10); // SED ; SBC $10
+            runInstruction(env); // reset
+            runInstruction(env); // SED, so SBC is planned with D=1
+            env.reg.setA(0x54);
+            env.reg.setP(env.reg.getP() | 0x01); // keep D from SED, set carry for no borrow
+            env.bus.setByte(0x0010, 0x12);
+            int sbcDecimalSubcycles = runInstructionAndCountSubcycles(env);
+            assertEquals(3, sbcDecimalSubcycles);
+            assertEquals(4, env.cpu.getLastInstructionCycleCount());
         }
     }
 }
