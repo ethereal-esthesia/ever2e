@@ -65,6 +65,15 @@ Windowed run (SDL test backend):
 - `--print-text-at-exit`
   - Print the active 40x24 text page on exit (headless/text-console useful).
   - Works without `--debug` (text dump remains visible even in quiet mode).
+- `--dump-mapped <start:end>`
+  - Dump mapped memory range using current softswitch/bank view (no side effects).
+  - Example: `--dump-mapped 0xC000:0xC0FF`
+- `--dump-all-64k`
+  - Dump full mapped 64K view (`0x0000..0xFFFF`).
+  - Aliases: `--dump-all`, `--dump-all-mapped`, `--dump-64k`
+- `--dump-unmapped`
+  - Dump full raw backing memory (`0x00000..0x1FFFF`) independent of softswitch mapping.
+  - Aliases: `--dump-all-raw-ram-rom`, `--dump-all-raw-ram`, `--dump-all-128k`
 - `--show-fps`
   - Print windowed display FPS once per second to stderr.
 - `--trace-start-pc <addr>`

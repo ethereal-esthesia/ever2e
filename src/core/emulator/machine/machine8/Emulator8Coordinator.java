@@ -218,6 +218,7 @@ public class Emulator8Coordinator {
 		Integer traceStartPc = null;
 			boolean textConsole = false;
 			boolean printTextAtExit = false;
+			String lastFrameOut = null;
 			boolean printCpuStateAtExit = false;
 			boolean showFps = false;
 			boolean noSound = false;
@@ -235,14 +236,14 @@ public class Emulator8Coordinator {
 		Integer resetYValue = null;
 		Integer resetSValue = null;
 		boolean floatingBusOpcodeTiming = false;
-		Integer floatingBusPhaseCycles = null;
-		Integer vblBarOffsetCycles = null;
 		Integer displayPhaseCycles = null;
 		long startupCpuManagerCalls = 0L;
+		long startupDisplayCycles = 0L;
 		Integer dumpPageAddress = null;
 		int dumpRangeStart = -1;
 		int dumpRangeEnd = -1;
-		boolean dumpAll = false;
+		boolean dumpAllMapped = false;
+		boolean dumpAllRawRam = false;
 		List<int[]> monitorSequenceWrites = new ArrayList<>();
 		Set<Integer> haltExecutions = new LinkedHashSet<>();
 		Set<Integer> requireHaltPcs = new LinkedHashSet<>();
@@ -299,6 +300,14 @@ public class Emulator8Coordinator {
 			}
 			else if( "--print-text-at-exit".equals(arg) ) {
 				printTextAtExit = true;
+			}
+			else if( "--last-frame-out".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --last-frame-out");
+				lastFrameOut = argList[++i];
+			}
+			else if( arg.startsWith("--last-frame-out=") ) {
+				lastFrameOut = arg.substring("--last-frame-out=".length());
 			}
 			else if( "--print-cpu-state-at-exit".equals(arg) ) {
 				printCpuStateAtExit = true;
@@ -399,22 +408,6 @@ public class Emulator8Coordinator {
 			else if( "--floating-bus-opcode-timing".equals(arg) ) {
 				floatingBusOpcodeTiming = true;
 			}
-			else if( "--floating-bus-phase-cycles".equals(arg) ) {
-				if( i+1>=argList.length )
-					throw new IllegalArgumentException("Missing value for --floating-bus-phase-cycles");
-				floatingBusPhaseCycles = Integer.parseInt(argList[++i]);
-			}
-			else if( arg.startsWith("--floating-bus-phase-cycles=") ) {
-				floatingBusPhaseCycles = Integer.parseInt(arg.substring("--floating-bus-phase-cycles=".length()));
-			}
-			else if( "--vblbar-offset-cycles".equals(arg) ) {
-				if( i+1>=argList.length )
-					throw new IllegalArgumentException("Missing value for --vblbar-offset-cycles");
-				vblBarOffsetCycles = Integer.parseInt(argList[++i]);
-			}
-			else if( arg.startsWith("--vblbar-offset-cycles=") ) {
-				vblBarOffsetCycles = Integer.parseInt(arg.substring("--vblbar-offset-cycles=".length()));
-			}
 			else if( "--display-phase-cycles".equals(arg) ) {
 				if( i+1>=argList.length )
 					throw new IllegalArgumentException("Missing value for --display-phase-cycles");
@@ -430,6 +423,14 @@ public class Emulator8Coordinator {
 			}
 			else if( arg.startsWith("--startup-cpu-manager-calls=") ) {
 				startupCpuManagerCalls = Long.parseLong(arg.substring("--startup-cpu-manager-calls=".length()));
+			}
+			else if( "--startup-display-cycles".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --startup-display-cycles");
+				startupDisplayCycles = Long.parseLong(argList[++i]);
+			}
+			else if( arg.startsWith("--startup-display-cycles=") ) {
+				startupDisplayCycles = Long.parseLong(arg.substring("--startup-display-cycles=".length()));
 			}
 			else if( "--dump-page".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -451,8 +452,46 @@ public class Emulator8Coordinator {
 				dumpRangeStart = range[0];
 				dumpRangeEnd = range[1];
 			}
+			else if( "--dump-mapped".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for --dump-mapped");
+				int[] range = parseWordRangeArg(argList[++i], "--dump-mapped");
+				dumpRangeStart = range[0];
+				dumpRangeEnd = range[1];
+			}
+			else if( arg.startsWith("--dump-mapped=") ) {
+				int[] range = parseWordRangeArg(arg.substring("--dump-mapped=".length()), "--dump-mapped");
+				dumpRangeStart = range[0];
+				dumpRangeEnd = range[1];
+			}
 			else if( "--dump-all".equals(arg) ) {
-				dumpAll = true;
+				// Backward-compatible alias for full mapped 64K dump.
+				dumpAllMapped = true;
+			}
+			else if( "--dump-all-64k".equals(arg) ) {
+				dumpAllMapped = true;
+			}
+			else if( "--dump-64k".equals(arg) ) {
+				// Backward-compatible alias for --dump-all-64k.
+				dumpAllMapped = true;
+			}
+			else if( "--dump-all-mapped".equals(arg) ) {
+				// Backward-compatible alias for full mapped 64K dump.
+				dumpAllMapped = true;
+			}
+			else if( "--dump-all-128k".equals(arg) ) {
+				// Backward-compatible alias for raw full-memory dump.
+				dumpAllRawRam = true;
+			}
+			else if( "--dump-unmapped".equals(arg) ) {
+				dumpAllRawRam = true;
+			}
+			else if( "--dump-all-raw-ram".equals(arg) ) {
+				// Backward-compatible alias for raw full-memory dump.
+				dumpAllRawRam = true;
+			}
+			else if( "--dump-all-raw-ram-rom".equals(arg) ) {
+				dumpAllRawRam = true;
 			}
 			else if( "--monitor-seq-write".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -509,27 +548,18 @@ public class Emulator8Coordinator {
 					" textInputMode="+textInputMode+
 					" sdlFullscreenMode="+sdlFullscreenMode);
 		}
-			if( !debugLogging && !printTextAtExit )
+			if( !debugLogging && !printTextAtExit && lastFrameOut==null )
 				System.setOut(new PrintStream(OutputStream.nullOutputStream()));
 		tracePhase = tracePhase.trim().toLowerCase();
 		if( !"pre".equals(tracePhase) && !"post".equals(tracePhase) )
 			throw new IllegalArgumentException("Unsupported --trace-phase value: "+tracePhase+" (expected pre or post)");
 		if( startupCpuManagerCalls<0L )
 			throw new IllegalArgumentException("--startup-cpu-manager-calls must be >= 0");
+		if( startupDisplayCycles<0L )
+			throw new IllegalArgumentException("--startup-display-cycles must be >= 0");
 		if( !"wdc".equals(cpuProfile) && !"cmd".equals(cpuProfile) )
 			throw new IllegalArgumentException("Unsupported --cpu-profile value: "+cpuProfile+" (expected cmd or wdc)");
-		int phaseArgCount = 0;
-		if( floatingBusPhaseCycles!=null )
-			phaseArgCount++;
-		if( vblBarOffsetCycles!=null )
-			phaseArgCount++;
-		if( displayPhaseCycles!=null )
-			phaseArgCount++;
-		if( phaseArgCount>1 )
-			throw new IllegalArgumentException("Use only one of --display-phase-cycles, --floating-bus-phase-cycles, or --vblbar-offset-cycles");
-		Integer phaseOverride =
-				displayPhaseCycles!=null ? displayPhaseCycles :
-				(vblBarOffsetCycles!=null ? vblBarOffsetCycles : floatingBusPhaseCycles);
+		Integer phaseOverride = displayPhaseCycles;
 		if( phaseOverride!=null ) {
 			if( phaseOverride.intValue()<0 )
 				throw new IllegalArgumentException("Display phase cycles must be >= 0");
@@ -608,12 +638,14 @@ public class Emulator8Coordinator {
 			if( textConsole ) {
 				headlessProbe = new HeadlessVideoProbe((MemoryBusIIe) bus, (long) (unitsPerCycle/displayMultiplier));
 				display = headlessProbe;
+				hardwareManagerQueue.add(headlessProbe);
 				hardwareManagerQueue.add(new DisplayConsoleAppleIIe((MemoryBusIIe) bus, (long) (unitsPerCycle/displayMultiplier)));
 			}
 			else if( isHeadlessMode(windowBackend) ) {
 				System.out.println("Running headless: using headless video probe");
 				headlessProbe = new HeadlessVideoProbe((MemoryBusIIe) bus, (long) (unitsPerCycle/displayMultiplier));
 				display = headlessProbe;
+				hardwareManagerQueue.add(headlessProbe);
 			}
 			else {
 				DisplayIIe windowDisplay = new DisplayIIe((MemoryBusIIe) bus, keyboard, (long) (unitsPerCycle/displayMultiplier));
@@ -720,6 +752,12 @@ public class Emulator8Coordinator {
 	   			bus.setByte(write[0], write[1]);
 	   		System.out.println("Applied monitor sequence write(s): "+formatMonitorSequenceWrites(monitorSequenceWrites));
 	   	}
+	   	if( startupDisplayCycles>0L && headlessProbe!=null ) {
+	   		if( startupDisplayCycles>Integer.MAX_VALUE )
+	   			throw new IllegalArgumentException("--startup-display-cycles too large for headless probe");
+	   		headlessProbe.advanceCycles((int) startupDisplayCycles);
+	   		System.out.println("Startup pre-advance: "+startupDisplayCycles+" display cycle(s)");
+	   	}
 	   	if( startupCpuManagerCalls>0L ) {
 	   		long warmed = emulator.start(startupCpuManagerCalls, cpu, null);
 	   		System.out.println("Startup pre-run: "+warmed+" CPU manager calls");
@@ -740,7 +778,6 @@ public class Emulator8Coordinator {
 	   		final Integer finalTraceStartPc = traceStartPc;
 	   		final Set<Integer> finalHaltExecutions = haltExecutions;
 	   		final HeadlessVideoProbe finalHeadlessProbe = headlessProbe;
-	   		final boolean finalFloatingBusOpcodeTiming = floatingBusOpcodeTiming;
 	   		final KeyboardIIe finalKeyboard = keyboard;
 	   		final boolean[] haltedAtAddress = new boolean[] { false };
 	   		final int[] haltedAtPc = new int[] { -1 };
@@ -750,9 +787,7 @@ public class Emulator8Coordinator {
 	   		final long[] retiredInstructionStep = new long[] { 0L };
 	   		final int[] subCycleIndex = new int[] { 0 };
 	   		final String[] lastRetiredSignature = new String[] { null };
-	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
 	   		final boolean[] cpuStepPreWasSub = new boolean[] { false };
-	   		final long[] lastCpuHandlerStep = new long[] { -1L };
 	   		final String finalPasteFile = pasteFile;
 	   		final String finalPasteText = pasteText;
 	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
@@ -762,40 +797,8 @@ public class Emulator8Coordinator {
 	   				queueBasicText(finalKeyboard, finalPasteFile, finalPasteText);
 	   				basicQueued[0] = true;
 	   			}
-	   			if( finalHeadlessProbe!=null && preCycle && manager==cpu && finalFloatingBusOpcodeTiming ) {
-	   				int effectiveAddr = estimatePendingReadAddress(cpu, bus);
-	   				if( effectiveAddr>=0xc000 && effectiveAddr<=0xc0ff ) {
-	   					int preCycles = estimatePendingPreReadCycles(cpu, bus);
-	   					if( preCycles>0 ) {
-	   						finalHeadlessProbe.advanceCycles(preCycles);
-	   						pendingPreAdvancedCycles[0] = preCycles;
-	   					}
-	   				}
-	   			}
 	   			if( manager==cpu && preCycle )
 	   				cpuStepPreWasSub[0] = cpu.hasPendingInFlightMicroEvent();
-	   			if( finalHeadlessProbe!=null && !preCycle && manager==cpu ) {
-	   				Opcode executed = cpu.getOpcode();
-	   				String mnemonic = executed.getMnemonic()==null ? "" : executed.getMnemonic().toString().trim();
-	   				int preAdvancedCycles = pendingPreAdvancedCycles[0];
-	   				pendingPreAdvancedCycles[0] = 0;
-	   				if( !"RES".equals(mnemonic) ) {
-	   					if( lastCpuHandlerStep[0]<0L )
-	   						lastCpuHandlerStep[0] = step-1L;
-	   					int monitorCycles = (int) (step-lastCpuHandlerStep[0]) - preAdvancedCycles;
-	   					lastCpuHandlerStep[0] = step;
-	   					if( monitorCycles<0 )
-	   						monitorCycles = 0;
-	   					if( finalDebugLogging ) {
-	   						long monitorStartNs = System.nanoTime();
-	   						finalHeadlessProbe.advanceCycles(monitorCycles);
-	   						maybeLogMonitorAdvanceBlocking(true, System.nanoTime()-monitorStartNs, monitorCycles);
-	   					}
-	   					else {
-	   						finalHeadlessProbe.advanceCycles(monitorCycles);
-	   					}
-	   				}
-	   			}
 	   			if( finalTraceWriter==null && finalHaltExecutions.isEmpty() )
 	   				return true;
 	   			if( !traceStarted[0] && preCycle && finalTraceStartPc!=null &&
@@ -847,14 +850,32 @@ public class Emulator8Coordinator {
 		   					return false;
 		   				}
 		   				traceRowStep[0]++;
+		   				String displayHScanText = "";
+		   				String displayVScanText = "";
+		   				String displayVblText = "";
+		   				String scanHText = "";
+		   				String scanVText = "";
+		   				String scanXText = "";
+		   				String scanYText = "";
+		   				String scanCyclesDescText = "";
+		   				String traceFrameCycleText = "";
 		   				int frameCycle = getDisplayFrameCycle(bus);
-		   				int displayHScan = deriveDisplayHScan(frameCycle);
-		   				int displayVScan = deriveDisplayVScan(frameCycle);
-		   				int displayVbl = deriveDisplayVblBit(frameCycle);
-		   				int scanX = deriveDisplayScanX(frameCycle);
-		   				int scanY = deriveDisplayScanY(frameCycle);
-		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
-		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
+		   				int displayHScan = displayHScan(frameCycle);
+		   				int displayVScan = displayVScan(frameCycle);
+		   				int displayVbl = displayVblBit(frameCycle);
+		   				int scanX = displayScanX(frameCycle);
+		   				int scanY = displayScanY(frameCycle);
+		   				int scanCyclesDesc = displayScanCyclesDesc(frameCycle);
+		   				int traceFrameCycle = traceFrameCycle(frameCycle);
+		   				displayHScanText = Integer.toString(displayHScan);
+		   				displayVScanText = Integer.toString(displayVScan);
+		   				displayVblText = Integer.toString(displayVbl);
+		   				scanHText = Integer.toString(displayHScan);
+		   				scanVText = Integer.toString(displayVScan);
+		   				scanXText = Integer.toString(scanX);
+		   				scanYText = Integer.toString(scanY);
+		   				scanCyclesDescText = Integer.toString(scanCyclesDesc);
+		   				traceFrameCycleText = Integer.toString(traceFrameCycle);
 		   				int rowSubCycleIndex = "sub".equals(eventType) ? (++subCycleIndex[0]) : ("instr".equals(eventType) ? (subCycleIndex[0] + 1) : 0);
 		   				if( !"sub".equals(eventType) )
 		   					subCycleIndex[0] = 0;
@@ -881,15 +902,15 @@ public class Emulator8Coordinator {
 		   						Long.toString(step),
 		   						Integer.toString(rowSubCycleIndex),
 		   						Integer.toString(traceInstructionCycles),
-		   						Integer.toString(displayHScan),
-		   						Integer.toString(displayVScan),
-		   						Integer.toString(displayVbl),
-		   						Integer.toString(displayHScan),
-		   						Integer.toString(displayVScan),
-		   						Integer.toString(scanX),
-		   						Integer.toString(scanY),
-		   						Integer.toString(scanCyclesDesc),
-		   						Integer.toString(traceFrameCycle)
+		   						displayHScanText,
+		   						displayVScanText,
+		   						displayVblText,
+		   						scanHText,
+		   						scanVText,
+		   						scanXText,
+		   						scanYText,
+		   						scanCyclesDescText,
+		   						traceFrameCycleText
 		   				);
 	   				haltedAtAddress[0] = true;
 	   				haltedAtPc[0] = pendingPc;
@@ -967,14 +988,32 @@ public class Emulator8Coordinator {
 		   				if( !emitRow )
 		   					return true;
 		   				traceRowStep[0]++;
+		   				String displayHScanText = "";
+		   				String displayVScanText = "";
+		   				String displayVblText = "";
+		   				String scanHText = "";
+		   				String scanVText = "";
+		   				String scanXText = "";
+		   				String scanYText = "";
+		   				String scanCyclesDescText = "";
+		   				String traceFrameCycleText = "";
 		   				int frameCycle = getDisplayFrameCycle(bus);
-		   				int displayHScan = deriveDisplayHScan(frameCycle);
-		   				int displayVScan = deriveDisplayVScan(frameCycle);
-		   				int displayVbl = deriveDisplayVblBit(frameCycle);
-		   				int scanX = deriveDisplayScanX(frameCycle);
-		   				int scanY = deriveDisplayScanY(frameCycle);
-		   				int scanCyclesDesc = deriveDisplayScanCyclesDesc(frameCycle);
-		   				int traceFrameCycle = deriveTraceFrameCycle(frameCycle);
+		   				int displayHScan = displayHScan(frameCycle);
+		   				int displayVScan = displayVScan(frameCycle);
+		   				int displayVbl = displayVblBit(frameCycle);
+		   				int scanX = displayScanX(frameCycle);
+		   				int scanY = displayScanY(frameCycle);
+		   				int scanCyclesDesc = displayScanCyclesDesc(frameCycle);
+		   				int traceFrameCycle = traceFrameCycle(frameCycle);
+		   				displayHScanText = Integer.toString(displayHScan);
+		   				displayVScanText = Integer.toString(displayVScan);
+		   				displayVblText = Integer.toString(displayVbl);
+		   				scanHText = Integer.toString(displayHScan);
+		   				scanVText = Integer.toString(displayVScan);
+		   				scanXText = Integer.toString(scanX);
+		   				scanYText = Integer.toString(scanY);
+		   				scanCyclesDescText = Integer.toString(scanCyclesDesc);
+		   				traceFrameCycleText = Integer.toString(traceFrameCycle);
 		   				int rowSubCycleIndex = "sub".equals(eventType) ? (++subCycleIndex[0]) : ("instr".equals(eventType) ? (subCycleIndex[0] + 1) : 0);
 		   				if( !"sub".equals(eventType) )
 		   					subCycleIndex[0] = 0;
@@ -1001,15 +1040,15 @@ public class Emulator8Coordinator {
 		   						Long.toString(step),
 		   						Integer.toString(rowSubCycleIndex),
 		   						Integer.toString(traceInstructionCycles),
-		   						Integer.toString(displayHScan),
-		   						Integer.toString(displayVScan),
-		   						Integer.toString(displayVbl),
-		   						Integer.toString(displayHScan),
-		   						Integer.toString(displayVScan),
-		   						Integer.toString(scanX),
-		   						Integer.toString(scanY),
-		   						Integer.toString(scanCyclesDesc),
-		   						Integer.toString(traceFrameCycle)
+		   						displayHScanText,
+		   						displayVScanText,
+		   						displayVblText,
+		   						scanHText,
+		   						scanVText,
+		   						scanXText,
+		   						scanYText,
+		   						scanCyclesDescText,
+		   						traceFrameCycleText
 		   				);
 	   			}
 	   			return true;
@@ -1031,8 +1070,10 @@ public class Emulator8Coordinator {
 				printPageDump(bus, dumpPageAddress);
 			if( dumpRangeStart>=0 )
 				printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
-			if( dumpAll )
+			if( dumpAllMapped )
 				printRangeDump(bus, 0x0000, 0xffff);
+			if( dumpAllRawRam )
+				printRawRangeDump(memory, 0x00000, 0x1ffff);
 			if( !requireHaltPcs.isEmpty() ) {
 				int finalPc = haltedAtAddress[0] ? (haltedAtPc[0]&0xffff) : (cpu.getRegister().getPC()&0xffff);
 				if( !requireHaltPcs.contains(finalPc) ) {
@@ -1048,6 +1089,8 @@ public class Emulator8Coordinator {
 					System.out.println("Trace written: "+traceFile);
 				if( printTextAtExit && bus instanceof MemoryBusIIe )
 					printTextScreen((MemoryBusIIe) bus, memory);
+				if( lastFrameOut!=null && bus instanceof MemoryBusIIe )
+					writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
 				// In windowed mode, AWT's event thread keeps the process alive after bounded runs.
 				// Exit explicitly so `--steps` behaves as a finite run.
 				if( !GraphicsEnvironment.isHeadless() && !textConsole )
@@ -1055,50 +1098,15 @@ public class Emulator8Coordinator {
 	   	}
 	   	else {
 	   		final HeadlessVideoProbe finalHeadlessProbe = headlessProbe;
-	   		final boolean finalFloatingBusOpcodeTiming = floatingBusOpcodeTiming;
 	   		final KeyboardIIe finalKeyboard = keyboard;
 	   		final String finalPasteFile = pasteFile;
 	   		final String finalPasteText = pasteText;
 	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
 	   		final boolean finalDebugLogging = debugLogging;
-	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
-	   		final long[] lastCpuHandlerStep = new long[] { -1L };
 	   		emulator.startWithStepPhases(-1, cpu, (step, manager, preCycle) -> {
 	   			if( !basicQueued[0] && manager==cpu && preCycle ) {
 	   				queueBasicText(finalKeyboard, finalPasteFile, finalPasteText);
 	   				basicQueued[0] = true;
-	   			}
-	   			if( finalHeadlessProbe!=null && preCycle && manager==cpu && finalFloatingBusOpcodeTiming ) {
-	   				int effectiveAddr = estimatePendingReadAddress(cpu, bus);
-	   				if( effectiveAddr>=0xc000 && effectiveAddr<=0xc0ff ) {
-	   					int preCycles = estimatePendingPreReadCycles(cpu, bus);
-	   					if( preCycles>0 ) {
-	   						finalHeadlessProbe.advanceCycles(preCycles);
-	   						pendingPreAdvancedCycles[0] = preCycles;
-	   					}
-	   				}
-	   			}
-	   			if( finalHeadlessProbe!=null && !preCycle && manager==cpu ) {
-	   				Opcode executed = cpu.getOpcode();
-	   				String mnemonic = executed.getMnemonic()==null ? "" : executed.getMnemonic().toString().trim();
-	   				int preAdvancedCycles = pendingPreAdvancedCycles[0];
-	   				pendingPreAdvancedCycles[0] = 0;
-	   				if( !"RES".equals(mnemonic) ) {
-	   					if( lastCpuHandlerStep[0]<0L )
-	   						lastCpuHandlerStep[0] = step-1L;
-	   					int monitorCycles = (int) (step-lastCpuHandlerStep[0]) - preAdvancedCycles;
-	   					lastCpuHandlerStep[0] = step;
-	   					if( monitorCycles<0 )
-	   						monitorCycles = 0;
-	   					if( finalDebugLogging ) {
-	   						long monitorStartNs = System.nanoTime();
-	   						finalHeadlessProbe.advanceCycles(monitorCycles);
-	   						maybeLogMonitorAdvanceBlocking(true, System.nanoTime()-monitorStartNs, monitorCycles);
-	   					}
-	   					else {
-	   						finalHeadlessProbe.advanceCycles(monitorCycles);
-	   					}
-	   				}
 	   			}
 	   			return true;
 	   		});
@@ -1109,10 +1117,14 @@ public class Emulator8Coordinator {
 				printPageDump(bus, dumpPageAddress);
 			if( dumpRangeStart>=0 )
 				printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
-			if( dumpAll )
+			if( dumpAllMapped )
 				printRangeDump(bus, 0x0000, 0xffff);
+			if( dumpAllRawRam )
+				printRawRangeDump(memory, 0x00000, 0x1ffff);
 			if( printTextAtExit && bus instanceof MemoryBusIIe )
 				printTextScreen((MemoryBusIIe) bus, memory);
+			if( lastFrameOut!=null && bus instanceof MemoryBusIIe )
+				writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
 	   	}
 
 	}
@@ -1130,46 +1142,54 @@ public class Emulator8Coordinator {
 		return v * DISPLAY_HSCAN_CYCLES + h;
 	}
 
-	private static int deriveDisplayHScan(int frameCycle) {
+	private static int displayHScan(int frameCycle) {
 		if( frameCycle<0 )
 			return -1;
 		return frameCycle % DISPLAY_HSCAN_CYCLES;
 	}
 
-	private static int deriveDisplayVScan(int frameCycle) {
+	private static int displayVScan(int frameCycle) {
 		if( frameCycle<0 )
 			return -1;
 		return (frameCycle / DISPLAY_HSCAN_CYCLES) % DISPLAY_VSCAN_LINES;
 	}
 
-	private static int deriveDisplayVblBit(int frameCycle) {
-		int v = deriveDisplayVScan(frameCycle);
+	private static int displayVblBit(int frameCycle) {
+		int v = displayVScan(frameCycle);
 		if( v<0 )
 			return 0;
 		return v<DISPLAY_VBL_LINES ? 1 : 0;
 	}
 
-	private static int deriveDisplayScanX(int frameCycle) {
-		int h = deriveDisplayHScan(frameCycle);
+	private static int displayScanX(int frameCycle) {
+		int h = displayHScan(frameCycle);
 		if( h<0 )
 			return -1;
 		return h * 14;
 	}
 
-	private static int deriveDisplayScanY(int frameCycle) {
-		return deriveDisplayVScan(frameCycle);
+	private static int displayScanY(int frameCycle) {
+		return displayVScan(frameCycle);
 	}
 
-	private static int deriveDisplayScanCyclesDesc(int frameCycle) {
-		int h = deriveDisplayHScan(frameCycle);
-		if( h<0 )
+	private static int displayScanCyclesDesc(int frameCycle) {
+		int normalized = normalizeDisplayFrameCycle(frameCycle);
+		if( normalized<0 )
 			return -1;
-		return 64 - h;
+		int frameLen = DISPLAY_HSCAN_CYCLES * DISPLAY_VSCAN_LINES;
+		return (frameLen - 1) - normalized;
 	}
 
-	private static int deriveTraceFrameCycle(int frameCycle) {
-		// Keep trace field aligned with compare tooling semantics: per-scanline cycle.
-		return deriveDisplayHScan(frameCycle);
+	private static int normalizeDisplayFrameCycle(int frameCycle) {
+		if( frameCycle<0 )
+			return -1;
+		int frameLen = DISPLAY_HSCAN_CYCLES * DISPLAY_VSCAN_LINES;
+		return Math.floorMod(frameCycle, frameLen);
+	}
+
+	private static int traceFrameCycle(int frameCycle) {
+		// Trace field is full-frame cycle position.
+		return normalizeDisplayFrameCycle(frameCycle);
 	}
 
 	private static void writeTraceRow(
@@ -1449,6 +1469,50 @@ public class Emulator8Coordinator {
 			System.err.println(line);
 		}
 		System.err.println("range_dump_end");
+	}
+
+	private static void printRawRangeDump(Memory8 memory, int startAddress, int endAddress) {
+		int maxAddress = memory.getMaxAddress() - 1;
+		int clampedStart = Math.max(0, startAddress);
+		int clampedEnd = Math.min(endAddress, maxAddress);
+		if( clampedStart>clampedEnd )
+			return;
+		System.err.println("raw_range_dump_begin start=$"+Cpu65c02.getHexString(clampedStart, 5)+
+				" end=$"+Cpu65c02.getHexString(clampedEnd, 5));
+		for( int rowBase = (clampedStart & ~0x0f); rowBase<=clampedEnd; rowBase += 16 ) {
+			StringBuilder line = new StringBuilder();
+			line.append(Cpu65c02.getHexString(rowBase, 5)).append(":");
+			for( int col = 0; col<16; col++ ) {
+				int addr = rowBase + col;
+				if( addr<clampedStart || addr>clampedEnd ) {
+					line.append(" ..");
+					continue;
+				}
+				int value = memory.getByte(addr);
+				line.append(" ").append(Cpu65c02.getHexString(value, 2));
+			}
+			System.err.println(line);
+		}
+		System.err.println("raw_range_dump_end");
+	}
+
+	private static void writeLastFrameDump(MemoryBusIIe memoryBus, String outFile) throws IOException {
+		int[] bytes = DisplayIIe.captureFrameBytes(memoryBus);
+		final int width = 65;
+		final int height = 262;
+		List<String> lines = new ArrayList<>(height + 2);
+		lines.add("frame_dump_begin width="+width+" height="+height+" bytes="+bytes.length);
+		for( int y = 0; y<height; y++ ) {
+			StringBuilder line = new StringBuilder();
+			line.append(String.format("%03d:", y));
+			int rowStart = y * width;
+			for( int x = 0; x<width; x++ )
+				line.append(' ').append(Cpu65c02.getHexString(bytes[rowStart+x], 2));
+			lines.add(line.toString());
+		}
+		lines.add("frame_dump_end");
+		Files.write(Paths.get(outFile), lines, StandardCharsets.UTF_8);
+		System.out.println("Last frame written: "+outFile);
 	}
 
 	private static void printCpuState(long maxCpuSteps, long stoppedAfterSteps, boolean haltedAtAddress, int haltedAtPc, Cpu65c02 cpu) {
