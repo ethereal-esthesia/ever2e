@@ -381,6 +381,11 @@ public enum Cpu65c02Opcode {
 			TAX_IMP, TAY_IMP, TXA_IMP, TYA_IMP, TSX_IMP, TXS_IMP);
 	private static final EnumSet<Cpu65c02Opcode> INDEX_INCDEC_FAMILY = EnumSet.of(
 			INX_IMP, INY_IMP, DEX_IMP, DEY_IMP, INA_ACC, DEA_ACC);
+	private static final EnumSet<Cpu65c02Opcode> STZ_FAMILY = EnumSet.of(
+			STZ_ZPG, STZ_ZPG_X, STZ_ABS, STZ_ABS_X);
+	private static final EnumSet<Cpu65c02Opcode> INTERRUPT_CONTROL_FLOW_FAMILY = EnumSet.of(
+			BRK_IMP, RTI_IMP, RTS_IMP, JSR_ABS, JMP_ABS, JMP_ABS_IND, JMP_ABS_IND_X,
+			BPL_REL, BMI_REL, BVC_REL, BVS_REL, BRA_REL, BCC_REL, BCS_REL, BNE_REL, BEQ_REL);
 	private static final EnumSet<Cpu65c02Opcode> STACK_FAMILY = EnumSet.of(
 			BRK_IMP, PHP_IMP, PLP_IMP, RTI_IMP, PHA_IMP, PLA_IMP, RTS_IMP, PHY_IMP, PLY_IMP, PHX_IMP, PLX_IMP);
 	private static final EnumSet<Cpu65c02Opcode> FLAGS_FAMILY = EnumSet.of(
@@ -611,6 +616,22 @@ public enum Cpu65c02Opcode {
 
 	public static int[] indexIncDecOpcodeBytes() {
 		return buildIndexIncDecOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> stzFamily() {
+		return EnumSet.copyOf(STZ_FAMILY);
+	}
+
+	public static int[] stzOpcodeBytes() {
+		return buildStzOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> interruptControlFlowFamily() {
+		return EnumSet.copyOf(INTERRUPT_CONTROL_FLOW_FAMILY);
+	}
+
+	public static int[] interruptControlFlowOpcodeBytes() {
+		return buildInterruptControlFlowOpcodeBytes();
 	}
 
 	public static EnumSet<Cpu65c02Opcode> stackFamily() {
@@ -847,6 +868,22 @@ public enum Cpu65c02Opcode {
 
 	private static int[] buildIndexIncDecOpcodeBytes() {
 		Cpu65c02Opcode[] ops = INDEX_INCDEC_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildStzOpcodeBytes() {
+		Cpu65c02Opcode[] ops = STZ_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildInterruptControlFlowOpcodeBytes() {
+		Cpu65c02Opcode[] ops = INTERRUPT_CONTROL_FLOW_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
 		for( int i = 0; i<ops.length; i++ )
 			bytes[i] = ops[i].opcodeByte();
