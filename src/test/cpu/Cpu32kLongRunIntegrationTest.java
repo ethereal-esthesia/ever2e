@@ -14,7 +14,7 @@ public class Cpu32kLongRunIntegrationTest {
 
 	@Test
 	public void opcodeLongRun32kReachesPassLoop() throws Exception {
-		String emuFile = getProp("ever2e.long32k.emu", "ever2e.smoke32k.emu", "ROMS/Apple2e.emu");
+		String emuFile = getProp("ever2e.long32k.emu", "ever2e.smoke32k.emu", "ROMS/Apple2eNoSlots.emu");
 		String pasteFile = getProp("ever2e.long32k.pasteFile", "ever2e.smoke32k.pasteFile", "ROMS/opcode_smoke_loader_hgr_mem_32k.mon");
 		String steps = getProp("ever2e.long32k.steps", "ever2e.smoke32k.steps", "120000000");
 		String haltExecution = getProp("ever2e.long32k.haltExecution", "ever2e.smoke32k.haltExecution", "0x6A45,0x6A33");
