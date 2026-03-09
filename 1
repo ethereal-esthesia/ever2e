@@ -1,10 +1,12 @@
 #!/bin/bash
 set -euo pipefail
-JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-0}"
+DISPLAY_PHASE_CYCLES="${DISPLAY_PHASE_CYCLES:-12489}"
+# Keep JVM frame_cycle aligned with compare-space (line 1 near 00010) unless overridden.
+JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-$((10-DISPLAY_PHASE_CYCLES))}"
 
 # 0) Regenerate JVM raw trace with current emulator code/flags
 cd /Users/shane/Project/ever2e-jvm
-GRADLE_USER_HOME=/private/tmp/gradle-home gradle --no-daemon runHeadless --args="ROMS/Apple2eForceMemtest.emu --steps 100000 --trace-file /private/tmp/jvm_phase12489_noreset.tr.csv --trace-phase pre --trace-start-pc 0xFA63 --display-phase-cycles 12489 --no-sound --reset-pflag-value 0x36 --reset-a-value 0x00 --reset-x-value 0x80 --reset-y-value 0x00 --reset-s-value 0xFD"
+GRADLE_USER_HOME=/private/tmp/gradle-home gradle --no-daemon runHeadless --args="ROMS/Apple2eForceMemtest.emu --steps 100000 --trace-file /private/tmp/jvm_phase12489_noreset.tr.csv --trace-phase pre --trace-start-pc 0xFA63 --display-phase-cycles ${DISPLAY_PHASE_CYCLES} --no-sound --reset-pflag-value 0x36 --reset-a-value 0x00 --reset-x-value 0x80 --reset-y-value 0x00 --reset-s-value 0xFD"
 
 # 1) Rebuild JVM normalized CSV with the updated normalizer
 python3 /Users/shane/Project/ever2e-py/tools/normalize_compare_csv.py \

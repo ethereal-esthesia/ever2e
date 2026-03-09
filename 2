@@ -15,7 +15,8 @@ TRACE_OUT="${TRACE_OUT:-/private/tmp/jvm_subinstructions.tr.log}"
 COMPARE_OUT="${COMPARE_OUT:-/private/tmp/jvm_subinstructions.compare.csv}"
 
 JVM_CYCLE_OFFSET="${JVM_CYCLE_OFFSET:-2}"
-JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-0}"
+# Keep JVM frame_cycle aligned with compare-space (line 1 near 00010) unless overridden.
+JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-$((10-DISPLAY_PHASE_CYCLES))}"
 
 START_LINE="${START_LINE:-1}"
 END_LINE="${END_LINE:-40}"
