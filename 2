@@ -13,6 +13,7 @@ DISPLAY_PHASE_CYCLES="${DISPLAY_PHASE_CYCLES:-12489}"
 
 TRACE_OUT="${TRACE_OUT:-/private/tmp/jvm_subinstructions.tr.log}"
 COMPARE_OUT="${COMPARE_OUT:-/private/tmp/jvm_subinstructions.compare.csv}"
+TRACE_MICROCODE="${TRACE_MICROCODE:-0}"
 
 JVM_CYCLE_OFFSET="${JVM_CYCLE_OFFSET:-2}"
 # Keep JVM frame_cycle aligned with compare-space (line 1 near 00010) unless overridden.
@@ -24,7 +25,12 @@ TOP_NAME="${TOP_NAME:-JVM}"
 
 cd "${JVM_REPO}"
 
-GRADLE_USER_HOME="${GRADLE_USER_HOME}" gradle --no-daemon runHeadless --args="${EMU} --steps ${STEPS} --trace-file ${TRACE_OUT} --trace-phase ${TRACE_PHASE} --trace-start-pc ${TRACE_START_PC} --trace-kv --display-phase-cycles ${DISPLAY_PHASE_CYCLES} --trace-subinstructions --no-sound --reset-pflag-value 0x36 --reset-a-value 0x00 --reset-x-value 0x80 --reset-y-value 0x00 --reset-s-value 0xFD"
+TRACE_MICROCODE_ARG=""
+if [[ "${TRACE_MICROCODE}" == "1" || "${TRACE_MICROCODE}" == "true" || "${TRACE_MICROCODE}" == "yes" ]]; then
+  TRACE_MICROCODE_ARG=" --trace-microcode"
+fi
+
+GRADLE_USER_HOME="${GRADLE_USER_HOME}" gradle --no-daemon runHeadless --args="${EMU} --steps ${STEPS} --trace-file ${TRACE_OUT} --trace-phase ${TRACE_PHASE} --trace-start-pc ${TRACE_START_PC} --trace-kv --display-phase-cycles ${DISPLAY_PHASE_CYCLES}${TRACE_MICROCODE_ARG} --no-sound --reset-pflag-value 0x36 --reset-a-value 0x00 --reset-x-value 0x80 --reset-y-value 0x00 --reset-s-value 0xFD"
 
 python3 "${PY_TOOLS}/normalize_compare_csv.py" \
   --kind jvm \

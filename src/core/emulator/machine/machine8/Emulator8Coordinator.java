@@ -280,6 +280,9 @@ public class Emulator8Coordinator {
 			else if( "--trace-subinstructions".equals(arg) ) {
 				traceSubinstructions = true;
 			}
+			else if( "--trace-microcode".equals(arg) ) {
+				traceSubinstructions = true;
+			}
 			else if( "--cpu-profile".equals(arg) ) {
 				if( i+1>=argList.length )
 					throw new IllegalArgumentException("Missing value for --cpu-profile");
