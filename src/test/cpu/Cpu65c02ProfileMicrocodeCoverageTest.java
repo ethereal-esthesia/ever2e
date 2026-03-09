@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,6 +141,61 @@ public class Cpu65c02ProfileMicrocodeCoverageTest {
 		}
 	}
 
+	private static Object newExecutionPlanner(Cpu65c02 cpu) {
+		try {
+			Class<?> plannerClass = Class.forName("core.cpu.cpu8.CpuExecutionPlanner");
+			Constructor<?> ctor = plannerClass.getDeclaredConstructor(MemoryBusIIe.class, core.cpu.cpu8.Register.class);
+			ctor.setAccessible(true);
+			return ctor.newInstance((MemoryBusIIe) cpu.getMemoryBus(), cpu.getRegister());
+		}
+		catch( Exception e ) {
+			throw new RuntimeException("Unable to construct CpuExecutionPlanner via reflection", e);
+		}
+	}
+
+	private static boolean plannerIsMicroQueued(Object planner, Opcode opcode) {
+		try {
+			Method m = planner.getClass().getDeclaredMethod("isMicroQueued", Opcode.class);
+			m.setAccessible(true);
+			return (Boolean) m.invoke(planner, opcode);
+		}
+		catch( Exception e ) {
+			throw new RuntimeException("Unable to invoke CpuExecutionPlanner.isMicroQueued", e);
+		}
+	}
+
+	private static void assertAllNonNopsAreRuntimeMicroQueued(Cpu65c02 cpu, String profileName) {
+		Opcode[] table = opcodeTableFor(cpu);
+		Object planner = newExecutionPlanner(cpu);
+		List<String> failures = new ArrayList<String>();
+		int checked = 0;
+		for( int opcodeByte = 0; opcodeByte<256; opcodeByte++ ) {
+			Opcode opcode = table[opcodeByte];
+			if( opcode==null )
+				continue;
+			if( opcode.getMnemonic()==Cpu65c02.OpcodeMnemonic.NOP )
+				continue;
+			checked++;
+			if( !plannerIsMicroQueued(planner, opcode) ) {
+				failures.add(String.format("$%02X not runtime micro-queued (%s/%s cycles=%d)",
+						opcodeByte, opcode.getMnemonic(), opcode.getAddressMode(), opcode.getCycleTime()));
+			}
+		}
+		int passed = checked - failures.size();
+		System.out.println(profileName + " runtime micro-queue coverage (non_nops): checked=" + checked + ", passed=" + passed + ", failed=" + failures.size());
+		if( !failures.isEmpty() ) {
+			StringBuilder sample = new StringBuilder();
+			int limit = Math.min(12, failures.size());
+			for( int i = 0; i<limit; i++ ) {
+				if( i>0 )
+					sample.append("; ");
+				sample.append(failures.get(i));
+			}
+			assertTrue(profileName + " runtime micro-queue coverage: checked=" + checked + ", passed=" + passed + ", failed=" + failures.size()
+					+ " opcode failures. Sample: " + sample, false);
+		}
+	}
+
 	@Test
 	public void wdcProfileHasCompleteOpcodeTableAndMicrocodeCoverage() {
 		Cpu65c02 cpu = newWdcCpu();
@@ -176,5 +232,17 @@ public class Cpu65c02ProfileMicrocodeCoverageTest {
 	public void cmdProfileNopOpcodesMatchMicrocodeCycleCount() {
 		Cpu65c02 cpu = newCmdCpu();
 		assertProfileCycleCountMatchesMicrocodeSteps(cpu, "cmd", true, false);
+	}
+
+	@Test
+	public void wdcProfileAllNonNopsAreRuntimeMicroQueued() {
+		Cpu65c02 cpu = newWdcCpu();
+		assertAllNonNopsAreRuntimeMicroQueued(cpu, "wdc");
+	}
+
+	@Test
+	public void cmdProfileAllNonNopsAreRuntimeMicroQueued() {
+		Cpu65c02 cpu = newCmdCpu();
+		assertAllNonNopsAreRuntimeMicroQueued(cpu, "cmd");
 	}
 }
