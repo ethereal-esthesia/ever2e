@@ -373,6 +373,10 @@ public enum Cpu65c02Opcode {
 			CPX_IMM, CPX_ZPG, CPX_ABS);
 	private static final EnumSet<Cpu65c02Opcode> CPY_FAMILY = EnumSet.of(
 			CPY_IMM, CPY_ZPG, CPY_ABS);
+	private static final EnumSet<Cpu65c02Opcode> STACK_FAMILY = EnumSet.of(
+			BRK_IMP, PHP_IMP, PLP_IMP, RTI_IMP, PHA_IMP, PLA_IMP, RTS_IMP, PHY_IMP, PLY_IMP, PHX_IMP, PLX_IMP);
+	private static final EnumSet<Cpu65c02Opcode> FLAGS_FAMILY = EnumSet.of(
+			CLC_IMP, SEC_IMP, CLI_IMP, SEI_IMP, CLV_IMP, CLD_IMP, SED_IMP);
 	private static final EnumSet<Cpu65c02Opcode> JSR_FAMILY = EnumSet.of(
 				JSR_ABS);
 	private static final EnumSet<Cpu65c02Opcode> BRANCH_FAMILY = EnumSet.of(
@@ -569,6 +573,22 @@ public enum Cpu65c02Opcode {
 		return buildCpyOpcodeBytes();
 	}
 
+	public static EnumSet<Cpu65c02Opcode> stackFamily() {
+		return EnumSet.copyOf(STACK_FAMILY);
+	}
+
+	public static int[] stackOpcodeBytes() {
+		return buildStackOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> flagsFamily() {
+		return EnumSet.copyOf(FLAGS_FAMILY);
+	}
+
+	public static int[] flagsOpcodeBytes() {
+		return buildFlagsOpcodeBytes();
+	}
+
 	public static EnumSet<Cpu65c02Opcode> jsrFamily() {
 		return EnumSet.copyOf(JSR_FAMILY);
 	}
@@ -755,6 +775,22 @@ public enum Cpu65c02Opcode {
 
 	private static int[] buildCpyOpcodeBytes() {
 		Cpu65c02Opcode[] ops = CPY_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildStackOpcodeBytes() {
+		Cpu65c02Opcode[] ops = STACK_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildFlagsOpcodeBytes() {
+		Cpu65c02Opcode[] ops = FLAGS_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
 		for( int i = 0; i<ops.length; i++ )
 			bytes[i] = ops[i].opcodeByte();
