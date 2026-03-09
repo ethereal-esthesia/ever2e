@@ -65,6 +65,7 @@ final class CpuExecutionPlanner {
 		out.addAll(Cpu65c02Opcode.cpyFamily());
 		out.addAll(Cpu65c02Opcode.jsrFamily());
 		out.addAll(Cpu65c02Opcode.branchFamily());
+		out.addAll(Cpu65c02Opcode.controlMiscFamily());
 		return out;
 	}
 }

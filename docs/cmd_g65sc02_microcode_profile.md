@@ -21,6 +21,7 @@ This is the CMD-only microcode coverage/status document.
 - Profile microcode/cycle coverage:
   - `/Users/shane/Project/ever2e-jvm/src/test/cpu/Cpu65c02ProfileMicrocodeCoverageTest.java`
   - CMD non-NOP coverage test: `cmdProfileAllNonNopOpcodesMatchMicrocodeCycleCount`
+  - CMD strict runtime micro-queue test: `cmdProfileAllNonNopsAreRuntimeMicroQueued`
   - CMD NOP coverage test: `cmdProfileNopOpcodesMatchMicrocodeCycleCount`
 - Microcode enum/script integrity:
   - `/Users/shane/Project/ever2e-jvm/src/test/cpu/Cpu65c02MicrocodeTest.java`
@@ -33,6 +34,7 @@ This is the CMD-only microcode coverage/status document.
 ## Current Status (CMD)
 - Total opcodes: `256`
 - Non-NOP opcodes: `177` (cycle-coverage tests pass)
+- Non-NOP runtime micro-queue coverage: `177/177` (strict queueing test passes)
 - NOP opcodes: `79` (measured timing/width table tests pass)
 - Overall status: `PASS` for CMD profile microcode-cycle parity checks.
 
