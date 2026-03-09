@@ -139,6 +139,46 @@ Notes:
 
 ## Examples
 
+Sample tooling workflow:
+
+```bash
+cd /Users/shane/Project/ever2e-jvm
+./scripts/recompile_all_sample_asm.sh
+```
+
+- Rebuilds all `.asm` files under `samples/` and regenerates:
+  - `samples/generated/bin/*.bin`
+  - `samples/generated/basic/*.bas`
+
+Run any generated BASIC loader in MAME-alt (autotype + `RUN`):
+
+```bash
+./scripts/run_mame_autoboot_bas.sh samples/generated/basic/<NAME>.bas
+```
+
+Verify a sample by loading its BASIC and dumping memory for binary compare:
+
+```bash
+./scripts/run_mame_verify_asm_load.sh --asm samples/<NAME>.asm
+```
+
+## Script helpers
+
+- `scripts/recompile_all_sample_asm.sh`
+  - Rebuild all `samples/*.asm` and regenerate matching `samples/generated/bin/*.bin` and `samples/generated/basic/*.bas`.
+- `scripts/run_mame_autoboot_bas.sh <file.bas> [mame args...]`
+  - Launch MAME-alt, normalize BASIC text input (`CR/LF` + control-char cleanup), type it, and execute `RUN`.
+  - Defaults to cardless slots (`-sl1 ""` through `-sl7 ""`).
+- `scripts/run_mame_verify_asm_load.sh --asm samples/<NAME>.asm [options]`
+  - End-to-end sample verifier: checks generated artifacts, launches via `run_mame_autoboot_bas.sh`, captures memory dump, and compares dump vs expected `.bin`.
+  - Uses the same centralized BASIC input normalization path as `run_mame_autoboot_bas.sh`.
+- `scripts/compare_mame_dump_to_bin.sh --expected <bin> --dump <dump> [--base <addr>]`
+  - Byte-compare helper used by the verify script.
+- `scripts/derive_mame_offsets.py`
+  - Utility for deriving alignment offsets from trace/cycle data.
+- `scripts/summarize_mame_trace_deltas.py`
+  - Utility to summarize per-row/per-field differences across trace outputs.
+
 Generate a pre-phase trace:
 
 ```bash

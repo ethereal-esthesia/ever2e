@@ -30,7 +30,7 @@
 
 ## Opcode Matrix Compare
 - Full per-opcode compare file:
-  - [rockwell_vs_wdc_opcode_matrix.csv](/Users/shane/Project/ever2e-jvm/docs/rockwell_vs_wdc_opcode_matrix.csv)
+  - [rockwell_vs_wdc_opcode_matrix.csv](/Users/shane/Project/ever2e-jvm/docs/specs/rockwell/rockwell_vs_wdc_opcode_matrix.csv)
 - Summary:
   - 256 opcode slots compared.
   - Raw token differences: 84 (timing-profile marker differences, e.g. `_c_` vs `_s_`).

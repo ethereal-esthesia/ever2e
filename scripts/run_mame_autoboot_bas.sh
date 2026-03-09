@@ -40,4 +40,5 @@ exec "$MAME_BIN" "$MACHINE" \
   -rompath "$ROMPATH" -homepath "$HOMEPATH" \
   -autoboot_delay "$AUTOBOOT_DELAY" \
   -autoboot_command "$cmd" \
+  -sl1 "" -sl2 "" -sl3 "" -sl4 "" -sl5 "" -sl6 "" -sl7 "" \
   "$@"

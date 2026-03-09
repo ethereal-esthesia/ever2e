@@ -111,9 +111,14 @@ fi
 MAME_BIN="${MAME_BIN:-/Users/shane/Project/mame-alt/mame}"
 MAME_ROMPATH="${MAME_ROMPATH:-/Users/shane/app/mame/roms}"
 MAME_HOMEPATH="${MAME_HOMEPATH:-$HOME/Library/Application Support/mame}"
+AUTOBOOT_HELPER="${ROOT}/scripts/run_mame_autoboot_bas.sh"
 
 if [[ ! -x "$MAME_BIN" ]]; then
   echo "error: MAME binary not executable: $MAME_BIN" >&2
+  exit 2
+fi
+if [[ ! -x "$AUTOBOOT_HELPER" ]]; then
+  echo "error: autoboot helper not executable: $AUTOBOOT_HELPER" >&2
   exit 2
 fi
 
@@ -200,11 +205,6 @@ fi
 if [[ -z "$FULL_DUMP_PATH" ]]; then
   FULL_DUMP_PATH="/tmp/${base_name}.full.dump.txt"
 fi
-
-autoboot_cmd="$(
-  perl -0777 -pe 's/\r\n|\n\r|\r/\n/g; s/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]//g; s/\\/\\\\/g; s/\n/\\r/g' "$loader_bas"
-)"
-autoboot_cmd+="\\rRUN\\r"
 
 tmp_debugscript="$(mktemp "${TMPDIR:-/tmp}/mame-verify.XXXXXX")"
 debugscript="${tmp_debugscript}.cmd"
@@ -351,21 +351,22 @@ else
 fi
 
 if (( HEADLESS == 1 )); then
-  SDL_VIDEODRIVER=dummy "$MAME_BIN" "$MACHINE" \
-    -window -video soft -sound none -skip_gameinfo \
-    -rompath "$MAME_ROMPATH" -homepath "$MAME_HOMEPATH" \
-    -autoboot_delay "$AUTOBOOT_DELAY" \
-    -autoboot_command "$autoboot_cmd" \
-    -debug -debugger none -debugscript "$debugscript" \
-    -sl1 "" -sl2 "" -sl3 "" -sl4 "" -sl5 "" -sl6 "" -sl7 ""
+  SDL_VIDEODRIVER=dummy \
+    MAME_BIN="$MAME_BIN" \
+    MAME_MACHINE="$MACHINE" \
+    MAME_ROMPATH="$MAME_ROMPATH" \
+    MAME_HOMEPATH="$MAME_HOMEPATH" \
+    MAME_AUTOBOOT_DELAY="$AUTOBOOT_DELAY" \
+    "$AUTOBOOT_HELPER" "$loader_bas" \
+      -debug -debugger none -debugscript "$debugscript"
 else
-  "$MAME_BIN" "$MACHINE" \
-    -window -video soft -sound none -skip_gameinfo \
-    -rompath "$MAME_ROMPATH" -homepath "$MAME_HOMEPATH" \
-    -autoboot_delay "$AUTOBOOT_DELAY" \
-    -autoboot_command "$autoboot_cmd" \
-    -debug -debugger none -debugscript "$debugscript" \
-    -sl1 "" -sl2 "" -sl3 "" -sl4 "" -sl5 "" -sl6 "" -sl7 ""
+  MAME_BIN="$MAME_BIN" \
+    MAME_MACHINE="$MACHINE" \
+    MAME_ROMPATH="$MAME_ROMPATH" \
+    MAME_HOMEPATH="$MAME_HOMEPATH" \
+    MAME_AUTOBOOT_DELAY="$AUTOBOOT_DELAY" \
+    "$AUTOBOOT_HELPER" "$loader_bas" \
+      -debug -debugger none -debugscript "$debugscript"
 fi
 
 if (( SKIP_COMPARE == 0 )); then

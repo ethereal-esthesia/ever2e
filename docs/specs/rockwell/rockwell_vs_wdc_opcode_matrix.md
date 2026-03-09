@@ -5,7 +5,7 @@ Sources used for machine-readable matrix generation:
 - `/Users/shane/app/mame/src/devices/cpu/m6502/dw65c02s.lst` (WDC W65C02S variant)
 
 These were used to build a 256-opcode side-by-side matrix in:
-- `/Users/shane/Project/ever2e-jvm/docs/rockwell_vs_wdc_opcode_matrix.csv`
+- `/Users/shane/Project/ever2e-jvm/docs/specs/rockwell/rockwell_vs_wdc_opcode_matrix.csv`
 
 ## Summary
 - Total opcode slots compared: 256
