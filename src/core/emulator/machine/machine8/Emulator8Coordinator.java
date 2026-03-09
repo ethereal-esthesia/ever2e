@@ -749,7 +749,7 @@ public class Emulator8Coordinator {
 	   		final String[] lastRetiredSignature = new String[] { null };
 	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
 	   		final boolean[] cpuStepPreWasSub = new boolean[] { false };
-	   		final long[] lastCpuClockCycles = new long[] { -1L };
+	   		final long[] lastCpuHandlerStep = new long[] { -1L };
 	   		final String finalPasteFile = pasteFile;
 	   		final String finalPasteText = pasteText;
 	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
@@ -777,11 +777,10 @@ public class Emulator8Coordinator {
 	   				int preAdvancedCycles = pendingPreAdvancedCycles[0];
 	   				pendingPreAdvancedCycles[0] = 0;
 	   				if( !"RES".equals(mnemonic) ) {
-	   					long currentClockCycles = cpu.getTotalCycleCount();
-	   					if( lastCpuClockCycles[0]<0L )
-	   						lastCpuClockCycles[0] = currentClockCycles;
-	   					int monitorCycles = (int) (currentClockCycles-lastCpuClockCycles[0]) - preAdvancedCycles;
-	   					lastCpuClockCycles[0] = currentClockCycles;
+	   					if( lastCpuHandlerStep[0]<0L )
+	   						lastCpuHandlerStep[0] = step-1L;
+	   					int monitorCycles = (int) (step-lastCpuHandlerStep[0]) - preAdvancedCycles;
+	   					lastCpuHandlerStep[0] = step;
 	   					if( monitorCycles<0 )
 	   						monitorCycles = 0;
 	   					if( finalDebugLogging ) {
@@ -1060,7 +1059,7 @@ public class Emulator8Coordinator {
 	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
 	   		final boolean finalDebugLogging = debugLogging;
 	   		final int[] pendingPreAdvancedCycles = new int[] { 0 };
-	   		final long[] lastCpuClockCycles = new long[] { -1L };
+	   		final long[] lastCpuHandlerStep = new long[] { -1L };
 	   		emulator.startWithStepPhases(-1, cpu, (step, manager, preCycle) -> {
 	   			if( !basicQueued[0] && manager==cpu && preCycle ) {
 	   				queueBasicText(finalKeyboard, finalPasteFile, finalPasteText);
@@ -1082,11 +1081,10 @@ public class Emulator8Coordinator {
 	   				int preAdvancedCycles = pendingPreAdvancedCycles[0];
 	   				pendingPreAdvancedCycles[0] = 0;
 	   				if( !"RES".equals(mnemonic) ) {
-	   					long currentClockCycles = cpu.getTotalCycleCount();
-	   					if( lastCpuClockCycles[0]<0L )
-	   						lastCpuClockCycles[0] = currentClockCycles;
-	   					int monitorCycles = (int) (currentClockCycles-lastCpuClockCycles[0]) - preAdvancedCycles;
-	   					lastCpuClockCycles[0] = currentClockCycles;
+	   					if( lastCpuHandlerStep[0]<0L )
+	   						lastCpuHandlerStep[0] = step-1L;
+	   					int monitorCycles = (int) (step-lastCpuHandlerStep[0]) - preAdvancedCycles;
+	   					lastCpuHandlerStep[0] = step;
 	   					if( monitorCycles<0 )
 	   						monitorCycles = 0;
 	   					if( finalDebugLogging ) {
