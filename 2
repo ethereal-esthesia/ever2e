@@ -16,6 +16,7 @@ COMPARE_OUT="${COMPARE_OUT:-/private/tmp/jvm_subinstructions.compare.csv}"
 
 JVM_CYCLE_OFFSET="${JVM_CYCLE_OFFSET:-2}"
 JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-0}"
+JVM_FRAME_PHASE_SCALE="${JVM_FRAME_PHASE_SCALE:-2}"
 
 START_LINE="${START_LINE:-1}"
 END_LINE="${END_LINE:-40}"
@@ -29,6 +30,7 @@ python3 "${PY_TOOLS}/normalize_compare_csv.py" \
   --kind jvm \
   --jvm-cycle-offset "${JVM_CYCLE_OFFSET}" \
   --jvm-frame-cycle-offset "${JVM_FRAME_CYCLE_OFFSET}" \
+  --jvm-frame-phase-scale "${JVM_FRAME_PHASE_SCALE}" \
   --input "${TRACE_OUT}" \
   --output "${COMPARE_OUT}"
 

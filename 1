@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-0}"
+JVM_FRAME_PHASE_SCALE="${JVM_FRAME_PHASE_SCALE:-2}"
 
 # 0) Regenerate JVM raw trace with current emulator code/flags
 cd /Users/shane/Project/ever2e-jvm
@@ -11,6 +12,7 @@ python3 /Users/shane/Project/ever2e-py/tools/normalize_compare_csv.py \
   --kind jvm \
   --jvm-cycle-offset 2 \
   --jvm-frame-cycle-offset "${JVM_FRAME_CYCLE_OFFSET}" \
+  --jvm-frame-phase-scale "${JVM_FRAME_PHASE_SCALE}" \
   --input /private/tmp/jvm_phase12489_noreset.tr.csv \
   --output /private/tmp/jvm_phase12489_noreset.compare.csv
 
