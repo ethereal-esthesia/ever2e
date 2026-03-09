@@ -1062,6 +1062,44 @@ public class Cpu65c02MicrocodeTest {
 	}
 
 	@Test
+	public void readModifyWriteOpcodeEnumMatchesOpcodeByteList() {
+		Cpu65c02Opcode[] ops = Cpu65c02Opcode.readModifyWriteFamily().toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = Cpu65c02Opcode.readModifyWriteOpcodeBytes();
+		assertEquals(ops.length, bytes.length);
+		for( int i = 0; i<ops.length; i++ )
+			assertEquals(ops[i].opcodeByte(), bytes[i]);
+	}
+
+	@Test
+	public void readModifyWriteOpcodeEnumProgramsDriveResolvedMicrocode() {
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.readModifyWriteFamily() ) {
+			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(opcode.opcodeByte());
+			assertEquals(opcode.microcode().accessType(), entry.getAccessType());
+			assertArrayEquals(opcode.microcode().noCrossScript(), entry.getExpectedMnemonicOrder(false));
+			assertArrayEquals(opcode.microcode().crossScript(), entry.getExpectedMnemonicOrder(true));
+		}
+	}
+
+	@Test
+	public void logicalArithmeticOpcodeEnumMatchesOpcodeByteList() {
+		Cpu65c02Opcode[] ops = Cpu65c02Opcode.logicalArithmeticFamily().toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = Cpu65c02Opcode.logicalArithmeticOpcodeBytes();
+		assertEquals(ops.length, bytes.length);
+		for( int i = 0; i<ops.length; i++ )
+			assertEquals(ops[i].opcodeByte(), bytes[i]);
+	}
+
+	@Test
+	public void logicalArithmeticOpcodeEnumProgramsDriveResolvedMicrocode() {
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.logicalArithmeticFamily() ) {
+			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(opcode.opcodeByte());
+			assertEquals(opcode.microcode().accessType(), entry.getAccessType());
+			assertArrayEquals(opcode.microcode().noCrossScript(), entry.getExpectedMnemonicOrder(false));
+			assertArrayEquals(opcode.microcode().crossScript(), entry.getExpectedMnemonicOrder(true));
+		}
+	}
+
+	@Test
 	public void stackOpcodeEnumMatchesOpcodeByteList() {
 		Cpu65c02Opcode[] ops = Cpu65c02Opcode.stackFamily().toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = Cpu65c02Opcode.stackOpcodeBytes();
@@ -1192,6 +1230,10 @@ public class Cpu65c02MicrocodeTest {
 		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.stzFamily() )
 			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
 		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.interruptControlFlowFamily() )
+			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.readModifyWriteFamily() )
+			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
+		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.logicalArithmeticFamily() )
 			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));
 		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.stackFamily() )
 			assertEquals(opcode, Cpu65c02Opcode.fromOpcodeByte(opcode.opcodeByte()));

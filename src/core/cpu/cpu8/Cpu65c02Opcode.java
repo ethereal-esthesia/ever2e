@@ -386,6 +386,20 @@ public enum Cpu65c02Opcode {
 	private static final EnumSet<Cpu65c02Opcode> INTERRUPT_CONTROL_FLOW_FAMILY = EnumSet.of(
 			BRK_IMP, RTI_IMP, RTS_IMP, JSR_ABS, JMP_ABS, JMP_ABS_IND, JMP_ABS_IND_X,
 			BPL_REL, BMI_REL, BVC_REL, BVS_REL, BRA_REL, BCC_REL, BCS_REL, BNE_REL, BEQ_REL);
+	private static final EnumSet<Cpu65c02Opcode> READ_MODIFY_WRITE_FAMILY = EnumSet.of(
+			ASL_ACC, ASL_ZPG, ASL_ZPG_X, ASL_ABS, ASL_ABS_X,
+			LSR_ACC, LSR_ZPG, LSR_ZPG_X, LSR_ABS, LSR_ABS_X,
+			ROL_ACC, ROL_ZPG, ROL_ZPG_X, ROL_ABS, ROL_ABS_X,
+			ROR_ACC, ROR_ZPG, ROR_ZPG_X, ROR_ABS, ROR_ABS_X,
+			INC_ZPG, INC_ZPG_X, INC_ABS, INC_ABS_X,
+			DEC_ZPG, DEC_ZPG_X, DEC_ABS, DEC_ABS_X,
+			TSB_ZPG, TSB_ABS, TRB_ZPG, TRB_ABS);
+	private static final EnumSet<Cpu65c02Opcode> LOGICAL_ARITHMETIC_FAMILY = EnumSet.of(
+			ORA_IMM, ORA_ZPG, ORA_ZPG_X, ORA_ABS, ORA_ABS_X, ORA_ABS_Y, ORA_IND_X, ORA_IND_Y, ORA_IND,
+			AND_IMM, AND_ZPG, AND_ZPG_X, AND_ABS, AND_ABS_X, AND_ABS_Y, AND_IND_X, AND_IND_Y, AND_IND,
+			EOR_IMM, EOR_ZPG, EOR_ZPG_X, EOR_ABS, EOR_ABS_X, EOR_ABS_Y, EOR_IND_X, EOR_IND_Y, EOR_IND,
+			ADC_IMM, ADC_ZPG, ADC_ZPG_X, ADC_ABS, ADC_ABS_X, ADC_ABS_Y, ADC_IND_X, ADC_IND_Y, ADC_IND,
+			SBC_IMM, SBC_ZPG, SBC_ZPG_X, SBC_ABS, SBC_ABS_X, SBC_ABS_Y, SBC_IND_X, SBC_IND_Y, SBC_IND);
 	private static final EnumSet<Cpu65c02Opcode> STACK_FAMILY = EnumSet.of(
 			BRK_IMP, PHP_IMP, PLP_IMP, RTI_IMP, PHA_IMP, PLA_IMP, RTS_IMP, PHY_IMP, PLY_IMP, PHX_IMP, PLX_IMP);
 	private static final EnumSet<Cpu65c02Opcode> FLAGS_FAMILY = EnumSet.of(
@@ -632,6 +646,22 @@ public enum Cpu65c02Opcode {
 
 	public static int[] interruptControlFlowOpcodeBytes() {
 		return buildInterruptControlFlowOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> readModifyWriteFamily() {
+		return EnumSet.copyOf(READ_MODIFY_WRITE_FAMILY);
+	}
+
+	public static int[] readModifyWriteOpcodeBytes() {
+		return buildReadModifyWriteOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> logicalArithmeticFamily() {
+		return EnumSet.copyOf(LOGICAL_ARITHMETIC_FAMILY);
+	}
+
+	public static int[] logicalArithmeticOpcodeBytes() {
+		return buildLogicalArithmeticOpcodeBytes();
 	}
 
 	public static EnumSet<Cpu65c02Opcode> stackFamily() {
@@ -884,6 +914,22 @@ public enum Cpu65c02Opcode {
 
 	private static int[] buildInterruptControlFlowOpcodeBytes() {
 		Cpu65c02Opcode[] ops = INTERRUPT_CONTROL_FLOW_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildReadModifyWriteOpcodeBytes() {
+		Cpu65c02Opcode[] ops = READ_MODIFY_WRITE_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildLogicalArithmeticOpcodeBytes() {
+		Cpu65c02Opcode[] ops = LOGICAL_ARITHMETIC_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
 		for( int i = 0; i<ops.length; i++ )
 			bytes[i] = ops[i].opcodeByte();
