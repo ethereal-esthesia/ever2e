@@ -18,6 +18,7 @@ public class Cpu32kLongRunIntegrationTest {
 		String pasteFile = getProp("ever2e.long32k.pasteFile", "ever2e.smoke32k.pasteFile", "ROMS/opcode_smoke_loader_hgr_mem_32k.mon");
 		String steps = getProp("ever2e.long32k.steps", "ever2e.smoke32k.steps", "120000000");
 		String haltExecution = getProp("ever2e.long32k.haltExecution", "ever2e.smoke32k.haltExecution", "0x6A45,0x6A33");
+		String cpuProfile = getProp("ever2e.long32k.cpuProfile", "ever2e.smoke32k.cpuProfile", "cmd");
 
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		PrintStream originalOut = System.out;
@@ -25,16 +26,17 @@ public class Cpu32kLongRunIntegrationTest {
 		try {
 			System.setProperty("java.awt.headless", "true");
 			System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
-			Emulator8Coordinator.main(new String[] {
-					emuFile,
-					"--steps", steps,
-					"--text-console",
-					"--paste-file", pasteFile,
-					"--halt-execution", haltExecution,
-					"--print-cpu-state-at-exit",
-					"--print-text-at-exit",
-					"--no-sound",
-			});
+				Emulator8Coordinator.main(new String[] {
+						emuFile,
+						"--steps", steps,
+						"--text-console",
+						"--paste-file", pasteFile,
+						"--cpu-profile", cpuProfile,
+						"--halt-execution", haltExecution,
+						"--print-cpu-state-at-exit",
+						"--print-text-at-exit",
+						"--no-sound",
+				});
 		}
 		finally {
 			System.setOut(originalOut);
