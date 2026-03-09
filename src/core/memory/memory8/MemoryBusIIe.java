@@ -1225,7 +1225,8 @@ public class MemoryBusIIe extends MemoryBus8 {
 	}
 
 	public void warmReset() {
-		// Reset every switch except text and mixed
+		// Apple IIe Platinum warm reset defaults display to TEXT + PAGE1.
+		switchText.setState();
 		switch80Store.resetState();
 		switchHiRes.resetState();
 		switchRamRead.resetState();
@@ -1258,9 +1259,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		// Match MAME boot snapshot pattern for main 64K: 00/FF alternating by byte.
 		for( int addr = 0; addr<0x10000; addr++ )
 			memory.setByte(addr, (addr&0x1)==0 ? 0x00 : 0xff);
-	
-		switchText.resetState();
-		switchMixed.resetState();
+
 		warmReset();
 
 	}
