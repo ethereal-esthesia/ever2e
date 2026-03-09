@@ -373,6 +373,10 @@ public enum Cpu65c02Opcode {
 			CPX_IMM, CPX_ZPG, CPX_ABS);
 	private static final EnumSet<Cpu65c02Opcode> CPY_FAMILY = EnumSet.of(
 			CPY_IMM, CPY_ZPG, CPY_ABS);
+	private static final EnumSet<Cpu65c02Opcode> JUMP_FAMILY = EnumSet.of(
+			JMP_ABS, JMP_ABS_IND, JMP_ABS_IND_X, JSR_ABS);
+	private static final EnumSet<Cpu65c02Opcode> BIT_TEST_SET_FAMILY = EnumSet.of(
+			BIT_IMM, BIT_ZPG, BIT_ZPG_X, BIT_ABS, BIT_ABS_X, TSB_ZPG, TSB_ABS, TRB_ZPG, TRB_ABS);
 	private static final EnumSet<Cpu65c02Opcode> STACK_FAMILY = EnumSet.of(
 			BRK_IMP, PHP_IMP, PLP_IMP, RTI_IMP, PHA_IMP, PLA_IMP, RTS_IMP, PHY_IMP, PLY_IMP, PHX_IMP, PLX_IMP);
 	private static final EnumSet<Cpu65c02Opcode> FLAGS_FAMILY = EnumSet.of(
@@ -571,6 +575,22 @@ public enum Cpu65c02Opcode {
 
 	public static int[] cpyOpcodeBytes() {
 		return buildCpyOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> jumpFamily() {
+		return EnumSet.copyOf(JUMP_FAMILY);
+	}
+
+	public static int[] jumpOpcodeBytes() {
+		return buildJumpOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> bitTestSetFamily() {
+		return EnumSet.copyOf(BIT_TEST_SET_FAMILY);
+	}
+
+	public static int[] bitTestSetOpcodeBytes() {
+		return buildBitTestSetOpcodeBytes();
 	}
 
 	public static EnumSet<Cpu65c02Opcode> stackFamily() {
@@ -775,6 +795,22 @@ public enum Cpu65c02Opcode {
 
 	private static int[] buildCpyOpcodeBytes() {
 		Cpu65c02Opcode[] ops = CPY_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildJumpOpcodeBytes() {
+		Cpu65c02Opcode[] ops = JUMP_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildBitTestSetOpcodeBytes() {
+		Cpu65c02Opcode[] ops = BIT_TEST_SET_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
 		for( int i = 0; i<ops.length; i++ )
 			bytes[i] = ops[i].opcodeByte();

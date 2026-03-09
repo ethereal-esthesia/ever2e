@@ -38,6 +38,10 @@ This is the CMD-only microcode coverage/status document.
 - NOP opcodes: `79` (measured timing/width table tests pass)
 - Overall status: `PASS` for CMD profile microcode-cycle parity checks.
 
+## Explicit Family Buckets (Progress)
+- `implemented`: `lda`, `sta`, `inc`, `dec`, `asl`, `lsr`, `rol`, `ror`, `ora`, `and`, `eor`, `adc`, `sbc`, `cmp`, `bit`, `ldx`, `ldy`, `stx`, `sty`, `cpx`, `cpy`, `jsr`, `branch`, `control_misc`, `stack`, `flags`, `jump`, `bit_test_set`
+- `note`: Some buckets intentionally overlap (for example `jump` includes `JSR`; `bit_test_set` includes `BIT/TSB/TRB`) to keep reporting and rollout by intent.
+
 ## Focused Matrix (Source + Tests + Status + Cycles + Bytes)
 - Full per-opcode matrix:
   - `/Users/shane/Project/ever2e-jvm/docs/cmd_g65sc02_microcode_matrix.csv`
