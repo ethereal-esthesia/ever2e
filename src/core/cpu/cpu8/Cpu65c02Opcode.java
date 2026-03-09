@@ -201,17 +201,130 @@ public enum Cpu65c02Opcode {
 	CPX_ZPG(0xE4, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_READ_EA))),
 	CPX_ABS(0xEC, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_EA))),
 
-	CPY_IMM(0xC0, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA))),
-	CPY_ZPG(0xC4, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_READ_EA))),
-	CPY_ABS(0xCC, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_EA))),
+		CPY_IMM(0xC0, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA))),
+		CPY_ZPG(0xC4, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_READ_EA))),
+		CPY_ABS(0xCC, MicroCycleProgram.readShared(cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_EA))),
 
-	JSR_ABS(0x20, MicroCycleProgram.internalShared(cycles(
-			MicroOp.M_FETCH_OPCODE,
-			MicroOp.M_FETCH_OPERAND_LO,
-			MicroOp.M_INTERNAL,
-			MicroOp.M_INTERNAL,
-			MicroOp.M_INTERNAL,
-			MicroOp.M_FETCH_OPERAND_HI)));
+		JSR_ABS(0x20, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE,
+				MicroOp.M_FETCH_OPERAND_LO,
+				MicroOp.M_INTERNAL,
+				MicroOp.M_INTERNAL,
+				MicroOp.M_INTERNAL,
+				MicroOp.M_FETCH_OPERAND_HI))),
+
+		BRK_IMP(0x00, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL,
+				MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		TSB_ZPG(0x04, MicroCycleProgram.rmwShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_READ_EA, MicroOp.M_WRITE_EA_DUMMY, MicroOp.M_WRITE_EA))),
+		PHP_IMP(0x08, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		TSB_ABS(0x0C, MicroCycleProgram.rmwShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_EA, MicroOp.M_WRITE_EA_DUMMY, MicroOp.M_WRITE_EA))),
+		BPL_REL(0x10, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		TRB_ZPG(0x14, MicroCycleProgram.rmwShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_READ_EA, MicroOp.M_WRITE_EA_DUMMY, MicroOp.M_WRITE_EA))),
+		CLC_IMP(0x18, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		INA_ACC(0x1A, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		TRB_ABS(0x1C, MicroCycleProgram.rmwShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_EA, MicroOp.M_WRITE_EA_DUMMY, MicroOp.M_WRITE_EA))),
+		PLP_IMP(0x28, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		BMI_REL(0x30, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		SEC_IMP(0x38, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		DEA_ACC(0x3A, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		RTI_IMP(0x40, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		PHA_IMP(0x48, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		JMP_ABS(0x4C, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI))),
+		BVC_REL(0x50, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		CLI_IMP(0x58, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		PHY_IMP(0x5A, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		RTS_IMP(0x60, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		STZ_ZPG(0x64, MicroCycleProgram.writeShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_WRITE_EA))),
+		PLA_IMP(0x68, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		JMP_ABS_IND(0x6C, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI,
+				MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		BVS_REL(0x70, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		STZ_ZPG_X(0x74, MicroCycleProgram.writeShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_READ_DUMMY, MicroOp.M_WRITE_EA))),
+		SEI_IMP(0x78, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		PLY_IMP(0x7A, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		JMP_ABS_IND_X(0x7C, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI,
+				MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		BRA_REL(0x80, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		DEY_IMP(0x88, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		TXA_IMP(0x8A, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		BCC_REL(0x90, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		TYA_IMP(0x98, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		TXS_IMP(0x9A, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		STZ_ABS(0x9C, MicroCycleProgram.writeShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_WRITE_EA))),
+		STZ_ABS_X(0x9E, MicroCycleProgram.writeShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_FETCH_OPERAND_LO, MicroOp.M_FETCH_OPERAND_HI, MicroOp.M_READ_DUMMY, MicroOp.M_WRITE_EA))),
+		TAY_IMP(0xA8, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		TAX_IMP(0xAA, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		BCS_REL(0xB0, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		CLV_IMP(0xB8, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		TSX_IMP(0xBA, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		INY_IMP(0xC8, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		DEX_IMP(0xCA, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		BNE_REL(0xD0, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		CLD_IMP(0xD8, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		PHX_IMP(0xDA, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL))),
+		INX_IMP(0xE8, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		BEQ_REL(0xF0, MicroCycleProgram.internalSplit(
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA),
+				cycles(MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL))),
+		SED_IMP(0xF8, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL))),
+		PLX_IMP(0xFA, MicroCycleProgram.internalShared(cycles(
+				MicroOp.M_FETCH_OPCODE, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL, MicroOp.M_INTERNAL)));
 
 	private final int opcodeByte;
 	private final MicroCycleProgram microcode;
@@ -261,7 +374,15 @@ public enum Cpu65c02Opcode {
 	private static final EnumSet<Cpu65c02Opcode> CPY_FAMILY = EnumSet.of(
 			CPY_IMM, CPY_ZPG, CPY_ABS);
 	private static final EnumSet<Cpu65c02Opcode> JSR_FAMILY = EnumSet.of(
-			JSR_ABS);
+				JSR_ABS);
+	private static final EnumSet<Cpu65c02Opcode> BRANCH_FAMILY = EnumSet.of(
+			BPL_REL, BMI_REL, BVC_REL, BVS_REL, BRA_REL, BCC_REL, BCS_REL, BNE_REL, BEQ_REL);
+	private static final EnumSet<Cpu65c02Opcode> CONTROL_MISC_FAMILY = EnumSet.of(
+				BRK_IMP, TSB_ZPG, PHP_IMP, TSB_ABS, BPL_REL, TRB_ZPG, CLC_IMP, INA_ACC, TRB_ABS, PLP_IMP,
+				BMI_REL, SEC_IMP, DEA_ACC, RTI_IMP, PHA_IMP, JMP_ABS, BVC_REL, CLI_IMP, PHY_IMP, RTS_IMP,
+				STZ_ZPG, PLA_IMP, JMP_ABS_IND, BVS_REL, STZ_ZPG_X, SEI_IMP, PLY_IMP, JMP_ABS_IND_X, BRA_REL,
+				DEY_IMP, TXA_IMP, BCC_REL, TYA_IMP, TXS_IMP, STZ_ABS, STZ_ABS_X, TAY_IMP, TAX_IMP, BCS_REL,
+				CLV_IMP, TSX_IMP, INY_IMP, DEX_IMP, BNE_REL, CLD_IMP, PHX_IMP, INX_IMP, BEQ_REL, SED_IMP, PLX_IMP);
 
 	Cpu65c02Opcode(int opcodeByte, MicroCycleProgram microcode) {
 		this.opcodeByte = opcodeByte & 0xff;
@@ -456,6 +577,22 @@ public enum Cpu65c02Opcode {
 		return buildJsrOpcodeBytes();
 	}
 
+	public static EnumSet<Cpu65c02Opcode> branchFamily() {
+		return EnumSet.copyOf(BRANCH_FAMILY);
+	}
+
+	public static int[] branchOpcodeBytes() {
+		return buildBranchOpcodeBytes();
+	}
+
+	public static EnumSet<Cpu65c02Opcode> controlMiscFamily() {
+		return EnumSet.copyOf(CONTROL_MISC_FAMILY);
+	}
+
+	public static int[] controlMiscOpcodeBytes() {
+		return buildControlMiscOpcodeBytes();
+	}
+
 	private static int[] buildLdaOpcodeBytes() {
 		Cpu65c02Opcode[] ops = LDA_FAMILY.toArray(new Cpu65c02Opcode[0]);
 		int[] bytes = new int[ops.length];
@@ -632,6 +769,22 @@ public enum Cpu65c02Opcode {
 		return bytes;
 	}
 
+	private static int[] buildBranchOpcodeBytes() {
+		Cpu65c02Opcode[] ops = BRANCH_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
+	private static int[] buildControlMiscOpcodeBytes() {
+		Cpu65c02Opcode[] ops = CONTROL_MISC_FAMILY.toArray(new Cpu65c02Opcode[0]);
+		int[] bytes = new int[ops.length];
+		for( int i = 0; i<ops.length; i++ )
+			bytes[i] = ops[i].opcodeByte();
+		return bytes;
+	}
+
 	private static EnumMap<Cpu65c02Opcode, Integer> buildOpcodeByteMap() {
 		EnumMap<Cpu65c02Opcode, Integer> map = new EnumMap<Cpu65c02Opcode, Integer>(Cpu65c02Opcode.class);
 		for( Cpu65c02Opcode opcode : Cpu65c02Opcode.values() )
@@ -690,6 +843,10 @@ public enum Cpu65c02Opcode {
 
 		public static MicroCycleProgram internalShared(MicroOp... script) {
 			return new MicroCycleProgram(AccessType.AT_NONE, script, script);
+		}
+
+		public static MicroCycleProgram internalSplit(MicroOp[] noCrossScript, MicroOp[] crossScript) {
+			return new MicroCycleProgram(AccessType.AT_NONE, noCrossScript, crossScript);
 		}
 
 		public AccessType accessType() {

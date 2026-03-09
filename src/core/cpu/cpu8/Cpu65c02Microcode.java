@@ -207,7 +207,10 @@ public final class Cpu65c02Microcode {
 			Cpu65c02Opcode.MicroCycleProgram program = jsr.microcode();
 			set(table, jsr.opcodeByte(), program.accessType(), program.noCrossScript(), program.crossScript());
 		}
-
+		for( Cpu65c02Opcode branch : Cpu65c02Opcode.branchFamily() ) {
+			Cpu65c02Opcode.MicroCycleProgram program = branch.microcode();
+			set(table, branch.opcodeByte(), program.accessType(), program.noCrossScript(), program.crossScript());
+		}
 		return table;
 	}
 

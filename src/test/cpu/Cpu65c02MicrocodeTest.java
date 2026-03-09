@@ -948,6 +948,25 @@ public class Cpu65c02MicrocodeTest {
 	}
 
 	@Test
+	public void branchOpcodeEnumMatchesOpcodeByteList() {
+		Cpu65c02Opcode[] branchOps = Cpu65c02Opcode.branchFamily().toArray(new Cpu65c02Opcode[0]);
+		int[] branchBytes = Cpu65c02Opcode.branchOpcodeBytes();
+		assertEquals(branchOps.length, branchBytes.length);
+		for( int i = 0; i<branchOps.length; i++ )
+			assertEquals(branchOps[i].opcodeByte(), branchBytes[i]);
+	}
+
+	@Test
+	public void branchOpcodeEnumProgramsDriveResolvedMicrocode() {
+		for( Cpu65c02Opcode branch : Cpu65c02Opcode.branchFamily() ) {
+			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(branch.opcodeByte());
+			assertEquals(branch.microcode().accessType(), entry.getAccessType());
+			assertArrayEquals(branch.microcode().noCrossScript(), entry.getExpectedMnemonicOrder(false));
+			assertArrayEquals(branch.microcode().crossScript(), entry.getExpectedMnemonicOrder(true));
+		}
+	}
+
+	@Test
 	public void opcodeByteRoundTripsToEnum() {
 		for( Cpu65c02Opcode lda : Cpu65c02Opcode.ldaFamily() )
 			assertEquals(lda, Cpu65c02Opcode.fromOpcodeByte(lda.opcodeByte()));
@@ -991,6 +1010,8 @@ public class Cpu65c02MicrocodeTest {
 			assertEquals(cpx, Cpu65c02Opcode.fromOpcodeByte(cpx.opcodeByte()));
 		for( Cpu65c02Opcode cpy : Cpu65c02Opcode.cpyFamily() )
 			assertEquals(cpy, Cpu65c02Opcode.fromOpcodeByte(cpy.opcodeByte()));
+		for( Cpu65c02Opcode branch : Cpu65c02Opcode.branchFamily() )
+			assertEquals(branch, Cpu65c02Opcode.fromOpcodeByte(branch.opcodeByte()));
 	}
 
 	@Test
