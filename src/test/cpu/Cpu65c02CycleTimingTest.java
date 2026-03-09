@@ -329,4 +329,36 @@ public class Cpu65c02CycleTimingTest {
             assertEquals(4, env.cpu.getLastInstructionCycleCount());
         }
     }
+
+    @Test
+    public void branchTakenAndPageCrossQueueExpectedSubcycles() throws Exception {
+        for( String profile : CPU_PROFILES ) {
+            // LDA #$01 ; BEQ +1 => branch not taken: 2 cycles => 1 subcycle
+            CpuEnv env = createEnv(profile);
+            loadProgram(env, 0xA9, 0x01, 0xF0, 0x01);
+            runInstruction(env); // reset
+            runInstruction(env); // LDA #$01 (Z clear)
+            int subNotTaken = runInstructionAndCountSubcycles(env);
+            assertEquals(1, subNotTaken);
+            assertEquals(2, env.cpu.getLastInstructionCycleCount());
+
+            // LDA #$00 ; BEQ +1 => taken same page: 3 cycles => 2 subcycles
+            env = createEnv(profile);
+            loadProgram(env, 0xA9, 0x00, 0xF0, 0x01);
+            runInstruction(env); // reset
+            runInstruction(env); // LDA #$00 (Z set)
+            int subTakenSame = runInstructionAndCountSubcycles(env);
+            assertEquals(2, subTakenSame);
+            assertEquals(3, env.cpu.getLastInstructionCycleCount());
+
+            // LDA #$00 ; BEQ -128 at $0202 => target crosses into $01xx page.
+            env = createEnv(profile);
+            loadProgram(env, 0xA9, 0x00, 0xF0, 0x80); // LDA #$00 ; BEQ -128
+            runInstruction(env); // reset
+            runInstruction(env); // LDA #$00 (Z set)
+            int subTakenCross = runInstructionAndCountSubcycles(env);
+            assertEquals(3, subTakenCross);
+            assertEquals(4, env.cpu.getLastInstructionCycleCount());
+        }
+    }
 }

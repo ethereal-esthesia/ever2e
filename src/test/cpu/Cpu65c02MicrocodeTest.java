@@ -1471,6 +1471,61 @@ public class Cpu65c02MicrocodeTest {
 	}
 
 	@Test
+	public void allPageCrossPenaltyReadOpcodesUseSplitScriptWithDummyRead() {
+		int[] opcodes = new int[] {
+				0x7D, 0x79, 0x71, // ADC abs,x abs,y ind,y
+				0x3D, 0x39, 0x31, // AND
+				0xDD, 0xD9, 0xD1, // CMP
+				0x5D, 0x59, 0x51, // EOR
+				0xBD, 0xB9, 0xB1, // LDA
+				0x1D, 0x19, 0x11, // ORA
+				0xFD, 0xF9, 0xF1, // SBC
+				0xBC,             // LDY abs,x
+				0xBE              // LDX abs,y
+		};
+		for( int opcode : opcodes ) {
+			Cpu65c02OpcodeView view = Cpu65c02Microcode.opcodeForByte(opcode);
+			MicroOp[] noCross = view.getExpectedMnemonicOrder(false);
+			MicroOp[] cross = view.getExpectedMnemonicOrder(true);
+			assertEquals(String.format("$%02X must add exactly one page-cross cycle", opcode),
+					noCross.length + 1, cross.length);
+			assertEquals(String.format("$%02X must insert dummy read on page-cross path", opcode),
+					MicroOp.M_READ_DUMMY, cross[cross.length-2]);
+			assertEquals(String.format("$%02X must still perform final effective read", opcode),
+					MicroOp.M_READ_EA, cross[cross.length-1]);
+		}
+	}
+
+	@Test
+	public void noPenaltyAbsoluteIndexedReadsDoNotSplit() {
+		int[] opcodes = new int[] {
+				0x3C, // BIT abs,x
+				0x5C, 0xDC, 0xFC // CMD fixed-cycle NOP abs,x
+		};
+		for( int opcode : opcodes ) {
+			Cpu65c02OpcodeView view = Cpu65c02Microcode.opcodeForByte(opcode);
+			assertArrayEquals(String.format("$%02X should not have a page-cross split path", opcode),
+					view.getExpectedMnemonicOrder(false), view.getExpectedMnemonicOrder(true));
+		}
+	}
+
+	@Test
+	public void allBranchOpcodesExposeTakenMicrocodeStep() {
+		int[] branches = new int[] { 0x10, 0x30, 0x50, 0x70, 0x80, 0x90, 0xB0, 0xD0, 0xF0 };
+		for( int opcode : branches ) {
+			Cpu65c02OpcodeView view = Cpu65c02Microcode.opcodeForByte(opcode);
+			MicroOp[] notTaken = view.getExpectedMnemonicOrder(false);
+			MicroOp[] taken = view.getExpectedMnemonicOrder(true);
+			assertEquals(String.format("$%02X branch not-taken cycles", opcode), 2, notTaken.length);
+			assertEquals(String.format("$%02X branch taken cycles", opcode), 3, taken.length);
+			assertArrayEquals(String.format("$%02X branch base path", opcode),
+					new MicroOp[] { MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA }, notTaken);
+			assertArrayEquals(String.format("$%02X branch taken path", opcode),
+					new MicroOp[] { MicroOp.M_FETCH_OPCODE, MicroOp.M_READ_IMM_DATA, MicroOp.M_INTERNAL }, taken);
+		}
+	}
+
+	@Test
 	public void allStaOpcodesHaveExpectedMicrocodeOrder() {
 		for( StaExpect expect : STA_EXPECTATIONS ) {
 			Cpu65c02OpcodeView entry = Cpu65c02Microcode.opcodeForByte(expect.opcode);

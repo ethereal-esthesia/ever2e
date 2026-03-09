@@ -39,6 +39,16 @@ public final class Cpu65c02CycleEstimator {
 			default:
 				break;
 		}
+		if( isBranch(op.getMnemonic()) ) {
+			int offset = memory.getByte((pc+1)&0xffff);
+			if( isBranchTaken(op.getMnemonic(), reg) ) {
+				cycles++;
+				int nextPc = (pc + op.getInstrSize()) & 0xffff;
+				int target = (nextPc + (byte) offset) & 0xffff;
+				if( (nextPc>>8)!=(target>>8) )
+					cycles++;
+			}
+		}
 		OpcodeMnemonic mnemonic = op.getMnemonic();
 		if( reg.getP(Register.StatusRegister.D) &&
 				(mnemonic==OpcodeMnemonic.ADC || mnemonic==OpcodeMnemonic.SBC) )
@@ -71,6 +81,50 @@ public final class Cpu65c02CycleEstimator {
 				return mode==AddressMode.ABS_X;
 			case LDX:
 				return mode==AddressMode.ABS_Y;
+			default:
+				return false;
+		}
+	}
+
+	private static boolean isBranch(OpcodeMnemonic mnemonic) {
+		if( mnemonic==null )
+			return false;
+		switch( mnemonic ) {
+			case BCC:
+			case BCS:
+			case BEQ:
+			case BMI:
+			case BNE:
+			case BPL:
+			case BRA:
+			case BVC:
+			case BVS:
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	private static boolean isBranchTaken(OpcodeMnemonic mnemonic, Register reg) {
+		switch( mnemonic ) {
+			case BCC:
+				return !reg.getP(Register.StatusRegister.C);
+			case BCS:
+				return reg.getP(Register.StatusRegister.C);
+			case BEQ:
+				return reg.getP(Register.StatusRegister.Z);
+			case BMI:
+				return reg.getP(Register.StatusRegister.N);
+			case BNE:
+				return !reg.getP(Register.StatusRegister.Z);
+			case BPL:
+				return !reg.getP(Register.StatusRegister.N);
+			case BRA:
+				return true;
+			case BVC:
+				return !reg.getP(Register.StatusRegister.V);
+			case BVS:
+				return reg.getP(Register.StatusRegister.V);
 			default:
 				return false;
 		}
