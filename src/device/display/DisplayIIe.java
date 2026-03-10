@@ -84,6 +84,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private boolean initializationComplete;
 	private boolean windowFocused = true;
 	private boolean mouseInsideWindow;
+	private boolean enforcingConfiguredFullscreenMode;
 	private final MacPresentationController macPresentation = new MacPresentationController();
 
 	private static final int PAL_INDEX_COLOR = 0;
@@ -1985,6 +1986,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	}
 
 	private void enterConfiguredFullscreenMode() {
+		if( enforcingConfiguredFullscreenMode )
+			return;
+		enforcingConfiguredFullscreenMode = true;
+		try {
 		if( "desktop".equals(sdlFullscreenMode) ) {
 			SDLVideo.nSDL_SetWindowFullscreenMode(sdlWindow, 0L);
 		}
@@ -1997,6 +2002,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		SDLVideo.SDL_SetWindowFullscreen(sdlWindow, true);
 		fullscreen = true;
 		mouseInsideWindow = true;
+		}
+		finally {
+			enforcingConfiguredFullscreenMode = false;
+		}
 	}
 
 	private void closeWindow() {
@@ -2049,6 +2058,25 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 					if( sdlTextAnchorDebug )
 						System.err.println("[debug] sdl_text_anchor source=focus_gained action=apply_mode");
 					applyMacPresentationLock("focus_gained");
+					continue;
+				}
+				if( type==SDLEvents.SDL_EVENT_WINDOW_ENTER_FULLSCREEN ) {
+					fullscreen = true;
+					mouseInsideWindow = true;
+					// Green-button/native fullscreen can bypass our normal toggle path.
+					// Normalize back to the configured fullscreen mode.
+					if( "exclusive".equals(sdlFullscreenMode) )
+						enterConfiguredFullscreenMode();
+					setSdlInputGrab(windowFocused, "window_enter_fullscreen");
+					updateSdlCursorVisibility("window_enter_fullscreen");
+					applyMacPresentationLock("window_enter_fullscreen");
+					continue;
+				}
+				if( type==SDLEvents.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN ) {
+					fullscreen = false;
+					setSdlInputGrab(windowFocused, "window_leave_fullscreen");
+					updateSdlCursorVisibility("window_leave_fullscreen");
+					applyMacPresentationLock("window_leave_fullscreen");
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_MOUSE_ENTER ) {
