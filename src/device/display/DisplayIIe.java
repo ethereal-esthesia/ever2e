@@ -83,6 +83,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private boolean pendingSdlInputGrabApply;
 	private boolean initializationComplete;
 	private boolean windowFocused = true;
+	private boolean mouseInsideWindow;
 	private final MacPresentationController macPresentation = new MacPresentationController();
 
 	private static final int PAL_INDEX_COLOR = 0;
@@ -1509,6 +1510,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				}
 				SDLVideo.SDL_SetWindowFullscreen(sdlWindow, true);
 				fullscreen = true;
+				mouseInsideWindow = true;
 			}
 			else {
 				SDLVideo.SDL_SetWindowPosition(sdlWindow, windowedX, windowedY);
@@ -1516,6 +1518,13 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				fullscreen = false;
 			}
 			SDLVideo.SDL_RaiseWindow(sdlWindow);
+			// Re-apply runtime state immediately so toggling back/forth yields
+			// the same effective settings as startup mode.
+			applySdlTextInputMode();
+			setSdlInputGrab(windowFocused, "recreate_window_mode");
+			updateSdlCursorVisibility("recreate_window_mode");
+			pendingSdlTextInputModeApply = false;
+			pendingSdlInputGrabApply = false;
 			applyMacPresentationLock("recreate_window");
 		}
 		catch( HardwareException e ) {
@@ -1934,8 +1943,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			SDLRender.nSDL_RenderTexture(sdlRenderer, sdlTexture, 0L, dst.address());
 		}
 		SDLRender.SDL_RenderPresent(sdlRenderer);
-		if( fullscreen )
-			org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
+		updateSdlCursorVisibility("frame_tick");
 		if( sdlImeUiSelfImplemented && ("offscreen".equals(sdlTextInputMode) || "center".equals(sdlTextInputMode)) )
 			applySdlTextInputAreaForMode("frame_tick");
 		pollSdlEvents();
@@ -1944,19 +1952,35 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private void setSdlInputGrab(boolean enabled, String source) {
 		if( sdlWindow==0L )
 			return;
-		SDLVideo.SDL_SetWindowKeyboardGrab(sdlWindow, enabled);
-		SDLVideo.SDL_SetWindowMouseGrab(sdlWindow, enabled);
-		org.lwjgl.sdl.SDLMouse.SDL_SetWindowRelativeMouseMode(sdlWindow, enabled);
-		if( enabled )
-			org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
-		else
-			org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
+		boolean grabEnabled = enabled && fullscreen;
+		SDLVideo.SDL_SetWindowKeyboardGrab(sdlWindow, grabEnabled);
+		SDLVideo.SDL_SetWindowMouseGrab(sdlWindow, grabEnabled);
+		org.lwjgl.sdl.SDLMouse.SDL_SetWindowRelativeMouseMode(sdlWindow, grabEnabled);
+		updateSdlCursorVisibility(source);
 		if( keyLoggingEnabled || sdlTextAnchorDebug ) {
 			System.err.println("[debug] sdl_input_grab source="+source+
 					" enabled="+enabled+
+					" effectiveGrab="+grabEnabled+
 					" fullscreen="+fullscreen);
 		}
 		applyMacPresentationLock("input_grab_"+source);
+	}
+
+	private void updateSdlCursorVisibility(String source) {
+		if( sdlWindow==0L )
+			return;
+		boolean hideCursor = fullscreen ? windowFocused : (windowFocused && mouseInsideWindow);
+		if( hideCursor )
+			org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
+		else
+			org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
+		if( sdlTextAnchorDebug ) {
+			System.err.println("[debug] sdl_cursor source="+source+
+					" hide="+hideCursor+
+					" fullscreen="+fullscreen+
+					" focused="+windowFocused+
+					" mouseInside="+mouseInsideWindow);
+		}
 	}
 
 	private void enterSdlFullscreenStartup() {
@@ -2020,6 +2044,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 					SDLKeyboard.SDL_StopTextInput(sdlWindow);
 					if( sdlTextAnchorDebug )
 						System.err.println("[debug] sdl_text_anchor source=focus_lost action=stop_text_input");
+					updateSdlCursorVisibility("focus_lost");
 					applyMacPresentationLock("focus_lost");
 					continue;
 				}
@@ -2027,11 +2052,19 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 					windowFocused = true;
 					applySdlTextInputMode();
 					setSdlInputGrab(true, "focus_gained");
-					if( fullscreen )
-						org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
 					if( sdlTextAnchorDebug )
 						System.err.println("[debug] sdl_text_anchor source=focus_gained action=apply_mode");
 					applyMacPresentationLock("focus_gained");
+					continue;
+				}
+				if( type==SDLEvents.SDL_EVENT_WINDOW_MOUSE_ENTER ) {
+					mouseInsideWindow = true;
+					updateSdlCursorVisibility("mouse_enter");
+					continue;
+				}
+				if( type==SDLEvents.SDL_EVENT_WINDOW_MOUSE_LEAVE ) {
+					mouseInsideWindow = false;
+					updateSdlCursorVisibility("mouse_leave");
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_KEY_DOWN || type==SDLEvents.SDL_EVENT_KEY_UP ) {
