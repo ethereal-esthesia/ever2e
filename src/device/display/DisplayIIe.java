@@ -7,10 +7,6 @@ import java.awt.image.BufferedImage;
 import java.util.Random;
 
 import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
 import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLError;
 import org.lwjgl.sdl.SDLInit;
@@ -36,7 +32,7 @@ import device.keyboard.KeyboardIIe;
 
 public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static volatile boolean keyLoggingEnabled;
-	private static volatile String windowBackend = "lwjgl";
+	private static volatile String windowBackend = "sdl";
 	private static volatile boolean startFullscreenOnLaunch;
 	private static volatile String sdlTextInputMode = "off";
 	private static volatile String sdlFullscreenMode = "exclusive";
@@ -71,17 +67,11 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private int palIndex;
 	private int hueShift = -32;
 	private KeyboardIIe keyboard;
-	private long glfwWindow;
 	private long sdlWindow;
-	private long sdlGlContext;
 	private long sdlRenderer;
 	private long sdlTexture;
 	private java.nio.ByteBuffer sdlTextureBytes;
 	private java.nio.IntBuffer sdlTextureInts;
-	private int textureId;
-	private java.nio.IntBuffer uploadPixels;
-	private boolean linearFilteringActive;
-	private boolean textureFilteringInitialized;
 	private boolean fullscreen;
 	private int windowedX;
 	private int windowedY;
@@ -112,17 +102,35 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int WINDOW_HEIGHT = CONTENT_HEIGHT + (BORDER_Y * 2);
 	private static final long FULLSCREEN_TRANSITION_GUARD_NS = 1_500_000_000L;
 	private static final int SDL_TEXT_ANCHOR_BELOW_OFFSET = 400;
+	private static final int FRAME_H_CYCLES = 65;
+	private static final int FRAME_V_LINES = 262;
+	private static final int FRAME_CYCLES = FRAME_H_CYCLES * FRAME_V_LINES;
+
+	public static int[] captureFrameBytes(MemoryBusIIe memoryBus) {
+		ScanlineTracer8 frameTracer = new ScanlineTracer8();
+		frameTracer.setScanStart(25, 70);
+		frameTracer.setScanSize(FRAME_H_CYCLES, FRAME_V_LINES);
+		frameTracer.setPage(memoryBus.isPage2() && !memoryBus.is80Store() ? 2 : 1);
+		frameTracer.setTraceMap(memoryBus.isHiRes() ? HI40_TRACE : LO40_TRACE);
+		frameTracer.coldReset();
+		int[] bytes = new int[FRAME_CYCLES];
+		for( int i = 0; i<FRAME_CYCLES; i++ ) {
+			frameTracer.cycle();
+			bytes[i] = memoryBus.peekByteNoSideEffects(frameTracer.getAddress());
+		}
+		return bytes;
+	}
 
 	public static void setWindowBackend(String backend) {
 		if( backend==null ) {
-			windowBackend = "lwjgl";
+			windowBackend = "sdl";
 			return;
 		}
 		String normalized = backend.trim().toLowerCase();
 		if( normalized.isEmpty() )
-			normalized = "lwjgl";
-		if( !"lwjgl".equals(normalized) && !"sdl".equals(normalized) )
-			throw new IllegalArgumentException("Unsupported window backend: "+backend+" (expected lwjgl or sdl)");
+			normalized = "sdl";
+		if( !"sdl".equals(normalized) )
+			throw new IllegalArgumentException("Unsupported window backend: "+backend+" (expected sdl)");
 		windowBackend = normalized;
 	}
 
@@ -1312,10 +1320,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		tracer.setScanSize(65, 262);
 		initializeWindow();
 		if( startFullscreenOnLaunch ) {
-			if( "sdl".equals(windowBackend) )
-				pendingStartFullscreen = true;
-			else
-				toggleFullscreen();
+			pendingStartFullscreen = true;
 		}
 		coldReset();
 		initializationComplete = true;
@@ -1326,142 +1331,11 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	}
 
 	private void initializeWindow() throws HardwareException {
-		if( "sdl".equals(windowBackend) )
-			initializeSdlWindow();
-		else
-			initializeLwjglWindow();
-	}
-
-	private void initializeLwjglWindow() throws HardwareException {
-		if( !GLFW.glfwInit() )
-			throw new HardwareException("Unable to initialize GLFW");
-		GLFW.glfwDefaultWindowHints();
-		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_TRUE);
-		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE);
-		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 2);
-		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);
-		glfwWindow = GLFW.glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Ever2e", 0L, 0L);
-		if( glfwWindow==0L ) {
-			GLFW.glfwTerminate();
-			throw new HardwareException("Unable to create GLFW window");
-		}
-		GLFW.glfwMakeContextCurrent(glfwWindow);
-		GL.createCapabilities();
-		GLFW.glfwSwapInterval(1);
-		GLFW.glfwSetInputMode(glfwWindow, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
-		GLFW.glfwSetFramebufferSizeCallback(glfwWindow, (window, width, height) -> GL11.glViewport(0, 0, width, height));
-		GLFW.glfwSetWindowPosCallback(glfwWindow, (window, x, y) -> {
-			if( System.nanoTime()<fullscreenTransitionGuardUntilNs )
-				return;
-			if( !fullscreen && GLFW.glfwGetWindowAttrib(window, GLFW.GLFW_MAXIMIZED)==GLFW.GLFW_FALSE ) {
-				windowedX = x;
-				windowedY = y;
-			}
-		});
-		GLFW.glfwSetWindowSizeCallback(glfwWindow, (window, width, height) -> {
-			if( System.nanoTime()<fullscreenTransitionGuardUntilNs )
-				return;
-			if( !fullscreen && GLFW.glfwGetWindowAttrib(window, GLFW.GLFW_MAXIMIZED)==GLFW.GLFW_FALSE &&
-					!isLikelyFullscreenSized(width, height) ) {
-				windowedWidth = width;
-				windowedHeight = height;
-			}
-		});
-		java.nio.IntBuffer fbWidth = BufferUtils.createIntBuffer(1);
-		java.nio.IntBuffer fbHeight = BufferUtils.createIntBuffer(1);
-		GLFW.glfwGetFramebufferSize(glfwWindow, fbWidth, fbHeight);
-		GL11.glViewport(0, 0, fbWidth.get(0), fbHeight.get(0));
-		GL11.glEnable(GL11.GL_TEXTURE_2D);
-		textureId = GL11.glGenTextures();
-		GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId);
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
-		setTextureFiltering(false);
-		GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, CONTENT_WIDTH, CONTENT_HEIGHT, 0,
-				GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, (java.nio.IntBuffer) null);
-		uploadPixels = BufferUtils.createIntBuffer(CONTENT_WIDTH * CONTENT_HEIGHT);
-		GLFW.glfwSetKeyCallback(glfwWindow, (window, key, scancode, action, mods) -> {
-			char keyChar = mapKeyChar(key, scancode, mods);
-			boolean fullscreenToggle = action==GLFW.GLFW_PRESS &&
-					(((mods&GLFW.GLFW_MOD_SUPER)!=0 && (mods&GLFW.GLFW_MOD_CONTROL)!=0 && Character.toLowerCase(keyChar)=='f') ||
-					 ((mods&GLFW.GLFW_MOD_SUPER)!=0 && (key==GLFW.GLFW_KEY_ENTER || key==GLFW.GLFW_KEY_KP_ENTER)));
-			if( fullscreenToggle ) {
-				toggleFullscreen();
-				return;
-			}
-			int awtKeyCode = toAwtKeyCode(key);
-			if( awtKeyCode==KeyEvent.VK_UNDEFINED )
-				return;
-			int awtModifiers = toAwtModifiers(mods);
-			boolean shiftDown = (mods&GLFW.GLFW_MOD_SHIFT)!=0;
-			boolean ctrlDown = (mods&GLFW.GLFW_MOD_CONTROL)!=0;
-			boolean altDown = (mods&GLFW.GLFW_MOD_ALT)!=0;
-			boolean metaDown = (mods&GLFW.GLFW_MOD_SUPER)!=0;
-			if( keyLoggingEnabled ) {
-				System.err.println("[lwjgl-key] action="+action+
-						" key="+key+
-						" awt="+awtKeyCode+
-						" char="+(keyChar==KeyEvent.CHAR_UNDEFINED ? "undef":Integer.toString((int) keyChar))+
-						" shift="+shiftDown+
-						" ctrl="+ctrlDown+
-						" alt="+altDown+
-						" meta="+metaDown+
-						" mods=0x"+Integer.toHexString(mods));
-			}
-			if( action==GLFW.GLFW_PRESS || action==GLFW.GLFW_REPEAT ) {
-				keyboard.keyPressedRaw(awtKeyCode, awtModifiers, keyChar, shiftDown, ctrlDown, altDown, metaDown);
-			}
-			else if( action==GLFW.GLFW_RELEASE ) {
-				keyboard.keyReleasedRaw(awtKeyCode, awtModifiers, keyChar, shiftDown, ctrlDown, altDown, metaDown);
-			}
-		});
+		initializeSdlWindow();
 	}
 
 	private void toggleFullscreen() {
-		if( "sdl".equals(windowBackend) ) {
-			toggleSdlFullscreen();
-			return;
-		}
-		if( glfwWindow==0L )
-			return;
-		fullscreenTransitionGuardUntilNs = System.nanoTime() + FULLSCREEN_TRANSITION_GUARD_NS;
-		if( !fullscreen ) {
-			if( GLFW.glfwGetWindowAttrib(glfwWindow, GLFW.GLFW_MAXIMIZED)==GLFW.GLFW_FALSE ) {
-				java.nio.IntBuffer xBuf = BufferUtils.createIntBuffer(1);
-				java.nio.IntBuffer yBuf = BufferUtils.createIntBuffer(1);
-				java.nio.IntBuffer wBuf = BufferUtils.createIntBuffer(1);
-				java.nio.IntBuffer hBuf = BufferUtils.createIntBuffer(1);
-				GLFW.glfwGetWindowPos(glfwWindow, xBuf, yBuf);
-				GLFW.glfwGetWindowSize(glfwWindow, wBuf, hBuf);
-				windowedX = xBuf.get(0);
-				windowedY = yBuf.get(0);
-				windowedWidth = wBuf.get(0);
-				windowedHeight = hBuf.get(0);
-			}
-			long monitor = GLFW.glfwGetPrimaryMonitor();
-			if( monitor==0L )
-				return;
-			org.lwjgl.glfw.GLFWVidMode mode = GLFW.glfwGetVideoMode(monitor);
-			if( mode==null )
-				return;
-			GLFW.glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, mode.width(), mode.height(), mode.refreshRate());
-			fullscreen = true;
-		}
-		else {
-			GLFW.glfwSetWindowMonitor(glfwWindow, 0L, windowedX, windowedY, windowedWidth, windowedHeight, 0);
-			fullscreen = false;
-		}
-	}
-
-	private boolean isLikelyFullscreenSized(int width, int height) {
-		long monitor = GLFW.glfwGetPrimaryMonitor();
-		if( monitor==0L )
-			return false;
-		org.lwjgl.glfw.GLFWVidMode mode = GLFW.glfwGetVideoMode(monitor);
-		if( mode==null )
-			return false;
-		return width >= (int) Math.floor(mode.width() * 0.95) &&
-				height >= (int) Math.floor(mode.height() * 0.95);
+		toggleSdlFullscreen();
 	}
 
 	private void initializeSdlWindow() throws HardwareException {
@@ -1636,34 +1510,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 	}
 
-	private void setTextureFiltering(boolean linear) {
-		if( textureId==0 )
-			return;
-		if( textureFilteringInitialized && linearFilteringActive==linear )
-			return;
-		GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId);
-		int filter = linear ? GL11.GL_LINEAR : GL11.GL_NEAREST;
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, filter);
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
-		linearFilteringActive = linear;
-		textureFilteringInitialized = true;
-	}
-
-	private int toAwtModifiers(int glfwMods) {
-		int mods = 0;
-		if( (glfwMods&GLFW.GLFW_MOD_SHIFT)!=0 )
-			mods |= Event.SHIFT_MASK;
-		if( (glfwMods&GLFW.GLFW_MOD_CONTROL)!=0 )
-			mods |= Event.CTRL_MASK;
-		if( (glfwMods&GLFW.GLFW_MOD_ALT)!=0 )
-			mods |= Event.ALT_MASK;
-		if( (glfwMods&GLFW.GLFW_MOD_SUPER)!=0 )
-			mods |= Event.META_MASK;
-		if( (glfwMods&GLFW.GLFW_MOD_CAPS_LOCK)!=0 )
-			mods |= Event.CAPS_LOCK;
-		return mods;
-	}
-
 	private int toAwtModifiersFromSdl(short sdlMods) {
 		int mods = 0;
 		if( (sdlMods&SDLKeycode.SDL_KMOD_SHIFT)!=0 )
@@ -1685,121 +1531,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			return Character.isLetter(out) ? Character.toLowerCase(out) : out;
 		}
 		return KeyEvent.CHAR_UNDEFINED;
-	}
-
-	private char mapKeyChar(int key, int scancode, int mods) {
-		String keyName = GLFW.glfwGetKeyName(key, scancode);
-		if( keyName==null || keyName.isEmpty() )
-			return KeyEvent.CHAR_UNDEFINED;
-		char out = keyName.charAt(0);
-		if( Character.isLetter(out) ) {
-			out = Character.toLowerCase(out);
-		}
-		else if( (mods&GLFW.GLFW_MOD_SHIFT)!=0 ) {
-			out = Character.toUpperCase(out);
-		}
-		return out;
-	}
-
-	private int toAwtKeyCode(int key) {
-		switch( key ) {
-			case GLFW.GLFW_KEY_A: return KeyEvent.VK_A;
-			case GLFW.GLFW_KEY_B: return KeyEvent.VK_B;
-			case GLFW.GLFW_KEY_C: return KeyEvent.VK_C;
-			case GLFW.GLFW_KEY_D: return KeyEvent.VK_D;
-			case GLFW.GLFW_KEY_E: return KeyEvent.VK_E;
-			case GLFW.GLFW_KEY_F: return KeyEvent.VK_F;
-			case GLFW.GLFW_KEY_G: return KeyEvent.VK_G;
-			case GLFW.GLFW_KEY_H: return KeyEvent.VK_H;
-			case GLFW.GLFW_KEY_I: return KeyEvent.VK_I;
-			case GLFW.GLFW_KEY_J: return KeyEvent.VK_J;
-			case GLFW.GLFW_KEY_K: return KeyEvent.VK_K;
-			case GLFW.GLFW_KEY_L: return KeyEvent.VK_L;
-			case GLFW.GLFW_KEY_M: return KeyEvent.VK_M;
-			case GLFW.GLFW_KEY_N: return KeyEvent.VK_N;
-			case GLFW.GLFW_KEY_O: return KeyEvent.VK_O;
-			case GLFW.GLFW_KEY_P: return KeyEvent.VK_P;
-			case GLFW.GLFW_KEY_Q: return KeyEvent.VK_Q;
-			case GLFW.GLFW_KEY_R: return KeyEvent.VK_R;
-			case GLFW.GLFW_KEY_S: return KeyEvent.VK_S;
-			case GLFW.GLFW_KEY_T: return KeyEvent.VK_T;
-			case GLFW.GLFW_KEY_U: return KeyEvent.VK_U;
-			case GLFW.GLFW_KEY_V: return KeyEvent.VK_V;
-			case GLFW.GLFW_KEY_W: return KeyEvent.VK_W;
-			case GLFW.GLFW_KEY_X: return KeyEvent.VK_X;
-			case GLFW.GLFW_KEY_Y: return KeyEvent.VK_Y;
-			case GLFW.GLFW_KEY_Z: return KeyEvent.VK_Z;
-			case GLFW.GLFW_KEY_0: return KeyEvent.VK_0;
-			case GLFW.GLFW_KEY_1: return KeyEvent.VK_1;
-			case GLFW.GLFW_KEY_2: return KeyEvent.VK_2;
-			case GLFW.GLFW_KEY_3: return KeyEvent.VK_3;
-			case GLFW.GLFW_KEY_4: return KeyEvent.VK_4;
-			case GLFW.GLFW_KEY_5: return KeyEvent.VK_5;
-			case GLFW.GLFW_KEY_6: return KeyEvent.VK_6;
-			case GLFW.GLFW_KEY_7: return KeyEvent.VK_7;
-			case GLFW.GLFW_KEY_8: return KeyEvent.VK_8;
-			case GLFW.GLFW_KEY_9: return KeyEvent.VK_9;
-			case GLFW.GLFW_KEY_MINUS: return KeyEvent.VK_MINUS;
-			case GLFW.GLFW_KEY_EQUAL: return KeyEvent.VK_EQUALS;
-			case GLFW.GLFW_KEY_LEFT_BRACKET: return KeyEvent.VK_OPEN_BRACKET;
-			case GLFW.GLFW_KEY_RIGHT_BRACKET: return KeyEvent.VK_CLOSE_BRACKET;
-			case GLFW.GLFW_KEY_BACKSLASH: return KeyEvent.VK_BACK_SLASH;
-			case GLFW.GLFW_KEY_SEMICOLON: return KeyEvent.VK_SEMICOLON;
-			case GLFW.GLFW_KEY_APOSTROPHE: return KeyEvent.VK_QUOTE;
-			case GLFW.GLFW_KEY_COMMA: return KeyEvent.VK_COMMA;
-			case GLFW.GLFW_KEY_PERIOD: return KeyEvent.VK_PERIOD;
-			case GLFW.GLFW_KEY_SLASH: return KeyEvent.VK_SLASH;
-			case GLFW.GLFW_KEY_GRAVE_ACCENT: return KeyEvent.VK_BACK_QUOTE;
-			case GLFW.GLFW_KEY_ENTER: return KeyEvent.VK_ENTER;
-			case GLFW.GLFW_KEY_BACKSPACE: return KeyEvent.VK_BACK_SPACE;
-			case GLFW.GLFW_KEY_TAB: return KeyEvent.VK_TAB;
-			case GLFW.GLFW_KEY_ESCAPE: return KeyEvent.VK_ESCAPE;
-			case GLFW.GLFW_KEY_SPACE: return KeyEvent.VK_SPACE;
-			case GLFW.GLFW_KEY_LEFT: return KeyEvent.VK_LEFT;
-			case GLFW.GLFW_KEY_RIGHT: return KeyEvent.VK_RIGHT;
-			case GLFW.GLFW_KEY_UP: return KeyEvent.VK_UP;
-			case GLFW.GLFW_KEY_DOWN: return KeyEvent.VK_DOWN;
-			case GLFW.GLFW_KEY_LEFT_SHIFT:
-			case GLFW.GLFW_KEY_RIGHT_SHIFT: return KeyEvent.VK_SHIFT;
-			case GLFW.GLFW_KEY_LEFT_CONTROL:
-			case GLFW.GLFW_KEY_RIGHT_CONTROL: return KeyEvent.VK_CONTROL;
-			case GLFW.GLFW_KEY_CAPS_LOCK: return KeyEvent.VK_CAPS_LOCK;
-			case GLFW.GLFW_KEY_LEFT_ALT:
-			case GLFW.GLFW_KEY_RIGHT_ALT: return KeyEvent.VK_ALT;
-			case GLFW.GLFW_KEY_LEFT_SUPER:
-			case GLFW.GLFW_KEY_RIGHT_SUPER: return KeyEvent.VK_META;
-			case GLFW.GLFW_KEY_INSERT: return KeyEvent.VK_INSERT;
-			case GLFW.GLFW_KEY_F1: return KeyEvent.VK_F1;
-			case GLFW.GLFW_KEY_F2: return KeyEvent.VK_F2;
-			case GLFW.GLFW_KEY_F3: return KeyEvent.VK_F3;
-			case GLFW.GLFW_KEY_F4: return KeyEvent.VK_F4;
-			case GLFW.GLFW_KEY_F5: return KeyEvent.VK_F5;
-			case GLFW.GLFW_KEY_F6: return KeyEvent.VK_F6;
-			case GLFW.GLFW_KEY_F7: return KeyEvent.VK_F7;
-			case GLFW.GLFW_KEY_F8: return KeyEvent.VK_F8;
-			case GLFW.GLFW_KEY_F9: return KeyEvent.VK_F9;
-			case GLFW.GLFW_KEY_F10: return KeyEvent.VK_F10;
-			case GLFW.GLFW_KEY_F11: return KeyEvent.VK_F11;
-			case GLFW.GLFW_KEY_F12: return KeyEvent.VK_F12;
-			case GLFW.GLFW_KEY_KP_0: return KeyEvent.VK_NUMPAD0;
-			case GLFW.GLFW_KEY_KP_1: return KeyEvent.VK_NUMPAD1;
-			case GLFW.GLFW_KEY_KP_2: return KeyEvent.VK_NUMPAD2;
-			case GLFW.GLFW_KEY_KP_3: return KeyEvent.VK_NUMPAD3;
-			case GLFW.GLFW_KEY_KP_4: return KeyEvent.VK_NUMPAD4;
-			case GLFW.GLFW_KEY_KP_5: return KeyEvent.VK_NUMPAD5;
-			case GLFW.GLFW_KEY_KP_6: return KeyEvent.VK_NUMPAD6;
-			case GLFW.GLFW_KEY_KP_7: return KeyEvent.VK_NUMPAD7;
-			case GLFW.GLFW_KEY_KP_8: return KeyEvent.VK_NUMPAD8;
-			case GLFW.GLFW_KEY_KP_9: return KeyEvent.VK_NUMPAD9;
-			case GLFW.GLFW_KEY_KP_DECIMAL: return KeyEvent.VK_DECIMAL;
-			case GLFW.GLFW_KEY_KP_DIVIDE: return KeyEvent.VK_DIVIDE;
-			case GLFW.GLFW_KEY_KP_MULTIPLY: return KeyEvent.VK_MULTIPLY;
-			case GLFW.GLFW_KEY_KP_SUBTRACT: return KeyEvent.VK_SUBTRACT;
-			case GLFW.GLFW_KEY_KP_ADD: return KeyEvent.VK_ADD;
-			case GLFW.GLFW_KEY_KP_ENTER: return KeyEvent.VK_ENTER;
-			case GLFW.GLFW_KEY_KP_EQUAL: return KeyEvent.VK_EQUALS;
-			default: return KeyEvent.VK_UNDEFINED;
-		}
 	}
 
 	private int toAwtKeyCodeFromSdlScancode(int scancode) {
@@ -2145,23 +1876,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	}
 
 	private void blitToWindow(BufferedImage image) {
-		if( "sdl".equals(windowBackend) ) {
-			blitToSdl(image);
-			return;
-		}
-		blitToLwjgl(image);
-	}
-
-	private void blitToLwjgl(BufferedImage image) {
-		if( glfwWindow==0L )
-			return;
-		blitToActiveContext(image, true);
-		GLFW.glfwSwapBuffers(glfwWindow);
-		GLFW.glfwPollEvents();
-		if( GLFW.glfwWindowShouldClose(glfwWindow) ) {
-			closeWindow();
-			System.exit(0);
-		}
+		blitToSdl(image);
 	}
 
 	private void blitToSdl(BufferedImage image) {
@@ -2177,12 +1892,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		if( pendingSdlInputGrabApply && initializationComplete ) {
 			pendingSdlInputGrabApply = false;
-			SDLVideo.SDL_SetWindowKeyboardGrab(sdlWindow, true);
-			SDLVideo.SDL_SetWindowMouseGrab(sdlWindow, true);
-			org.lwjgl.sdl.SDLMouse.SDL_SetWindowRelativeMouseMode(sdlWindow, true);
-			org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
-			if( sdlTextAnchorDebug )
-				System.err.println("[debug] sdl_init step=apply_input_grab");
+			setSdlInputGrab(true, "deferred_init_apply");
 		}
 		int[] pixels = image.getRGB(0, 0, CONTENT_WIDTH, CONTENT_HEIGHT, null, 0, CONTENT_WIDTH);
 		sdlTextureInts.clear();
@@ -2222,6 +1932,23 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		pollSdlEvents();
 	}
 
+	private void setSdlInputGrab(boolean enabled, String source) {
+		if( sdlWindow==0L )
+			return;
+		SDLVideo.SDL_SetWindowKeyboardGrab(sdlWindow, enabled);
+		SDLVideo.SDL_SetWindowMouseGrab(sdlWindow, enabled);
+		org.lwjgl.sdl.SDLMouse.SDL_SetWindowRelativeMouseMode(sdlWindow, enabled);
+		if( enabled )
+			org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
+		else
+			org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
+		if( keyLoggingEnabled || sdlTextAnchorDebug ) {
+			System.err.println("[debug] sdl_input_grab source="+source+
+					" enabled="+enabled+
+					" fullscreen="+fullscreen);
+		}
+	}
+
 	private void enterSdlFullscreenStartup() {
 		if( sdlWindow==0L )
 			return;
@@ -2243,77 +1970,13 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			System.err.println("[debug] sdl_text_anchor source=startup_fullscreen action=entered_fullscreen");
 	}
 
-	private void blitToActiveContext(BufferedImage image, boolean lwjglWindow) {
-		int[] pixels = image.getRGB(0, 0, CONTENT_WIDTH, CONTENT_HEIGHT, null, 0, CONTENT_WIDTH);
-		uploadPixels.clear();
-		uploadPixels.put(pixels);
-		uploadPixels.flip();
-		GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId);
-		GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, CONTENT_WIDTH, CONTENT_HEIGHT,
-				GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, uploadPixels);
-		java.nio.IntBuffer fbWidth = BufferUtils.createIntBuffer(1);
-		java.nio.IntBuffer fbHeight = BufferUtils.createIntBuffer(1);
-		if( lwjglWindow ) {
-			GLFW.glfwGetFramebufferSize(glfwWindow, fbWidth, fbHeight);
-		}
-		else {
-			SDLVideo.SDL_GetWindowSizeInPixels(sdlWindow, fbWidth, fbHeight);
-		}
-		int framebufferWidth = fbWidth.get(0);
-		int framebufferHeight = fbHeight.get(0);
-		double fitScale = Math.min(framebufferWidth / (double) WINDOW_WIDTH, framebufferHeight / (double) WINDOW_HEIGHT);
-		int frameWidth = Math.max(1, (int) Math.round(WINDOW_WIDTH * fitScale));
-		int frameHeight = Math.max(1, (int) Math.round(WINDOW_HEIGHT * fitScale));
-		int frameX = Math.max((framebufferWidth - frameWidth) / 2, 0);
-		int frameY = Math.max((framebufferHeight - frameHeight) / 2, 0);
-		int contentWidth = Math.max(1, (int) Math.round(CONTENT_WIDTH * fitScale));
-		int contentHeight = Math.max(1, (int) Math.round(CONTENT_HEIGHT * fitScale));
-		int borderX = Math.max(0, (int) Math.round(BORDER_X * fitScale));
-		int borderY = Math.max(0, (int) Math.round(BORDER_Y * fitScale));
-		int contentX = frameX + borderX;
-		int contentY = frameY + borderY;
-		GL11.glViewport(0, 0, framebufferWidth, framebufferHeight);
-		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
-		boolean scaled = contentWidth!=CONTENT_WIDTH || contentHeight!=CONTENT_HEIGHT;
-		setTextureFiltering(scaled);
-		GL11.glViewport(contentX, contentY, contentWidth, contentHeight);
-		GL11.glMatrixMode(GL11.GL_PROJECTION);
-		GL11.glLoadIdentity();
-		GL11.glOrtho(-1, 1, -1, 1, -1, 1);
-		GL11.glMatrixMode(GL11.GL_MODELVIEW);
-		GL11.glLoadIdentity();
-		GL11.glBegin(GL11.GL_QUADS);
-		GL11.glTexCoord2f(0f, 1f); GL11.glVertex2f(-1f, -1f);
-		GL11.glTexCoord2f(1f, 1f); GL11.glVertex2f(1f, -1f);
-		GL11.glTexCoord2f(1f, 0f); GL11.glVertex2f(1f, 1f);
-		GL11.glTexCoord2f(0f, 0f); GL11.glVertex2f(-1f, 1f);
-		GL11.glEnd();
-	}
-
 	private void closeWindow() {
-		if( textureId!=0 ) {
-			GL11.glDeleteTextures(textureId);
-			textureId = 0;
-		}
-		if( "sdl".equals(windowBackend) )
-			closeSdlWindow(true);
-		else
-			closeLwjglWindow();
-	}
-
-	private void closeLwjglWindow() {
-		if( glfwWindow==0L )
-			return;
-		GLFW.glfwDestroyWindow(glfwWindow);
-		glfwWindow = 0L;
-		GLFW.glfwTerminate();
+		closeSdlWindow(true);
 	}
 
 	private void closeSdlWindow(boolean quitSdl) {
-		if( sdlGlContext!=0L ) {
-			SDLVideo.SDL_GL_DestroyContext(sdlGlContext);
-			sdlGlContext = 0L;
-		}
+		if( sdlWindow!=0L )
+			setSdlInputGrab(false, "close_window");
 		if( sdlTexture!=0L ) {
 			SDLRender.nSDL_DestroyTexture(sdlTexture);
 			sdlTexture = 0L;

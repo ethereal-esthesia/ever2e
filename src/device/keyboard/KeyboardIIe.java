@@ -28,6 +28,7 @@ public class KeyboardIIe extends Keyboard {
 	private Queue<Boolean> pasteMarkerQueue = new LinkedList<>();
 	private Toolkit toolKit;
 	private Clipboard clipboard;
+	private boolean toolkitInitAttempted;
 
 	private int modifierSet;
 	private int functionKeySet;
@@ -199,19 +200,7 @@ public class KeyboardIIe extends Keyboard {
 		super(unitsPerCycle);
 		coldReset();
 		this.cpu = cpu;
-		try {
-			toolKit = Toolkit.getDefaultToolkit();
-		} catch( HeadlessException e ) {
-			toolKit = null;
-		}
-		if( toolKit!=null ) {
-			try {
-				clipboard = toolKit.getSystemClipboard();
-			} catch( HeadlessException | SecurityException e ) {
-				clipboard = null;
-			}
-		}
-		capsLockState = isCapsLockDown();
+		capsLockState = false;
 		applyCapsLockState();
 	}
 
@@ -669,6 +658,7 @@ public class KeyboardIIe extends Keyboard {
 			break;
 			
 		case KEY_MASK_F12|KEY_MASK_SHIFT:
+			ensureToolkitInitialized();
 			if( keyQueue.size()==0 && clipboard!=null ) {
 				Transferable contents = clipboard.getContents(null);
 				if( contents!=null && contents.isDataFlavorSupported(DataFlavor.stringFlavor) ) {
@@ -697,11 +687,32 @@ public class KeyboardIIe extends Keyboard {
 		consumedQueuedKeyCount = 0L;
 		pendingPastedKeys = 0;
 		pasteInputSuppressed = false;
-		capsLockState = isCapsLockDown();
+		// Keep reset path independent from host toolkit initialization.
+		// We sync caps-lock lazily when real keyboard input arrives.
+		capsLockState = false;
 		applyCapsLockState();
 	}
 
+	private void ensureToolkitInitialized() {
+		if( toolkitInitAttempted )
+			return;
+		toolkitInitAttempted = true;
+		try {
+			toolKit = Toolkit.getDefaultToolkit();
+		} catch( HeadlessException e ) {
+			toolKit = null;
+		}
+		if( toolKit!=null ) {
+			try {
+				clipboard = toolKit.getSystemClipboard();
+			} catch( HeadlessException | SecurityException e ) {
+				clipboard = null;
+			}
+		}
+	}
+
 	private boolean isCapsLockDown() {
+		ensureToolkitInitialized();
 		if( toolKit==null )
 			return false;
 		try {

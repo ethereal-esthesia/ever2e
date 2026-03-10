@@ -38,13 +38,13 @@ Specific `.emu` file:
 ./gradlew runHeadless --args="ROMS/Apple2e.emu"
 ```
 
-Windowed run (LWJGL):
+Windowed run (SDL):
 
 ```bash
 ./gradlew run
 ```
 
-Windowed run (SDL test backend):
+Windowed run (alias task):
 
 ```bash
 ./gradlew runSdl
@@ -102,9 +102,9 @@ Windowed run (SDL test backend):
 - `--no-logging`
   - Force quiet mode (kept for compatibility).
 - `--keylog`
-  - Enable keyboard input logging to stderr (`[lwjgl-key]` and key probe events).
-- `--window-backend lwjgl|sdl`
-  - Select window backend (default `lwjgl`, optional `sdl` for MAME-style fullscreen testing).
+  - Enable keyboard input logging to stderr (`[sdl-key]` and key probe events).
+- `--window-backend sdl`
+  - Window backend selection (SDL only).
 - `--start-fullscreen`
   - Start directly in fullscreen mode.
 - `--text-input-mode off|offscreen|normal|center`

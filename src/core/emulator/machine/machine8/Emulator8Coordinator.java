@@ -224,7 +224,7 @@ public class Emulator8Coordinator {
 			boolean noSound = false;
 			boolean debugLogging = false;
 			boolean keyLogging = false;
-			String windowBackend = "lwjgl";
+			String windowBackend = "sdl";
 			boolean startFullscreen = false;
 			String textInputMode = "off";
 			String sdlFullscreenMode = "exclusive";
