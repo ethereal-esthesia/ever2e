@@ -2075,10 +2075,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				if( type==SDLEvents.SDL_EVENT_WINDOW_ENTER_FULLSCREEN ) {
 					fullscreen = true;
 					mouseInsideWindow = true;
-					// Green-button/native fullscreen can bypass our normal toggle path.
-					// Normalize back to the configured fullscreen mode.
-					if( "exclusive".equals(sdlFullscreenMode) )
-						enterConfiguredFullscreenMode();
 					setSdlInputGrab(windowFocused, "window_enter_fullscreen");
 					updateSdlCursorVisibility("window_enter_fullscreen");
 					applyMacPresentationLock("window_enter_fullscreen");
