@@ -1348,7 +1348,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=hints_begin");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
-		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "0");
+		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "1");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_IME_IMPLEMENTED_UI, sdlImeUiSelfImplemented ? "1" : "0");
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=init_video_events");

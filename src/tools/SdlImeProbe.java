@@ -110,6 +110,10 @@ public final class SdlImeProbe {
 		boolean textInputBelow = false;
 		boolean textInputNegative = true;
 		boolean fullscreen = true;
+		boolean fullscreenTransitionPending = false;
+		boolean pendingFullscreenTarget = fullscreen;
+		long fullscreenTransitionStartNs = 0L;
+		final long fullscreenTransitionTimeoutNs = 2_000_000_000L;
 		boolean startupExclusive = hasArg(args, "--startup-exclusive");
 		boolean macAllowProcessSwitching =
 				hasArg(args, "--mac-allow-process-switching") && !hasArg(args, "--mac-disable-process-switching");
@@ -117,8 +121,8 @@ public final class SdlImeProbe {
 
 		trace(traceSdl, "SDL_SetHint(VIDEO_MINIMIZE_ON_FOCUS_LOSS,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
-		trace(traceSdl, "SDL_SetHint(VIDEO_MAC_FULLSCREEN_SPACES,0)");
-		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "0");
+		trace(traceSdl, "SDL_SetHint(VIDEO_MAC_FULLSCREEN_SPACES,1)");
+		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "1");
 		trace(traceSdl, "SDL_SetHint(MAC_PRESS_AND_HOLD,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MAC_PRESS_AND_HOLD, "0");
 		trace(traceSdl, "SDL_SetHint(IME_IMPLEMENTED_UI," + (imeSelfUi ? "1" : "0") + ")");
@@ -179,6 +183,9 @@ public final class SdlImeProbe {
 		SDLVideo.SDL_ShowWindow(window);
 		trace(traceSdl, "SDL_RaiseWindow");
 		SDLVideo.SDL_RaiseWindow(window);
+		long initialFlags = SDLVideo.SDL_GetWindowFlags(window);
+		fullscreen = (initialFlags & SDLVideo.SDL_WINDOW_FULLSCREEN) != 0L;
+		pendingFullscreenTarget = fullscreen;
 		if( fullscreen && !macAllowProcessSwitching && macPresentationLock.isAvailable() ) {
 			macPresentationLock.setDisableProcessSwitching(true, "startup");
 		}
@@ -273,6 +280,28 @@ public final class SdlImeProbe {
 							macPresentationLock.setDisableProcessSwitching(isFullscreenNow && !macAllowProcessSwitching, "focus_gained");
 						continue;
 					}
+					if( type==SDLEvents.SDL_EVENT_WINDOW_ENTER_FULLSCREEN ) {
+						fullscreen = true;
+						if( fullscreenTransitionPending && pendingFullscreenTarget ) {
+							fullscreenTransitionPending = false;
+						}
+						applyGrabState(window, true, traceSdl);
+						if( macPresentationLock.isAvailable() )
+							macPresentationLock.setDisableProcessSwitching(!macAllowProcessSwitching, "enter_fullscreen");
+						System.out.println("[probe] window_enter_fullscreen");
+						continue;
+					}
+					if( type==SDLEvents.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN ) {
+						fullscreen = false;
+						if( fullscreenTransitionPending && !pendingFullscreenTarget ) {
+							fullscreenTransitionPending = false;
+						}
+						applyGrabState(window, false, traceSdl);
+						if( macPresentationLock.isAvailable() )
+							macPresentationLock.setDisableProcessSwitching(false, "leave_fullscreen");
+						System.out.println("[probe] window_leave_fullscreen");
+						continue;
+					}
 					if( type==SDLEvents.SDL_EVENT_KEY_DOWN || type==SDLEvents.SDL_EVENT_KEY_UP ) {
 						SDL_KeyboardEvent keyEvent = event.key();
 						boolean pressed = type==SDLEvents.SDL_EVENT_KEY_DOWN;
@@ -293,15 +322,21 @@ public final class SdlImeProbe {
 									+ " repeat=" + repeat
 									+ " mods=0x" + Integer.toHexString(mods & 0xffff));
 						}
-						if( pressed && (scancode==SDLScancode.SDL_SCANCODE_F12 || key==SDLKeycode.SDLK_F12) ) {
+						if( pressed && !repeat && (scancode==SDLScancode.SDL_SCANCODE_F12 || key==SDLKeycode.SDLK_F12) ) {
 							long flags = SDLVideo.SDL_GetWindowFlags(window);
 							boolean isFullscreen = (flags & SDLVideo.SDL_WINDOW_FULLSCREEN) != 0L;
-							boolean nextFullscreen = !isFullscreen;
-							System.out.println("[probe] toggle_fullscreen via F12 next=" + nextFullscreen);
-							SDLVideo.SDL_SetWindowFullscreen(window, nextFullscreen);
-							applyGrabState(window, nextFullscreen, traceSdl);
-							if( macPresentationLock.isAvailable() )
-								macPresentationLock.setDisableProcessSwitching(nextFullscreen && !macAllowProcessSwitching, "f12_toggle");
+							fullscreen = isFullscreen;
+							if( fullscreenTransitionPending ) {
+								System.out.println("[probe] toggle_fullscreen ignored while transition pending");
+							}
+							else {
+								boolean nextFullscreen = !isFullscreen;
+								System.out.println("[probe] toggle_fullscreen via F12 next=" + nextFullscreen);
+								fullscreenTransitionPending = true;
+								pendingFullscreenTarget = nextFullscreen;
+								fullscreenTransitionStartNs = System.nanoTime();
+								SDLVideo.SDL_SetWindowFullscreen(window, nextFullscreen);
+							}
 						}
 						if( pressed && (scancode==SDLScancode.SDL_SCANCODE_ESCAPE || key==SDLKeycode.SDLK_ESCAPE) )
 							running = false;
@@ -405,8 +440,18 @@ public final class SdlImeProbe {
 						perfPresentMaxNs = presentElapsedNs;
 					redraw = false;
 				}
-				if( fullscreen )
-					SDLMouse.SDL_HideCursor();
+				if( fullscreenTransitionPending ) {
+					long nowNs = System.nanoTime();
+					if( nowNs - fullscreenTransitionStartNs >= fullscreenTransitionTimeoutNs ) {
+						long flags = SDLVideo.SDL_GetWindowFlags(window);
+						fullscreen = (flags & SDLVideo.SDL_WINDOW_FULLSCREEN) != 0L;
+						fullscreenTransitionPending = false;
+						applyGrabState(window, fullscreen, traceSdl);
+						if( macPresentationLock.isAvailable() )
+							macPresentationLock.setDisableProcessSwitching(fullscreen && !macAllowProcessSwitching, "transition_timeout_sync");
+						System.out.println("[probe] fullscreen_transition_timeout_sync fullscreen=" + fullscreen);
+					}
+				}
 				long nowNs = System.nanoTime();
 				long perfElapsedNs = nowNs - perfWindowStartNs;
 				if( perfElapsedNs >= 2_000_000_000L ) {
