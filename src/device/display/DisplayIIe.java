@@ -1953,15 +1953,17 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private void setSdlInputGrab(boolean enabled, String source) {
 		if( sdlWindow==0L )
 			return;
-		boolean grabEnabled = enabled && fullscreen;
-		SDLVideo.SDL_SetWindowKeyboardGrab(sdlWindow, grabEnabled);
-		SDLVideo.SDL_SetWindowMouseGrab(sdlWindow, grabEnabled);
-		org.lwjgl.sdl.SDLMouse.SDL_SetWindowRelativeMouseMode(sdlWindow, grabEnabled);
+		boolean keyboardGrabEnabled = enabled && fullscreen;
+		boolean mouseGrabEnabled = enabled && fullscreen && !IS_MAC;
+		SDLVideo.SDL_SetWindowKeyboardGrab(sdlWindow, keyboardGrabEnabled);
+		SDLVideo.SDL_SetWindowMouseGrab(sdlWindow, mouseGrabEnabled);
+		org.lwjgl.sdl.SDLMouse.SDL_SetWindowRelativeMouseMode(sdlWindow, mouseGrabEnabled);
 		updateSdlCursorVisibility(source);
 		if( keyLoggingEnabled || sdlTextAnchorDebug ) {
 			System.err.println("[debug] sdl_input_grab source="+source+
 					" enabled="+enabled+
-					" effectiveGrab="+grabEnabled+
+					" effectiveGrab="+mouseGrabEnabled+
+					" keyboardGrab="+keyboardGrabEnabled+
 					" fullscreen="+fullscreen);
 		}
 		applyMacPresentationLock("input_grab_"+source);
@@ -1970,7 +1972,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private void updateSdlCursorVisibility(String source) {
 		if( sdlWindow==0L )
 			return;
-		boolean hideCursor = fullscreen ? windowFocused : (windowFocused && mouseInsideWindow);
+		boolean hideCursor = fullscreen ? (windowFocused && !IS_MAC) : (windowFocused && mouseInsideWindow);
 		if( hideCursor )
 			org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
 		else
