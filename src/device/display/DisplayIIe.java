@@ -109,7 +109,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int FRAME_H_CYCLES = 65;
 	private static final int FRAME_V_LINES = 262;
 	private static final int FRAME_CYCLES = FRAME_H_CYCLES * FRAME_V_LINES;
-	private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
 
 	public static int[] captureFrameBytes(MemoryBusIIe memoryBus) {
 		ScanlineTracer8 frameTracer = new ScanlineTracer8();
@@ -2119,11 +2118,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (mods&SDLKeycode.SDL_KMOD_CTRL)!=0 && Character.toLowerCase(keyChar)=='f') ||
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (scancode==SDLScancode.SDL_SCANCODE_RETURN || scancode==SDLScancode.SDL_SCANCODE_KP_ENTER)));
 		if( fullscreenToggle ) {
-			if( IS_MAC ) {
-				if( sdlTextAnchorDebug || keyLoggingEnabled )
-					System.err.println("[debug] mac_fullscreen_toggle_ignored reason=sdl_appkit_transition_crash_workaround");
-				return;
-			}
 			toggleFullscreen();
 			return;
 		}
