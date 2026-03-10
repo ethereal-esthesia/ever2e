@@ -253,6 +253,37 @@ public class Cpu65c02CycleTimingTest {
     }
 
     @Test
+    public void cmdEightCycleUndocumentedNopRetiresAsSingleInstructionEvent() throws Exception {
+        CpuEnv env = createEnv("cmd");
+        loadProgram(env, 0x5C, 0x00, 0x00, 0xEA); // 8-cycle undocumented NOP, then official NOP
+        runInstruction(env); // reset
+
+        int subcycles = 0;
+        int retireEvents = 0;
+        int cpuCalls = 0;
+        while( true ) {
+            boolean instructionEndsThisCycle = env.cpu.hasPendingInstructionEndEvent();
+            boolean subcycleThisCycle = env.cpu.hasPendingInFlightMicroEvent();
+            env.emulator.startWithStepPhases(1, env.cpu, (step, manager, preCycle) -> true);
+            cpuCalls++;
+            if( subcycleThisCycle )
+                subcycles++;
+            if( instructionEndsThisCycle ) {
+                retireEvents++;
+                break;
+            }
+            if( cpuCalls>32 )
+                throw new AssertionError("NOP $5C did not retire within expected safety bound");
+        }
+
+        assertEquals(1, retireEvents);
+        assertEquals(1, cpuCalls);
+        assertEquals(0, subcycles);
+        assertEquals(8, env.cpu.getLastInstructionCycleCount());
+        assertEquals(PROG_PC + 3, env.cpu.getPendingPC());
+    }
+
+    @Test
     public void decimalAdcZeroPageTakesFourCycles() throws Exception {
         for( String profile : CPU_PROFILES ) {
             CpuEnv env = createEnv(profile);

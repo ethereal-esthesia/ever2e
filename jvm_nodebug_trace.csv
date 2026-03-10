@@ -1,0 +1,4 @@
+step,retired_step,event_type,event,pc,opcode,opc1,opc2,opc3,a,x,y,p,s,mnemonic,mode,cpu_total_cycles,cpu_micro_total_cycles,subcycle_index,last_instruction_cycles,display_hscan,display_vscan,display_vbl,scan_h,scan_v,scan_x,scan_y,scan_cycles_desc,frame_cycle
+1,0,event,RESET,FFFF,--,C3,00,FF,FF,FF,FF,FF,00,RES,IMP         ,0,1,0,6,64,261,0,64,261,896,261,0,17029
+2,1,instr,,FA62,D8,D8,20,84,FF,FF,FF,F7,FD,CLD,IMP         ,6,2,1,2,64,261,0,64,261,896,261,0,17029
+3,2,instr,,FA63,20,20,84,FE,FF,FF,FF,F7,FD,JSR,ABS         ,8,4,1,6,0,0,1,0,0,0,0,17029,0

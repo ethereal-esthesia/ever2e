@@ -12,6 +12,10 @@
 ;        PRINT PEEK(251)+256*PEEK(252)
 ;        PRINT PEEK(253)+256*PEEK(254)
 ;
+; NTSC expected:
+;   baseline = 462
+;   test     = 136
+;
 ; ZP outputs:
 ;   $FB/$FC baseline count
 ;   $FD/$FE test count (1-cycle group stream)

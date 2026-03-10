@@ -1,24 +1,51 @@
 #!/bin/bash
 set -euo pipefail
-DISPLAY_PHASE_CYCLES="${DISPLAY_PHASE_CYCLES:-12489}"
-# Keep JVM frame_cycle aligned with compare-space (line 1 near 00010) unless overridden.
-JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-$((10-DISPLAY_PHASE_CYCLES))}"
+STEP_RANGE="${STEP_RANGE:-${1:-1-9}}"
+if [[ "${STEP_RANGE}" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+  START_LINE="${BASH_REMATCH[1]}"
+  END_LINE="${BASH_REMATCH[2]}"
+  if (( START_LINE < 1 )); then
+    START_LINE=1
+  fi
+  if (( END_LINE < START_LINE )); then
+    echo "error: STEP_RANGE end must be >= start (got ${STEP_RANGE})" >&2
+    exit 1
+  fi
+else
+  echo "error: STEP_RANGE must be <start-end>, e.g. 0-1000000 (got ${STEP_RANGE})" >&2
+  exit 1
+fi
+DISPLAY_PHASE_CYCLES="${DISPLAY_PHASE_CYCLES:-12490}"
+# In raw compare mode, default to +1 frame-cycle offset to align JVM panel phase with MAME.
+# In legacy compare mode, retain the historical normalized start-near-00010 behavior.
+JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-}"
+RAW_COMPARE="${RAW_COMPARE:-1}"
+JVM_CYCLE_OFFSET="${JVM_CYCLE_OFFSET:-2}"
 MAME_BIN="${MAME_BIN:-/Users/shane/Project/mame-alt/mame}"
 MAME_ROMPATH="${MAME_ROMPATH:-}"
 MAME_BASE_ROM_DIR="${MAME_BASE_ROM_DIR:-/Users/shane/Project/mame-alt/roms}"
 MAME_FORCE_SET_ZIP="${MAME_FORCE_SET_ZIP:-${MAME_BASE_ROM_DIR}/apple2ep_force_memtest.zip}"
 MAME_MACHINE="${MAME_MACHINE:-apple2ep}"
-MAME_STEPS="${MAME_STEPS:-200}"
+MAME_STEPS="${MAME_STEPS:-$END_LINE}"
 MAME_TRACE="${MAME_TRACE:-/tmp/mame_force_small.tr}"
 MAME_CSV="${MAME_CSV:-/tmp/mame_force_small.csv}"
 MAME_TRACE_FLAGS="${MAME_TRACE_FLAGS:-noloop}"
-MAME_TRACE_ACTION="${MAME_TRACE_ACTION:-tracelog \"TC=%08X A=%02X,X=%02X,Y=%02X,P=%02X,S=%03X \",totalcycles,a,x,y,p,sp}"
+MAME_TRACE_PROFILE="${MAME_TRACE_PROFILE:-}"
+MAME_TRACE_ACTION="${MAME_TRACE_ACTION:-}"
 MAME_RUNNER="${MAME_RUNNER:-/Users/shane/Project/ever2e-py/tools/run_mame_trace.sh}"
 MAME_HEADLESS="${MAME_HEADLESS:-1}"
 MAME_VIDEO="${MAME_VIDEO:-}"
 MAME_WINDOW="${MAME_WINDOW:-}"
 MAME_DEBUGGER="${MAME_DEBUGGER:-}"
 MAME_SDL_VIDEODRIVER="${MAME_SDL_VIDEODRIVER:-}"
+
+if [[ "${RAW_COMPARE}" == "1" ]]; then
+  MAME_TRACE_PROFILE="${MAME_TRACE_PROFILE:-raw}"
+  JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-0}"
+else
+  JVM_FRAME_CYCLE_OFFSET="${JVM_FRAME_CYCLE_OFFSET:-$((10-DISPLAY_PHASE_CYCLES))}"
+fi
+MAME_TRACE_PROFILE="${MAME_TRACE_PROFILE:-basic}"
 
 if [[ "${MAME_HEADLESS}" == "1" ]]; then
   MAME_VIDEO="${MAME_VIDEO:-none}"
@@ -29,6 +56,14 @@ else
   MAME_VIDEO="${MAME_VIDEO:-soft}"
   MAME_WINDOW="${MAME_WINDOW:-1}"
   MAME_DEBUGGER="${MAME_DEBUGGER:-osx}"
+fi
+
+if [[ -z "${MAME_TRACE_ACTION}" ]]; then
+  if [[ "${MAME_TRACE_PROFILE}" == "raw" ]]; then
+    MAME_TRACE_ACTION='tracelog "TC=%08X C=%d BX=%d BY=%d FR=%d IR=%02X A=%02X,X=%02X,Y=%02X,P=%02X,S=%03X ",totalcycles,cycles,beamx,beamy,frame,ir,a,x,y,p,sp'
+  else
+    MAME_TRACE_ACTION='tracelog "TC=%08X A=%02X,X=%02X,Y=%02X,P=%02X,S=%03X ",totalcycles,a,x,y,p,sp'
+  fi
 fi
 
 if [[ -z "${MAME_ROMPATH}" ]]; then
@@ -51,7 +86,7 @@ GRADLE_USER_HOME=/private/tmp/gradle-home gradle --no-daemon runHeadless --args=
 # 1) Rebuild JVM normalized CSV with the updated normalizer
 python3 /Users/shane/Project/ever2e-py/tools/normalize_compare_csv.py \
   --kind jvm \
-  --jvm-cycle-offset 2 \
+  --jvm-cycle-offset "${JVM_CYCLE_OFFSET}" \
   --jvm-frame-cycle-offset "${JVM_FRAME_CYCLE_OFFSET}" \
   --input /private/tmp/jvm_phase12489_noreset.tr.csv \
   --output /private/tmp/jvm_phase12489_noreset.compare.csv
@@ -64,6 +99,7 @@ ROMPATH="${MAME_ROMPATH}" \
 STEPS="${MAME_STEPS}" \
 TRACE_OUT="${MAME_TRACE}" \
 CSV_OUT="${MAME_CSV}" \
+CSV_DERIVE_RETRACE=0 \
 CARDLESS=1 \
 WINDOW="${MAME_WINDOW}" \
 VIDEO="${MAME_VIDEO}" \
@@ -78,9 +114,9 @@ python3 /Users/shane/Project/ever2e-py/tools/normalize_compare_csv.py \
   --input "${MAME_CSV}" \
   --output /tmp/mame_force_small.compare.csv
 
-# 3) Compare 1-9
+# 3) Compare selected step/line window
 python3 /Users/shane/Project/ever2e-py/tools/compare_csv_side_by_side.py \
   --top /tmp/mame_force_small.compare.csv \
   --bottom /private/tmp/jvm_phase12489_noreset.compare.csv \
-  --start-line 1 \
-  --end-line 9
+  --start-line "${START_LINE}" \
+  --end-line "${END_LINE}"

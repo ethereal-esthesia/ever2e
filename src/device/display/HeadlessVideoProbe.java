@@ -65,6 +65,10 @@ public class HeadlessVideoProbe extends HardwareManager implements VideoSignalSo
 		}
 	}
 
+	public int[] captureFrameBytes() {
+		return DisplayIIe.captureFrameBytes(memoryBus);
+	}
+
 	@Override
 	public void coldReset() throws HardwareException {
 		coldResetNoThrow();
