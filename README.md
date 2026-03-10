@@ -107,6 +107,10 @@ Windowed run (alias task):
   - Window backend selection (SDL only).
 - `--start-fullscreen`
   - Start directly in fullscreen mode.
+- `--mac-allow-process-switching`
+  - macOS fullscreen opt-out for process-switch lock.
+  - By default, fullscreen disables process switching (Cmd+Tab) while focused.
+  - Pass this flag to allow normal process switching even in fullscreen.
 - `--text-input-mode off|offscreen|normal|center`
   - SDL text input behavior (`off` disables host text input, `offscreen` requests text input but moves caret area offscreen, `center` places caret area at window center, `normal` uses default text input area).
 - `--sdl-fullscreen-mode exclusive|desktop`
