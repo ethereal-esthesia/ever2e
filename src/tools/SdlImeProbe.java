@@ -23,11 +23,12 @@ import org.lwjgl.system.MemoryUtil;
  * Minimal SDL3 text/input probe for macOS IME/Caps HUD behavior.
  */
 public final class SdlImeProbe {
+	private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
+
 	private SdlImeProbe() {
 	}
 
 	private static final class MacPresentationLock {
-		private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
 		private static final long NS_APP_PRESENTATION_AUTO_HIDE_DOCK = 1L << 0;
 		private static final long NS_APP_PRESENTATION_DISABLE_PROCESS_SWITCHING = 1L << 5;
 
@@ -121,8 +122,10 @@ public final class SdlImeProbe {
 
 		trace(traceSdl, "SDL_SetHint(VIDEO_MINIMIZE_ON_FOCUS_LOSS,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
-		trace(traceSdl, "SDL_SetHint(VIDEO_MAC_FULLSCREEN_SPACES,1)");
-		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "1");
+		if( IS_MAC ) {
+			trace(traceSdl, "SDL_SetHint(VIDEO_MAC_FULLSCREEN_SPACES,1)");
+			SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "1");
+		}
 		trace(traceSdl, "SDL_SetHint(MAC_PRESS_AND_HOLD,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MAC_PRESS_AND_HOLD, "0");
 		trace(traceSdl, "SDL_SetHint(IME_IMPLEMENTED_UI," + (imeSelfUi ? "1" : "0") + ")");
