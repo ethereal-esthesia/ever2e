@@ -1499,18 +1499,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			closeSdlWindow(false);
 			initializeSdlWindow();
 			if( targetFullscreen ) {
-				if( "desktop".equals(sdlFullscreenMode) ) {
-					SDLVideo.nSDL_SetWindowFullscreenMode(sdlWindow, 0L);
-				}
-				else {
-					int display = SDLVideo.SDL_GetDisplayForWindow(sdlWindow);
-					SDL_DisplayMode mode = display!=0 ? SDLVideo.SDL_GetCurrentDisplayMode(display) : null;
-					if( mode!=null )
-						SDLVideo.SDL_SetWindowFullscreenMode(sdlWindow, mode);
-				}
-				SDLVideo.SDL_SetWindowFullscreen(sdlWindow, true);
-				fullscreen = true;
-				mouseInsideWindow = true;
+				enterConfiguredFullscreenMode();
 			}
 			else {
 				SDLVideo.SDL_SetWindowPosition(sdlWindow, windowedX, windowedY);
@@ -1988,6 +1977,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			return;
 		if( fullscreen )
 			return;
+		enterConfiguredFullscreenMode();
+		SDLVideo.SDL_RaiseWindow(sdlWindow);
+		if( sdlTextAnchorDebug )
+			System.err.println("[debug] sdl_text_anchor source=startup_fullscreen action=entered_fullscreen");
+		applyMacPresentationLock("startup_fullscreen");
+	}
+
+	private void enterConfiguredFullscreenMode() {
 		if( "desktop".equals(sdlFullscreenMode) ) {
 			SDLVideo.nSDL_SetWindowFullscreenMode(sdlWindow, 0L);
 		}
@@ -1999,10 +1996,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		SDLVideo.SDL_SetWindowFullscreen(sdlWindow, true);
 		fullscreen = true;
-		SDLVideo.SDL_RaiseWindow(sdlWindow);
-		if( sdlTextAnchorDebug )
-			System.err.println("[debug] sdl_text_anchor source=startup_fullscreen action=entered_fullscreen");
-		applyMacPresentationLock("startup_fullscreen");
+		mouseInsideWindow = true;
 	}
 
 	private void closeWindow() {
