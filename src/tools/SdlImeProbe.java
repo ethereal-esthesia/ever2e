@@ -1,5 +1,7 @@
 package tools;
 
+import com.sun.jna.Function;
+import com.sun.jna.NativeLibrary;
 import org.lwjgl.sdl.SDLError;
 import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLHints;
@@ -24,6 +26,73 @@ public final class SdlImeProbe {
 	private SdlImeProbe() {
 	}
 
+	private static final class MacPresentationLock {
+		private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
+		private static final long NS_APP_PRESENTATION_AUTO_HIDE_DOCK = 1L << 0;
+		private static final long NS_APP_PRESENTATION_DISABLE_PROCESS_SWITCHING = 1L << 5;
+
+		private final boolean available;
+		private final Function objcMsgSend;
+		private final long nsApplicationClass;
+		private final long selSharedApplication;
+		private final long selSetPresentationOptions;
+		private long cachedAppInstance;
+		private boolean disabled;
+
+		MacPresentationLock() {
+			if( !IS_MAC ) {
+				available = false;
+				objcMsgSend = null;
+				nsApplicationClass = 0L;
+				selSharedApplication = 0L;
+				selSetPresentationOptions = 0L;
+				return;
+			}
+			try {
+				NativeLibrary objc = NativeLibrary.getInstance("objc");
+				Function objcGetClass = objc.getFunction("objc_getClass");
+				Function selRegisterName = objc.getFunction("sel_registerName");
+				objcMsgSend = objc.getFunction("objc_msgSend");
+				nsApplicationClass = objcGetClass.invokeLong(new Object[] {"NSApplication"});
+				selSharedApplication = selRegisterName.invokeLong(new Object[] {"sharedApplication"});
+				selSetPresentationOptions = selRegisterName.invokeLong(new Object[] {"setPresentationOptions:"});
+				available = nsApplicationClass!=0L && selSharedApplication!=0L && selSetPresentationOptions!=0L;
+			}
+			catch( Throwable t ) {
+				throw new RuntimeException("Failed to initialize macOS presentation lock", t);
+			}
+		}
+
+		boolean isAvailable() {
+			return available;
+		}
+
+		void setDisableProcessSwitching(boolean enabled, String source) {
+			if( !available )
+				return;
+			if( disabled==enabled )
+				return;
+			long app = appInstance();
+			if( app==0L )
+				return;
+			long options = enabled
+					? (NS_APP_PRESENTATION_AUTO_HIDE_DOCK | NS_APP_PRESENTATION_DISABLE_PROCESS_SWITCHING)
+					: 0L;
+			objcMsgSend.invokeVoid(new Object[] {app, selSetPresentationOptions, options});
+			disabled = enabled;
+			System.out.println("[probe] mac_presentation source=" + source
+					+ " disableProcessSwitching=" + disabled
+					+ " options=0x" + Long.toHexString(options));
+		}
+
+		private long appInstance() {
+			if( cachedAppInstance!=0L )
+				return cachedAppInstance;
+			cachedAppInstance = objcMsgSend.invokeLong(new Object[] {nsApplicationClass, selSharedApplication});
+			return cachedAppInstance;
+		}
+	}
+
 	private static void trace(boolean enabled, String msg) {
 		if( enabled )
 			System.out.println("[sdl-trace] " + msg);
@@ -42,6 +111,9 @@ public final class SdlImeProbe {
 		boolean textInputNegative = true;
 		boolean fullscreen = true;
 		boolean startupExclusive = hasArg(args, "--startup-exclusive");
+		boolean macAllowProcessSwitching =
+				hasArg(args, "--mac-allow-process-switching") && !hasArg(args, "--mac-disable-process-switching");
+		MacPresentationLock macPresentationLock = new MacPresentationLock();
 
 		trace(traceSdl, "SDL_SetHint(VIDEO_MINIMIZE_ON_FOCUS_LOSS,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
@@ -107,16 +179,10 @@ public final class SdlImeProbe {
 		SDLVideo.SDL_ShowWindow(window);
 		trace(traceSdl, "SDL_RaiseWindow");
 		SDLVideo.SDL_RaiseWindow(window);
-		if( fullscreen ) {
-			trace(traceSdl, "SDL_HideCursor");
-			SDLMouse.SDL_HideCursor();
+		if( fullscreen && !macAllowProcessSwitching && macPresentationLock.isAvailable() ) {
+			macPresentationLock.setDisableProcessSwitching(true, "startup");
 		}
-		trace(traceSdl, "SDL_SetWindowKeyboardGrab(true)");
-		SDLVideo.SDL_SetWindowKeyboardGrab(window, true);
-		trace(traceSdl, "SDL_SetWindowMouseGrab(true)");
-		SDLVideo.SDL_SetWindowMouseGrab(window, true);
-		trace(traceSdl, "SDL_SetWindowRelativeMouseMode(true)");
-		SDLMouse.SDL_SetWindowRelativeMouseMode(window, true);
+		applyGrabState(window, fullscreen, traceSdl);
 		System.out.println("SDL IME Probe started");
 		System.out.println("imeSelfUi=" + imeSelfUi
 				+ ", textCenter=" + textInputCenter
@@ -129,6 +195,8 @@ public final class SdlImeProbe {
 				+ ", startupExclusive=" + startupExclusive);
 		System.out.println("mouseDebug=" + mouseDebug);
 		System.out.println("keyDebug=" + keyDebug);
+		System.out.println("macAllowProcessSwitching=" + macAllowProcessSwitching
+				+ " macPresentationAvailable=" + macPresentationLock.isAvailable());
 		System.out.println("Press Esc to quit.");
 
 		java.nio.FloatBuffer mouseX = org.lwjgl.BufferUtils.createFloatBuffer(1);
@@ -187,6 +255,8 @@ public final class SdlImeProbe {
 					if( type==SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST ) {
 						System.out.println("[focus] lost -> stop text input");
 						SDLKeyboard.SDL_StopTextInput(window);
+						if( macPresentationLock.isAvailable() )
+							macPresentationLock.setDisableProcessSwitching(false, "focus_lost");
 						hadFocus = false;
 						leftMousePressed = false;
 						continue;
@@ -196,11 +266,11 @@ public final class SdlImeProbe {
 						SDLKeyboard.SDL_StartTextInput(window);
 						applyConfiguredTextAnchor(window, textInputBottomLeft, textInputBelow, textInputNegative, textInputZero, textInputMouse, textInputCenter);
 						hadFocus = true;
-						SDLVideo.SDL_SetWindowKeyboardGrab(window, true);
-						SDLVideo.SDL_SetWindowMouseGrab(window, true);
-						SDLMouse.SDL_SetWindowRelativeMouseMode(window, true);
-						if( fullscreen )
-							SDLMouse.SDL_HideCursor();
+						long flags = SDLVideo.SDL_GetWindowFlags(window);
+						boolean isFullscreenNow = (flags & SDLVideo.SDL_WINDOW_FULLSCREEN) != 0L;
+						applyGrabState(window, isFullscreenNow, traceSdl);
+						if( macPresentationLock.isAvailable() )
+							macPresentationLock.setDisableProcessSwitching(isFullscreenNow && !macAllowProcessSwitching, "focus_gained");
 						continue;
 					}
 					if( type==SDLEvents.SDL_EVENT_KEY_DOWN || type==SDLEvents.SDL_EVENT_KEY_UP ) {
@@ -210,12 +280,28 @@ public final class SdlImeProbe {
 						int key = keyEvent.key();
 						short mods = keyEvent.mod();
 						boolean repeat = keyEvent.repeat();
-						if( keyDebug ) {
+						boolean probeKey = keyDebug
+								|| scancode==SDLScancode.SDL_SCANCODE_F11
+								|| scancode==SDLScancode.SDL_SCANCODE_F12
+								|| key==SDLKeycode.SDLK_F11
+								|| key==SDLKeycode.SDLK_F12
+								|| ((mods & SDLKeycode.SDL_KMOD_GUI) != 0);
+						if( probeKey ) {
 							System.out.println("[key] phase=" + (pressed ? "down" : "up")
 									+ " key=" + key
 									+ " scancode=" + scancode
 									+ " repeat=" + repeat
 									+ " mods=0x" + Integer.toHexString(mods & 0xffff));
+						}
+						if( pressed && (scancode==SDLScancode.SDL_SCANCODE_F12 || key==SDLKeycode.SDLK_F12) ) {
+							long flags = SDLVideo.SDL_GetWindowFlags(window);
+							boolean isFullscreen = (flags & SDLVideo.SDL_WINDOW_FULLSCREEN) != 0L;
+							boolean nextFullscreen = !isFullscreen;
+							System.out.println("[probe] toggle_fullscreen via F12 next=" + nextFullscreen);
+							SDLVideo.SDL_SetWindowFullscreen(window, nextFullscreen);
+							applyGrabState(window, nextFullscreen, traceSdl);
+							if( macPresentationLock.isAvailable() )
+								macPresentationLock.setDisableProcessSwitching(nextFullscreen && !macAllowProcessSwitching, "f12_toggle");
 						}
 						if( pressed && (scancode==SDLScancode.SDL_SCANCODE_ESCAPE || key==SDLKeycode.SDLK_ESCAPE) )
 							running = false;
@@ -354,6 +440,8 @@ public final class SdlImeProbe {
 			}
 		}
 		finally {
+			if( macPresentationLock.isAvailable() )
+				macPresentationLock.setDisableProcessSwitching(false, "shutdown");
 			SDLKeyboard.SDL_StopTextInput(window);
 			SDLRender.nSDL_DestroyTexture(patternTextureA);
 			SDLRender.nSDL_DestroyTexture(patternTextureB);
@@ -423,6 +511,23 @@ public final class SdlImeProbe {
 		SDLVideo.SDL_GetWindowSizeInPixels(window, wBuf, hBuf);
 		int bottomY = Math.max(0, hBuf.get(0) - 1);
 		applyTextInputArea(window, 0, bottomY);
+	}
+
+	private static void applyGrabState(long window, boolean fullscreen, boolean traceSdl) {
+		if( fullscreen ) {
+			trace(traceSdl, "SDL_HideCursor");
+			SDLMouse.SDL_HideCursor();
+		}
+		else {
+			trace(traceSdl, "SDL_ShowCursor");
+			SDLMouse.SDL_ShowCursor();
+		}
+		trace(traceSdl, "SDL_SetWindowKeyboardGrab(true)");
+		SDLVideo.SDL_SetWindowKeyboardGrab(window, true);
+		trace(traceSdl, "SDL_SetWindowMouseGrab(" + fullscreen + ")");
+		SDLVideo.SDL_SetWindowMouseGrab(window, fullscreen);
+		trace(traceSdl, "SDL_SetWindowRelativeMouseMode(" + fullscreen + ")");
+		SDLMouse.SDL_SetWindowRelativeMouseMode(window, fullscreen);
 	}
 
 	private static void applyBelowDisplayTextInputArea(long window) {
