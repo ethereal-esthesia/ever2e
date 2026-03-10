@@ -1488,10 +1488,20 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			windowedY = yBuf.get(0);
 			windowedWidth = wBuf.get(0);
 			windowedHeight = hBuf.get(0);
-			recreateSdlWindow(true);
+			enterConfiguredFullscreenMode();
+			setSdlInputGrab(windowFocused, "toggle_enter_fullscreen");
+			updateSdlCursorVisibility("toggle_enter_fullscreen");
+			applyMacPresentationLock("toggle_enter_fullscreen");
 		}
 		else {
-			recreateSdlWindow(false);
+			SDLVideo.SDL_SetWindowFullscreen(sdlWindow, false);
+			fullscreen = false;
+			SDLVideo.SDL_SetWindowPosition(sdlWindow, windowedX, windowedY);
+			SDLVideo.SDL_SetWindowSize(sdlWindow, windowedWidth, windowedHeight);
+			SDLVideo.SDL_RaiseWindow(sdlWindow);
+			setSdlInputGrab(windowFocused, "toggle_leave_fullscreen");
+			updateSdlCursorVisibility("toggle_leave_fullscreen");
+			applyMacPresentationLock("toggle_leave_fullscreen");
 		}
 	}
 
@@ -2016,18 +2026,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		applyMacPresentationLock("close_window_pre");
 		if( sdlWindow!=0L )
 			setSdlInputGrab(false, "close_window");
-		// On newer macOS versions, destroying a fullscreen NSWindow without a
-		// clean fullscreen exit transition can throw an AppKit exception.
-		// Force a fullscreen exit first to keep SDL/AppKit state coherent.
-		if( sdlWindow!=0L && fullscreen ) {
-			try {
-				SDLVideo.SDL_SetWindowFullscreen(sdlWindow, false);
-			}
-			catch( Exception ignored ) {
-				// Best effort; continue teardown.
-			}
-			fullscreen = false;
-		}
 		if( sdlTexture!=0L ) {
 			SDLRender.nSDL_DestroyTexture(sdlTexture);
 			sdlTexture = 0L;
