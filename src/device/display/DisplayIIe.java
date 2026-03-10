@@ -38,6 +38,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static volatile String sdlFullscreenMode = "exclusive";
 	private static volatile boolean sdlImeUiSelfImplemented;
 	private static volatile boolean sdlTextAnchorDebug;
+	private static volatile boolean macDisableProcessSwitching;
 
 	private ScanlineTracer8 tracer;
 
@@ -81,6 +82,8 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private boolean pendingSdlTextInputModeApply;
 	private boolean pendingSdlInputGrabApply;
 	private boolean initializationComplete;
+	private boolean windowFocused = true;
+	private final MacPresentationController macPresentation = new MacPresentationController();
 
 	private static final int PAL_INDEX_COLOR = 0;
 	private static final int PAL_INDEX_MONO = 48;
@@ -169,6 +172,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 
 	public static void setSdlTextAnchorDebug(boolean enabled) {
 		sdlTextAnchorDebug = enabled;
+	}
+
+	public static void setMacDisableProcessSwitching(boolean enabled) {
+		macDisableProcessSwitching = enabled;
 	}
 
 	public static final TraceMap8 LO40_TRACE;
@@ -1348,7 +1355,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=create_window");
-		sdlWindow = SDLVideo.SDL_CreateWindow("Ever2e", WINDOW_WIDTH, WINDOW_HEIGHT, SDLVideo.SDL_WINDOW_RESIZABLE);
+		long createFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
+		if( startFullscreenOnLaunch && "exclusive".equals(sdlFullscreenMode) )
+			createFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
+		sdlWindow = SDLVideo.SDL_CreateWindow("Ever2e", WINDOW_WIDTH, WINDOW_HEIGHT, createFlags);
 		if( sdlWindow==0L ) {
 			SDLInit.SDL_Quit();
 			throw new HardwareException("Unable to create SDL window: " + SDLError.SDL_GetError());
@@ -1380,6 +1390,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			enterSdlFullscreenStartup();
 			setSdlInputGrab(true, "startup_fullscreen");
 		}
+		applyMacPresentationLock("init");
 		pendingSdlTextInputModeApply = true;
 		pendingSdlInputGrabApply = true;
 		if( sdlTextAnchorDebug )
@@ -1504,6 +1515,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				fullscreen = false;
 			}
 			SDLVideo.SDL_RaiseWindow(sdlWindow);
+			applyMacPresentationLock("recreate_window");
 		}
 		catch( HardwareException e ) {
 			throw new RuntimeException("Failed to recreate SDL window during fullscreen toggle", e);
@@ -1943,6 +1955,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 					" enabled="+enabled+
 					" fullscreen="+fullscreen);
 		}
+		applyMacPresentationLock("input_grab_"+source);
 	}
 
 	private void enterSdlFullscreenStartup() {
@@ -1964,6 +1977,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		SDLVideo.SDL_RaiseWindow(sdlWindow);
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_text_anchor source=startup_fullscreen action=entered_fullscreen");
+		applyMacPresentationLock("startup_fullscreen");
 	}
 
 	private void closeWindow() {
@@ -1971,6 +1985,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	}
 
 	private void closeSdlWindow(boolean quitSdl) {
+		applyMacPresentationLock("close_window_pre");
 		if( sdlWindow!=0L )
 			setSdlInputGrab(false, "close_window");
 		if( sdlTexture!=0L ) {
@@ -1987,6 +2002,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		if( quitSdl )
 			SDLInit.SDL_Quit();
+		applyMacPresentationLock("close_window_post");
 	}
 
 	private void pollSdlEvents() {
@@ -1999,18 +2015,22 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 					return;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST ) {
+					windowFocused = false;
 					SDLKeyboard.SDL_StopTextInput(sdlWindow);
 					if( sdlTextAnchorDebug )
 						System.err.println("[debug] sdl_text_anchor source=focus_lost action=stop_text_input");
+					applyMacPresentationLock("focus_lost");
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED ) {
+					windowFocused = true;
 					applySdlTextInputMode();
 					setSdlInputGrab(true, "focus_gained");
 					if( fullscreen )
 						org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
 					if( sdlTextAnchorDebug )
 						System.err.println("[debug] sdl_text_anchor source=focus_gained action=apply_mode");
+					applyMacPresentationLock("focus_gained");
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_KEY_DOWN || type==SDLEvents.SDL_EVENT_KEY_UP ) {
@@ -2030,6 +2050,16 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		boolean ctrlDown = (mods&SDLKeycode.SDL_KMOD_CTRL)!=0;
 		boolean altDown = (mods&SDLKeycode.SDL_KMOD_ALT)!=0;
 		boolean metaDown = (mods&SDLKeycode.SDL_KMOD_GUI)!=0;
+		boolean macKioskExit = pressed && !repeat && metaDown && ctrlDown &&
+				scancode==SDLScancode.SDL_SCANCODE_ESCAPE;
+		if( macKioskExit ) {
+			macDisableProcessSwitching = false;
+			applyMacPresentationLock("hotkey_exit");
+			if( keyLoggingEnabled || sdlTextAnchorDebug ) {
+				System.err.println("[debug] mac_presentation source=hotkey_exit action=disable_process_switching");
+			}
+			return;
+		}
 		boolean fullscreenToggle = pressed && !repeat &&
 				(((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (mods&SDLKeycode.SDL_KMOD_CTRL)!=0 && Character.toLowerCase(keyChar)=='f') ||
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (scancode==SDLScancode.SDL_SCANCODE_RETURN || scancode==SDLScancode.SDL_SCANCODE_KP_ENTER)));
@@ -2058,6 +2088,19 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		else {
 			keyboard.keyReleasedRaw(awtKeyCode, awtModifiers, keyChar, shiftDown, ctrlDown, altDown, metaDown);
+		}
+	}
+
+	private void applyMacPresentationLock(String source) {
+		if( !macPresentation.isAvailable() )
+			return;
+		boolean shouldDisableProcessSwitching = macDisableProcessSwitching && fullscreen && windowFocused;
+		macPresentation.setDisableProcessSwitching(shouldDisableProcessSwitching);
+		if( sdlTextAnchorDebug ) {
+			System.err.println("[debug] mac_presentation source="+source+
+					" disableProcessSwitching="+shouldDisableProcessSwitching+
+					" fullscreen="+fullscreen+
+					" focused="+windowFocused);
 		}
 	}
 

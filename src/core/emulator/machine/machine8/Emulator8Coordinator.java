@@ -224,11 +224,12 @@ public class Emulator8Coordinator {
 			boolean noSound = false;
 			boolean debugLogging = false;
 			boolean keyLogging = false;
-			String windowBackend = "sdl";
-			boolean startFullscreen = false;
-			String textInputMode = "off";
-			String sdlFullscreenMode = "exclusive";
-			boolean sdlImeUiSelf = false;
+		String windowBackend = "sdl";
+		boolean startFullscreen = false;
+		boolean macDisableProcessSwitching = false;
+		String textInputMode = "off";
+		String sdlFullscreenMode = "exclusive";
+		boolean sdlImeUiSelf = false;
 		String cpuProfile = "cmd";
 		Integer resetPFlagValue = null;
 		Integer resetAValue = null;
@@ -337,6 +338,13 @@ public class Emulator8Coordinator {
 			}
 			else if( "--start-fullscreen".equals(arg) ) {
 				startFullscreen = true;
+			}
+			else if( "--mac-disable-process-switching".equals(arg) ) {
+				macDisableProcessSwitching = true;
+			}
+			else if( "--mac-kiosk-grab".equals(arg) ) {
+				// Alias kept for convenience while tuning startup behavior.
+				macDisableProcessSwitching = true;
 			}
 			else if( "--text-input-mode".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -537,6 +545,7 @@ public class Emulator8Coordinator {
 		DisplayIIe.setKeyLoggingEnabled(keyLogging);
 		DisplayIIe.setWindowBackend(windowBackend);
 		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
+		DisplayIIe.setMacDisableProcessSwitching(macDisableProcessSwitching);
 		DisplayIIe.setSdlTextInputMode(textInputMode);
 		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
 		DisplayIIe.setSdlImeUiSelfImplemented(sdlImeUiSelf);
@@ -544,6 +553,7 @@ public class Emulator8Coordinator {
 		if( debugLogging ) {
 			System.err.println("[debug] launch_config windowBackend="+windowBackend+
 					" startFullscreen="+startFullscreen+
+					" macDisableProcessSwitching="+macDisableProcessSwitching+
 					" sdlImeUiSelf="+sdlImeUiSelf+
 					" textInputMode="+textInputMode+
 					" sdlFullscreenMode="+sdlFullscreenMode);

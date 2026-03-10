@@ -26,6 +26,7 @@ dependencies {
     implementation platform("org.lwjgl:lwjgl-bom:${lwjglVersion}")
     implementation 'org.lwjgl:lwjgl'
     implementation 'org.lwjgl:lwjgl-sdl'
+    implementation 'net.java.dev.jna:jna:5.14.0'
 
     runtimeOnly 'org.lwjgl:lwjgl::natives-macos'
     runtimeOnly 'org.lwjgl:lwjgl-sdl::natives-macos'

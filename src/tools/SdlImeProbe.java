@@ -24,9 +24,15 @@ public final class SdlImeProbe {
 	private SdlImeProbe() {
 	}
 
+	private static void trace(boolean enabled, String msg) {
+		if( enabled )
+			System.out.println("[sdl-trace] " + msg);
+	}
+
 	public static void main(String[] args) {
 		boolean mouseDebug = hasArg(args, "--debug-mouse");
 		boolean keyDebug = hasArg(args, "--debug-key");
+		boolean traceSdl = hasArg(args, "--trace-sdl");
 		boolean imeSelfUi = true;
 		boolean textInputCenter = false;
 		boolean textInputMouse = false;
@@ -35,31 +41,39 @@ public final class SdlImeProbe {
 		boolean textInputBelow = false;
 		boolean textInputNegative = true;
 		boolean fullscreen = true;
+		boolean startupExclusive = hasArg(args, "--startup-exclusive");
 
+		trace(traceSdl, "SDL_SetHint(VIDEO_MINIMIZE_ON_FOCUS_LOSS,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+		trace(traceSdl, "SDL_SetHint(VIDEO_MAC_FULLSCREEN_SPACES,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "0");
+		trace(traceSdl, "SDL_SetHint(MAC_PRESS_AND_HOLD,0)");
+		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MAC_PRESS_AND_HOLD, "0");
+		trace(traceSdl, "SDL_SetHint(IME_IMPLEMENTED_UI," + (imeSelfUi ? "1" : "0") + ")");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_IME_IMPLEMENTED_UI, imeSelfUi ? "1" : "0");
 
+		trace(traceSdl, "SDL_Init(VIDEO|EVENTS)");
 		if( !SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO | SDLInit.SDL_INIT_EVENTS) ) {
 			throw new IllegalStateException("SDL init failed: " + SDLError.SDL_GetError());
 		}
 
-		long window = SDLVideo.SDL_CreateWindow(
-				"SDL IME Probe",
-				960,
-				600,
-				SDLVideo.SDL_WINDOW_RESIZABLE
-		);
+		long windowFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
+		if( startupExclusive )
+			windowFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
+		trace(traceSdl, "SDL_CreateWindow(flags=0x" + Long.toHexString(windowFlags) + ")");
+		long window = SDLVideo.SDL_CreateWindow("SDL IME Probe", 960, 600, windowFlags);
 		if( window==0L ) {
 			SDLInit.SDL_Quit();
 			throw new IllegalStateException("Window create failed: " + SDLError.SDL_GetError());
 		}
+		trace(traceSdl, "SDL_CreateRenderer");
 		long renderer = SDLRender.nSDL_CreateRenderer(window, 0L);
 		if( renderer==0L ) {
 			SDLVideo.SDL_DestroyWindow(window);
 			SDLInit.SDL_Quit();
 			throw new IllegalStateException("Renderer create failed: " + SDLError.SDL_GetError());
 		}
+		trace(traceSdl, "SDL_SetRenderVSync(1)");
 		if( !SDLRender.SDL_SetRenderVSync(renderer, 1) ) {
 			System.out.println("[warn] SDL_SetRenderVSync(1) failed: " + SDLError.SDL_GetError());
 		}
@@ -82,17 +96,27 @@ public final class SdlImeProbe {
 			throw new IllegalStateException("Pattern texture create failed: " + SDLError.SDL_GetError());
 		}
 
-		if( fullscreen )
+		if( fullscreen && !startupExclusive ) {
+			trace(traceSdl, "SDL_SetWindowFullscreen(true)");
 			SDLVideo.SDL_SetWindowFullscreen(window, true);
-		if( fullscreen )
-			SDLMouse.SDL_HideCursor();
-		SDLVideo.SDL_RaiseWindow(window);
-		SDLVideo.SDL_SetWindowKeyboardGrab(window, true);
-		SDLVideo.SDL_SetWindowMouseGrab(window, true);
-		SDLMouse.SDL_SetWindowRelativeMouseMode(window, true);
-
+		}
+		trace(traceSdl, "SDL_StartTextInput");
 		SDLKeyboard.SDL_StartTextInput(window);
 		applyConfiguredTextAnchor(window, textInputBottomLeft, textInputBelow, textInputNegative, textInputZero, textInputMouse, textInputCenter);
+		trace(traceSdl, "SDL_ShowWindow");
+		SDLVideo.SDL_ShowWindow(window);
+		trace(traceSdl, "SDL_RaiseWindow");
+		SDLVideo.SDL_RaiseWindow(window);
+		if( fullscreen ) {
+			trace(traceSdl, "SDL_HideCursor");
+			SDLMouse.SDL_HideCursor();
+		}
+		trace(traceSdl, "SDL_SetWindowKeyboardGrab(true)");
+		SDLVideo.SDL_SetWindowKeyboardGrab(window, true);
+		trace(traceSdl, "SDL_SetWindowMouseGrab(true)");
+		SDLVideo.SDL_SetWindowMouseGrab(window, true);
+		trace(traceSdl, "SDL_SetWindowRelativeMouseMode(true)");
+		SDLMouse.SDL_SetWindowRelativeMouseMode(window, true);
 		System.out.println("SDL IME Probe started");
 		System.out.println("imeSelfUi=" + imeSelfUi
 				+ ", textCenter=" + textInputCenter
@@ -101,7 +125,8 @@ public final class SdlImeProbe {
 				+ ", textBottomLeft=" + textInputBottomLeft
 				+ ", textBelow=" + textInputBelow
 				+ ", textNegative=" + textInputNegative
-				+ ", fullscreen=" + fullscreen);
+				+ ", fullscreen=" + fullscreen
+				+ ", startupExclusive=" + startupExclusive);
 		System.out.println("mouseDebug=" + mouseDebug);
 		System.out.println("keyDebug=" + keyDebug);
 		System.out.println("Press Esc to quit.");
