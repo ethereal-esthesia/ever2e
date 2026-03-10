@@ -1900,7 +1900,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		if( pendingSdlInputGrabApply && initializationComplete ) {
 			pendingSdlInputGrabApply = false;
-			setSdlInputGrab(true, "deferred_init_apply");
+			setSdlInputGrab(windowFocused, "deferred_init_apply");
 		}
 		int[] pixels = image.getRGB(0, 0, CONTENT_WIDTH, CONTENT_HEIGHT, null, 0, CONTENT_WIDTH);
 		sdlTextureInts.clear();
@@ -2075,16 +2075,15 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				if( type==SDLEvents.SDL_EVENT_WINDOW_ENTER_FULLSCREEN ) {
 					fullscreen = true;
 					mouseInsideWindow = true;
-					setSdlInputGrab(windowFocused, "window_enter_fullscreen");
-					updateSdlCursorVisibility("window_enter_fullscreen");
-					applyMacPresentationLock("window_enter_fullscreen");
+					// macOS green-button fullscreen performs an animated native transition.
+					// Avoid mutating SDL window/grab state in this callback; defer it.
+					pendingSdlInputGrabApply = true;
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN ) {
 					fullscreen = false;
-					setSdlInputGrab(windowFocused, "window_leave_fullscreen");
-					updateSdlCursorVisibility("window_leave_fullscreen");
-					applyMacPresentationLock("window_leave_fullscreen");
+					// Same as enter: defer mutable SDL state changes until frame tick.
+					pendingSdlInputGrabApply = true;
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_MOUSE_ENTER ) {
