@@ -364,7 +364,8 @@ public final class SdlImeProbe {
 							leftMousePressed = true;
 						if( textInputMouse ) {
 							applyTextInputArea(window, clickX, clickY);
-							System.out.println("[anchor] x=" + clickX + " y=" + clickY + " source=click");
+							if( mouseDebug )
+								System.out.println("[anchor] x=" + clickX + " y=" + clickY + " source=click");
 						}
 					}
 					else if( type==SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ) {
@@ -377,7 +378,8 @@ public final class SdlImeProbe {
 							leftMousePressed = false;
 							patternEnabled = !patternEnabled;
 							redraw = true;
-							System.out.println("[pattern] enabled=" + patternEnabled);
+							if( mouseDebug )
+								System.out.println("[pattern] enabled=" + patternEnabled + " x=" + releaseX + " y=" + releaseY + " source=click");
 						}
 					}
 					else if( type==SDLEvents.SDL_EVENT_MOUSE_MOTION ) {
