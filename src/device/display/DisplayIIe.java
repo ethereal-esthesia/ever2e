@@ -78,7 +78,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private int windowedWidth = WINDOW_WIDTH;
 	private int windowedHeight = WINDOW_HEIGHT;
 	private long fullscreenTransitionGuardUntilNs;
-	private boolean pendingStartFullscreen;
 	private boolean pendingSdlTextInputModeApply;
 	private boolean pendingSdlInputGrabApply;
 	private boolean initializationComplete;
@@ -1319,9 +1318,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		tracer.setScanStart(25, 70);
 		tracer.setScanSize(65, 262);
 		initializeWindow();
-		if( startFullscreenOnLaunch ) {
-			pendingStartFullscreen = true;
-		}
 		coldReset();
 		initializationComplete = true;
 	}
@@ -1380,6 +1376,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		sdlTextureBytes = BufferUtils.createByteBuffer(CONTENT_WIDTH * CONTENT_HEIGHT * 4);
 		sdlTextureInts = sdlTextureBytes.asIntBuffer();
+		if( startFullscreenOnLaunch ) {
+			enterSdlFullscreenStartup();
+			setSdlInputGrab(true, "startup_fullscreen");
+		}
 		pendingSdlTextInputModeApply = true;
 		pendingSdlInputGrabApply = true;
 		if( sdlTextAnchorDebug )
@@ -1882,10 +1882,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private void blitToSdl(BufferedImage image) {
 		if( sdlWindow==0L )
 			return;
-		if( pendingStartFullscreen && initializationComplete ) {
-			pendingStartFullscreen = false;
-			enterSdlFullscreenStartup();
-		}
 		if( pendingSdlTextInputModeApply && initializationComplete ) {
 			pendingSdlTextInputModeApply = false;
 			applySdlTextInputMode();
@@ -2010,6 +2006,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED ) {
 					applySdlTextInputMode();
+					setSdlInputGrab(true, "focus_gained");
 					if( fullscreen )
 						org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
 					if( sdlTextAnchorDebug )
