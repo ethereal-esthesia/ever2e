@@ -2050,24 +2050,16 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		boolean ctrlDown = (mods&SDLKeycode.SDL_KMOD_CTRL)!=0;
 		boolean altDown = (mods&SDLKeycode.SDL_KMOD_ALT)!=0;
 		boolean metaDown = (mods&SDLKeycode.SDL_KMOD_GUI)!=0;
-		boolean macKioskExit = pressed && !repeat && metaDown && ctrlDown &&
-				scancode==SDLScancode.SDL_SCANCODE_ESCAPE;
-		if( macKioskExit ) {
-			macDisableProcessSwitching = false;
-			applyMacPresentationLock("hotkey_exit");
-			if( keyLoggingEnabled || sdlTextAnchorDebug ) {
-				System.err.println("[debug] mac_presentation source=hotkey_exit action=disable_process_switching");
-			}
-			return;
-		}
+		int awtKeyCode = toAwtKeyCodeFromSdlScancode(scancode);
 		boolean fullscreenToggle = pressed && !repeat &&
-				(((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (mods&SDLKeycode.SDL_KMOD_CTRL)!=0 && Character.toLowerCase(keyChar)=='f') ||
+				(scancode==SDLScancode.SDL_SCANCODE_F11 || awtKeyCode==KeyEvent.VK_F11 || key==SDLKeycode.SDLK_F11 ||
+				 (!ctrlDown && (scancode==SDLScancode.SDL_SCANCODE_F12 || awtKeyCode==KeyEvent.VK_F12 || key==SDLKeycode.SDLK_F12)) ||
+				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (mods&SDLKeycode.SDL_KMOD_CTRL)!=0 && Character.toLowerCase(keyChar)=='f') ||
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (scancode==SDLScancode.SDL_SCANCODE_RETURN || scancode==SDLScancode.SDL_SCANCODE_KP_ENTER)));
 		if( fullscreenToggle ) {
 			toggleFullscreen();
 			return;
 		}
-		int awtKeyCode = toAwtKeyCodeFromSdlScancode(scancode);
 		if( awtKeyCode==KeyEvent.VK_UNDEFINED )
 			return;
 		int awtModifiers = toAwtModifiersFromSdl(mods);
