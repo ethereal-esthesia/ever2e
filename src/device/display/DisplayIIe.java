@@ -38,7 +38,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static volatile String sdlFullscreenMode = "exclusive";
 	private static volatile boolean sdlImeUiSelfImplemented;
 	private static volatile boolean sdlTextAnchorDebug;
-	private static volatile boolean macDisableProcessSwitching;
+	private static volatile boolean macAllowProcessSwitching;
 
 	private ScanlineTracer8 tracer;
 
@@ -174,8 +174,8 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		sdlTextAnchorDebug = enabled;
 	}
 
-	public static void setMacDisableProcessSwitching(boolean enabled) {
-		macDisableProcessSwitching = enabled;
+	public static void setMacAllowProcessSwitching(boolean enabled) {
+		macAllowProcessSwitching = enabled;
 	}
 
 	public static final TraceMap8 LO40_TRACE;
@@ -1355,8 +1355,9 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=create_window");
+		boolean startupInit = !initializationComplete;
 		long createFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
-		if( startFullscreenOnLaunch && "exclusive".equals(sdlFullscreenMode) )
+		if( startupInit && startFullscreenOnLaunch && "exclusive".equals(sdlFullscreenMode) )
 			createFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
 		sdlWindow = SDLVideo.SDL_CreateWindow("Ever2e", WINDOW_WIDTH, WINDOW_HEIGHT, createFlags);
 		if( sdlWindow==0L ) {
@@ -1386,7 +1387,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 		sdlTextureBytes = BufferUtils.createByteBuffer(CONTENT_WIDTH * CONTENT_HEIGHT * 4);
 		sdlTextureInts = sdlTextureBytes.asIntBuffer();
-		if( startFullscreenOnLaunch ) {
+		if( startupInit && startFullscreenOnLaunch ) {
 			enterSdlFullscreenStartup();
 			setSdlInputGrab(true, "startup_fullscreen");
 		}
@@ -2086,11 +2087,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private void applyMacPresentationLock(String source) {
 		if( !macPresentation.isAvailable() )
 			return;
-		boolean shouldDisableProcessSwitching = macDisableProcessSwitching && fullscreen && windowFocused;
+		// Default behavior on macOS: in fullscreen, disable process switching
+		// unless explicitly allowed by CLI flag.
+		boolean shouldDisableProcessSwitching = !macAllowProcessSwitching && fullscreen && windowFocused;
 		macPresentation.setDisableProcessSwitching(shouldDisableProcessSwitching);
 		if( sdlTextAnchorDebug ) {
 			System.err.println("[debug] mac_presentation source="+source+
 					" disableProcessSwitching="+shouldDisableProcessSwitching+
+					" allowProcessSwitching="+macAllowProcessSwitching+
 					" fullscreen="+fullscreen+
 					" focused="+windowFocused);
 		}
