@@ -82,7 +82,7 @@ tasks.register('smoke', JavaExec) {
     workingDir = projectDir
     jvmArgs '-Dever2e.headless=true'
 
-    def emuFile = providers.gradleProperty('smokeEmuFile').orElse('ROMS/Apple2e.emu').get()
+    def emuFile = providers.gradleProperty('smokeEmuFile').orElse('ROMS/Apple2eNoSlots.emu').get()
     def pasteFile = providers.gradleProperty('smokePasteFile').orNull
     def steps = providers.gradleProperty('smokeSteps').orElse('250000').get()
     def haltExecution = providers.gradleProperty('smokeHaltExecution').orNull
