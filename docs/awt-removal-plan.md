@@ -8,6 +8,13 @@
 - Phase 5 (legacy/test cleanup): complete (`Display32x32` SDL migration + removal of AWT test harness files).
 - Headless property now uses `ever2e.headless` only.
 - Fullscreen hotkey behavior was intentionally simplified to `F12` only (`F11` no-op).
+- `smoke` task default machine was changed to `ROMS/Apple2eNoSlots.emu`.
+
+## Post-Migration Notes (2026-03-11)
+- Fixed: PB2 default line now boots low in `MemoryBusIIe` to avoid unintended ROM self-test (`System OK`) paths at startup.
+- Verified: PB1/PB2 modifier reads (`C062/C063`) sample keyboard state on each access.
+- Known issue: no-slots smoke still queues `--paste-file` text but may not consume it during bounded runs (`basic_queue consumed=0`) depending on startup path/state.
+- Current recommendation: use explicit Apple IIe slot/disk machine profiles for paste-loader opcode smoke flows until no-slots paste consumption is stabilized.
 
 ## Goal
 Remove runtime dependency on `java.awt` from the SDL emulator path, while preserving current behavior for:
