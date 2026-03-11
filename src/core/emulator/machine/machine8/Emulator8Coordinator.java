@@ -324,8 +324,11 @@ public class Emulator8Coordinator {
 			else if( "--debug".equals(arg) ) {
 				debugLogging = true;
 			}
-			else if( "--keylog".equals(arg) ) {
+			else if( "--keylog".equals(arg) || "--key-log".equals(arg) ) {
 				keyLogging = true;
+			}
+			else if( arg.startsWith("--key-log=") ) {
+				keyLogging = Boolean.parseBoolean(arg.substring("--key-log=".length()));
 			}
 			else if( "--debug-mouse".equals(arg) ) {
 				mouseDebug = true;
