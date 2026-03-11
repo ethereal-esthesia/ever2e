@@ -611,6 +611,18 @@ public class Emulator8Coordinator {
 		}
 		if( shouldRunStartupPrimer(startupPrimerInternal, textConsole, isHeadlessMode()) )
 			runStartupPrimer();
+		// Primer uses nested main(...) and mutates static display/keyboard launch config.
+		// Re-apply outer invocation config so real boot cannot inherit primer flags.
+		KeyboardIIe.setKeyLoggingEnabled(keyLogging);
+		DisplayIIe.setKeyLoggingEnabled(keyLogging);
+		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
+		DisplayIIe.setStartHiddenOnLaunch(startHidden);
+		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
+		DisplayIIe.setSdlTextInputMode(textInputMode);
+		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
+		DisplayIIe.setSdlImeUiSelfImplemented(sdlImeUiSelf);
+		DisplayIIe.setSdlTextAnchorDebug(debugLogging);
+		DisplayIIe.setSdlMouseDebug(mouseDebug);
 			if( !debugLogging && !printTextAtExit && lastFrameOut==null )
 				System.setOut(new PrintStream(OutputStream.nullOutputStream()));
 		tracePhase = tracePhase.trim().toLowerCase();
