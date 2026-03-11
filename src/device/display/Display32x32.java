@@ -4,6 +4,8 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -76,7 +78,19 @@ public class Display32x32 extends DisplayWindow {
 		frame.add(canvas);
 		frame.setVisible(true);  
 		frame.setSize(XSIZE, YSIZE+frame.getInsets().top);
-		frame.addKeyListener(keyboard);
+		frame.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent event) {
+				keyboard.keyPressedRaw(event.getKeyCode(), event.getModifiers(), event.getKeyChar(),
+						event.isShiftDown(), event.isControlDown(), event.isAltDown(), event.isMetaDown());
+			}
+
+			@Override
+			public void keyReleased(KeyEvent event) {
+				keyboard.keyReleasedRaw(event.getKeyCode(), event.getModifiers(), event.getKeyChar(),
+						event.isShiftDown(), event.isControlDown(), event.isAltDown(), event.isMetaDown());
+			}
+		});
 		canvas.repaint();
 	}
 
