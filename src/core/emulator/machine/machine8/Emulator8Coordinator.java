@@ -8,7 +8,6 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.awt.GraphicsEnvironment;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1101,9 +1100,9 @@ public class Emulator8Coordinator {
 					printTextScreen((MemoryBusIIe) bus, memory);
 				if( lastFrameOut!=null && bus instanceof MemoryBusIIe )
 					writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
-				// In windowed mode, AWT's event thread keeps the process alive after bounded runs.
+				// In windowed mode, GUI/event threads can keep the process alive after bounded runs.
 				// Exit explicitly so `--steps` behaves as a finite run.
-				if( !GraphicsEnvironment.isHeadless() && !textConsole )
+				if( !runningHeadless && !textConsole )
 					System.exit(0);
 	   	}
 	   	else {
