@@ -23,15 +23,14 @@ repositories {
 def lwjglVersion = '3.4.1'
 
 dependencies {
-    implementation platform("org.lwjgl:lwjgl-bom:${lwjglVersion}")
-    implementation 'org.lwjgl:lwjgl'
-    implementation 'org.lwjgl:lwjgl-sdl'
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-sdl:${lwjglVersion}"
     implementation 'net.java.dev.jna:jna:5.14.0'
 
-    runtimeOnly 'org.lwjgl:lwjgl::natives-macos'
-    runtimeOnly 'org.lwjgl:lwjgl-sdl::natives-macos'
-    runtimeOnly 'org.lwjgl:lwjgl::natives-macos-arm64'
-    runtimeOnly 'org.lwjgl:lwjgl-sdl::natives-macos-arm64'
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-macos"
+    runtimeOnly "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-macos"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-macos-arm64"
+    runtimeOnly "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-macos-arm64"
 
     testImplementation 'junit:junit:4.13.2'
 }
