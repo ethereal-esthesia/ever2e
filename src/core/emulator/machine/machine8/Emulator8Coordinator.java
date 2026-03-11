@@ -47,7 +47,7 @@ public class Emulator8Coordinator {
 	private static final String STARTUP_PRIMER_MACHINE = "ROMS/Apple2eNoSlots.emu";
 	private static final String STARTUP_PRIMER_PASTE_FILE = "ROMS/opcode_smoke_loader_hgr_mem_32k.mon";
 	private static final int GRANULARITY_BITS_PER_MS = 32;
-	private static final boolean ENABLE_STARTUP_JIT_PRIME = true;
+	private static final boolean ENABLE_STARTUP_JIT_PRIME = false;
 	private static final int STARTUP_JIT_PRIME_STEPS = 300000;
 	private static final long STARTUP_PRIMER_STEPS = 8_000_000L;
 	private static final int DEFAULT_SPEAKER_WARMUP_MS = 500;
@@ -189,6 +189,14 @@ public class Emulator8Coordinator {
 		if( !STARTUP_PRIMER_DONE.compareAndSet(false, true) )
 			return false;
 		return Files.exists(Paths.get(STARTUP_PRIMER_MACHINE)) && Files.exists(Paths.get(STARTUP_PRIMER_PASTE_FILE));
+	}
+
+	private static boolean shouldRunStartupJitPrime(boolean noSound, boolean startupPrimerInternal, boolean startupPrimerRan) {
+		if( noSound || startupPrimerInternal || startupPrimerRan )
+			return false;
+		if( !ENABLE_STARTUP_JIT_PRIME )
+			return false;
+		return Boolean.parseBoolean(System.getProperty("ever2e.startupJitPrime", "false"));
 	}
 
 	private static void runStartupPrimer() {
@@ -609,7 +617,8 @@ public class Emulator8Coordinator {
 					" textInputMode="+textInputMode+
 					" sdlFullscreenMode="+sdlFullscreenMode);
 		}
-		if( shouldRunStartupPrimer(startupPrimerInternal, textConsole, isHeadlessMode()) )
+		boolean startupPrimerRan = shouldRunStartupPrimer(startupPrimerInternal, textConsole, isHeadlessMode());
+		if( startupPrimerRan )
 			runStartupPrimer();
 		// Primer uses nested main(...) and mutates static display/keyboard launch config.
 		// Re-apply outer invocation config so real boot cannot inherit primer flags.
@@ -780,7 +789,7 @@ public class Emulator8Coordinator {
 		boolean runningHeadless = isHeadlessMode();
 		if( runningHeadless )
 			emulator.setRealtimeThrottleEnabled(false);
-		if( ENABLE_STARTUP_JIT_PRIME && !noSound ) {
+		if( shouldRunStartupJitPrime(noSound, startupPrimerInternal, startupPrimerRan) ) {
 			try {
 				runSilently(() -> emulator.startWithStepPhases(STARTUP_JIT_PRIME_STEPS, cpu, (step, manager, preCycle) -> true));
 			}
