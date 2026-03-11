@@ -1161,7 +1161,7 @@ public class Emulator8Coordinator {
 					writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
 				// In windowed mode, GUI/event threads can keep the process alive after bounded runs.
 				// Exit explicitly so `--steps` behaves as a finite run.
-				if( !runningHeadless && !textConsole )
+				if( !startupPrimerInternal && !runningHeadless && !textConsole )
 					System.exit(0);
 	   	}
 	   	else {
