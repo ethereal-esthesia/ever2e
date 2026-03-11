@@ -88,6 +88,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private boolean pendingSdlTextInputModeApply;
 	private boolean pendingSdlInputGrabApply;
 	private long startupWindowTraceUntilNs;
+	private long startupVisibilityGuardUntilNs;
 	private boolean initializationComplete;
 	private boolean windowFocused = true;
 	private boolean mouseInsideWindow;
@@ -117,6 +118,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int FRAME_V_LINES = 262;
 	private static final int FRAME_CYCLES = FRAME_H_CYCLES * FRAME_V_LINES;
 	private static final long SDL_STARTUP_WINDOW_TRACE_NS = 8_000_000_000L;
+	private static final long SDL_STARTUP_VISIBILITY_GUARD_NS = 8_000_000_000L;
 	private static final Map<Integer, String> SDL_WINDOW_EVENT_NAMES = buildSdlWindowEventNameMap();
 
 	public static int[] captureFrameBytes(MemoryBusIIe memoryBus) {
@@ -1427,10 +1429,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			enterSdlFullscreenStartup();
 			setSdlInputGrab(true, "startup_fullscreen");
 		}
+		SDLVideo.SDL_ShowWindow(sdlWindow);
+		SDLVideo.SDL_RestoreWindow(sdlWindow);
+		SDLVideo.SDL_RaiseWindow(sdlWindow);
 		applyMacPresentationLock("init");
 		pendingSdlTextInputModeApply = true;
 		pendingSdlInputGrabApply = true;
 		startupWindowTraceUntilNs = System.nanoTime() + SDL_STARTUP_WINDOW_TRACE_NS;
+		startupVisibilityGuardUntilNs = System.nanoTime() + SDL_STARTUP_VISIBILITY_GUARD_NS;
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=defer_input_grab");
 		if( sdlTextAnchorDebug )
@@ -2090,6 +2096,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			while( SDLEvents.SDL_PollEvent(event) ) {
 				int type = event.type();
 				logStartupWindowEvent(type);
+				guardStartupWindowVisibility(type);
 				if( type==SDLEvents.SDL_EVENT_QUIT || type==SDLEvents.SDL_EVENT_WINDOW_CLOSE_REQUESTED ) {
 					closeWindow();
 					System.exit(0);
@@ -2175,6 +2182,25 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				" pos="+x+","+y+
 				" size="+w+"x"+h+
 				" flags=0x"+Long.toHexString(flags));
+	}
+
+	private void guardStartupWindowVisibility(int type) {
+		if( sdlWindow==0L )
+			return;
+		if( startupVisibilityGuardUntilNs<=0L )
+			return;
+		if( System.nanoTime()>startupVisibilityGuardUntilNs )
+			return;
+		String eventName = SDL_WINDOW_EVENT_NAMES.get(type);
+		if( eventName==null )
+			return;
+		if( !"SDL_EVENT_WINDOW_MINIMIZED".equals(eventName) && !"SDL_EVENT_WINDOW_HIDDEN".equals(eventName) )
+			return;
+		if( sdlTextAnchorDebug )
+			System.err.println("[debug] sdl_startup_visibility_guard event="+eventName+" action=restore_raise");
+		SDLVideo.SDL_ShowWindow(sdlWindow);
+		SDLVideo.SDL_RestoreWindow(sdlWindow);
+		SDLVideo.SDL_RaiseWindow(sdlWindow);
 	}
 
 	private void processSdlKeyboardEvent(org.lwjgl.sdl.SDL_KeyboardEvent keyEvent, boolean pressed) {
