@@ -1,7 +1,6 @@
 package device.keyboard;
 
 import java.awt.Event;
-import java.awt.EventQueue;
 import java.awt.HeadlessException;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
@@ -15,6 +14,8 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.lwjgl.sdl.SDLClipboard;
 
 import core.cpu.cpu8.Cpu65c02;
 import core.exception.HardwareException;
@@ -46,9 +47,7 @@ public class KeyboardIIe extends Keyboard {
 	private long consumedQueuedKeyCount;
 	private int pendingPastedKeys;
 	private boolean pasteInputSuppressed;
-	private volatile boolean clipboardPasteRequestInFlight;
-	private volatile boolean clipboardPasteReady;
-	private volatile String clipboardPasteText;
+	private static volatile boolean awtClipboardFallbackEnabled = Boolean.getBoolean("ever2e.clipboard.awt.fallback");
 	
 	private static final int PRE_REPEAT_FLOP_COUNT = 11;
 	private static final int FLOP_DELAY_CYCLES = 4;
@@ -210,6 +209,10 @@ public class KeyboardIIe extends Keyboard {
 
 	public static void setKeyLoggingEnabled(boolean enabled) {
 		keyLoggingEnabled = enabled;
+	}
+
+	public static void setAwtClipboardFallbackEnabled(boolean enabled) {
+		awtClipboardFallbackEnabled = enabled;
 	}
 
 	@Override
@@ -630,7 +633,6 @@ public class KeyboardIIe extends Keyboard {
 
 		incSleepCycles(1);
 		cycleCount++;
-		drainPendingClipboardPaste();
 		
 		// Check for key-repeat
 		if( delayCount>0 && (keyCode&0x80)==0 && (cycleCount&(FLOP_DELAY_CYCLES-1))==0 && keyQueue.size()==0 ) {
@@ -663,7 +665,7 @@ public class KeyboardIIe extends Keyboard {
 			break;
 			
 		case KEY_MASK_F12|KEY_MASK_SHIFT:
-			requestClipboardPasteAsync();
+			requestClipboardPaste();
 			break;
 			
 		}
@@ -682,9 +684,6 @@ public class KeyboardIIe extends Keyboard {
 		consumedQueuedKeyCount = 0L;
 		pendingPastedKeys = 0;
 		pasteInputSuppressed = false;
-		clipboardPasteRequestInFlight = false;
-		clipboardPasteReady = false;
-		clipboardPasteText = null;
 		// Keep reset path independent from host toolkit initialization.
 		// We sync caps-lock lazily when real keyboard input arrives.
 		capsLockState = false;
@@ -751,53 +750,58 @@ public class KeyboardIIe extends Keyboard {
 				" modifiersEx=0x"+Integer.toHexString(modifiersEx));
 	}
 
-	private void requestClipboardPasteAsync() {
-		ensureToolkitInitialized();
-		if( keyQueue.size()!=0 || clipboard==null || clipboardPasteRequestInFlight )
+	private void requestClipboardPaste() {
+		if( keyQueue.size()!=0 )
 			return;
-		clipboardPasteRequestInFlight = true;
-		Runnable fetchAction = () -> {
-			String text = null;
-			try {
-				Transferable contents = clipboard.getContents(null);
-				if( contents!=null && contents.isDataFlavorSupported(DataFlavor.stringFlavor) ) {
-					Object data = contents.getTransferData(DataFlavor.stringFlavor);
-					if( data!=null )
-						text = trimTrailingClipboardNewline(data.toString());
-				}
-			}
-			catch( UnsupportedFlavorException | IOException | IllegalStateException ignored ) {
-				// Ignore unsupported/busy clipboard payloads.
-			}
-			catch( Throwable ignored ) {
-				// Defensive: never let host clipboard issues crash emulator input path.
-			}
-			finally {
-				clipboardPasteText = text;
-				clipboardPasteReady = true;
-				clipboardPasteRequestInFlight = false;
-			}
-		};
+		String text = readClipboardText();
+		if( keyLoggingEnabled ) {
+			System.err.println("[debug] paste_request source=shift_insert"+
+					" clipboardTextPresent="+(text!=null && !text.isEmpty())+
+					" queueDepth="+keyQueue.size()+
+					" awtFallback="+awtClipboardFallbackEnabled);
+		}
+		if( text!=null )
+			queuePasteText(trimTrailingClipboardNewline(text));
+	}
+
+	private String readClipboardText() {
+		String text = readClipboardTextFromSdl();
+		if( text!=null )
+			return text;
+		if( !awtClipboardFallbackEnabled )
+			return null;
+		return readClipboardTextFromAwt();
+	}
+
+	private String readClipboardTextFromSdl() {
 		try {
-			if( EventQueue.isDispatchThread() )
-				fetchAction.run();
-			else
-				EventQueue.invokeLater(fetchAction);
+			if( !SDLClipboard.SDL_HasClipboardText() )
+				return null;
+			String text = SDLClipboard.SDL_GetClipboardText();
+			if( text==null || text.isEmpty() )
+				return null;
+			return text;
 		}
 		catch( Throwable ignored ) {
-			clipboardPasteText = null;
-			clipboardPasteReady = true;
-			clipboardPasteRequestInFlight = false;
+			// Keep paste path resilient if SDL clipboard fails.
+			return null;
 		}
 	}
 
-	private void drainPendingClipboardPaste() {
-		if( !clipboardPasteReady )
-			return;
-		String text = clipboardPasteText;
-		clipboardPasteText = null;
-		clipboardPasteReady = false;
-		queuePasteText(text);
+	private String readClipboardTextFromAwt() {
+		ensureToolkitInitialized();
+		if( clipboard==null )
+			return null;
+		try {
+			Transferable contents = clipboard.getContents(null);
+			if( contents==null || !contents.isDataFlavorSupported(DataFlavor.stringFlavor) )
+				return null;
+			Object data = contents.getTransferData(DataFlavor.stringFlavor);
+			return data==null ? null : data.toString();
+		}
+		catch( UnsupportedFlavorException | IOException | IllegalStateException ignored ) {
+			return null;
+		}
 	}
 
 }
