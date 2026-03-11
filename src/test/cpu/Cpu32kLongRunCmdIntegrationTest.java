@@ -22,9 +22,9 @@ public class Cpu32kLongRunCmdIntegrationTest {
 
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		PrintStream originalOut = System.out;
-		String previousHeadless = System.getProperty("java.awt.headless");
+		String previousHeadless = System.getProperty("ever2e.headless");
 		try {
-			System.setProperty("java.awt.headless", "true");
+			System.setProperty("ever2e.headless", "true");
 			System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
 				Emulator8Coordinator.main(new String[] {
 						emuFile,
@@ -41,9 +41,9 @@ public class Cpu32kLongRunCmdIntegrationTest {
 		finally {
 			System.setOut(originalOut);
 			if( previousHeadless==null )
-				System.clearProperty("java.awt.headless");
+				System.clearProperty("ever2e.headless");
 			else
-				System.setProperty("java.awt.headless", previousHeadless);
+				System.setProperty("ever2e.headless", previousHeadless);
 		}
 
 		String stdout = output.toString(StandardCharsets.UTF_8);

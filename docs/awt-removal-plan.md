@@ -5,6 +5,7 @@
 - Phase 3 (display pixel/color path): complete in runtime path.
 - Phase 1 (input decoupling): complete in runtime path via internal key model (`EmuKey`).
 - Phase 4 (runtime AWT-free verification): complete for active SDL runtime classes.
+- Phase 5 (legacy display migration): `Display32x32` now SDL-based; AWT remnants are test harness only.
 - Headless property now uses `ever2e.headless` (with backward-compatible fallback from `java.awt.headless`).
 - Fullscreen hotkey behavior was intentionally simplified to `F12` only (`F11` no-op).
 
@@ -38,8 +39,7 @@ Files:
 - Complete: keyboard base no longer implements AWT `KeyListener`; SDL path feeds raw internal key values.
 
 ## Current AWT Usage (non-critical / legacy)
-- `src/device/display/Display32x32.java` (AWT windowing)
-- `src/test/VideoTest.java`, `src/test/KeyboardTest.java` (AWT test harness)
+- `src/test/VideoTest.java`, `src/test/KeyboardTest.java` (AWT test harness only)
 
 These should not block runtime SDL migration.
 
@@ -147,6 +147,8 @@ Optional cleanup after runtime migration.
 
 ### Acceptance
 - Whole repo either AWT-free, or AWT usage is explicitly test-only and documented.
+- Status
+- `Display32x32` migration complete (SDL path); remaining work is test harness cleanup.
 
 ---
 

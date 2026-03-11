@@ -41,8 +41,9 @@ public class VideoTest {
 		canvas = new MyCanvas();
 		image = new MyBuffer();
 		frame.add(canvas);
-		frame.addKeyListener(keyboard);
-		canvas.addKeyListener(keyboard);
+		AwtKeyboardAdapter keyAdapter = new AwtKeyboardAdapter(keyboard);
+		frame.addKeyListener(keyAdapter);
+		canvas.addKeyListener(keyAdapter);
 		frame.setVisible(true);  
 		canvas.repaint();
 		while( true ) {

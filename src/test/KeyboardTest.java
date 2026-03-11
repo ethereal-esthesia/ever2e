@@ -47,7 +47,7 @@ public class KeyboardTest extends JFrame {
 		keyboard = new KeyboardIIe(0, null);
 
 		displayArea.setEditable(false);
-		displayArea.addKeyListener(keyboard);
+		displayArea.addKeyListener(new AwtKeyboardAdapter(keyboard));
 		displayArea.setFocusTraversalKeysEnabled(false);
 		displayArea.getActionMap().get(DefaultEditorKit.deleteNextCharAction).setEnabled(false);
 		displayArea.getActionMap().get(DefaultEditorKit.deletePrevCharAction).setEnabled(false);
