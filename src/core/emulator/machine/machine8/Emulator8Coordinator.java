@@ -674,7 +674,6 @@ public class Emulator8Coordinator {
 				else {
 					try {
 						speaker = new Speaker1Bit((MemoryBusIIe) bus, (long) unitsPerCycle, GRANULARITY_BITS_PER_MS);
-						hardwareManagerQueue.add(speaker);
 					} catch (Exception e) {
 						System.out.println("Warning: Speaker initialization unavailable: " + e.getClass().getSimpleName());
 					}
@@ -738,6 +737,9 @@ public class Emulator8Coordinator {
 			int warmupIterations = (int) Math.max(1L,
 					Math.round((cpuClock*(double) DEFAULT_SPEAKER_WARMUP_MS/1000d)/Speaker1Bit.getSkipCycles()));
 			speaker.warmupIterations(warmupIterations);
+			if( bus instanceof MemoryBusIIe )
+				((MemoryBusIIe) bus).setSpeakerToggle(false);
+			hardwareManagerQueue.add(speaker);
 		}
 
 		System.out.println();
