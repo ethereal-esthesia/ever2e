@@ -67,11 +67,11 @@ tasks.named('run', JavaExec) {
 
 tasks.register('runHeadless', JavaExec) {
     group = 'application'
-    description = 'Run Emulator8Coordinator with headless AWT mode enabled.'
+    description = 'Run Emulator8Coordinator in headless mode.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass
     workingDir = projectDir
-    jvmArgs '-Djava.awt.headless=true'
+    jvmArgs '-Dever2e.headless=true'
 }
 
 tasks.register('smoke', JavaExec) {
@@ -80,7 +80,7 @@ tasks.register('smoke', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass
     workingDir = projectDir
-    jvmArgs '-Djava.awt.headless=true'
+    jvmArgs '-Dever2e.headless=true'
 
     def emuFile = providers.gradleProperty('smokeEmuFile').orElse('ROMS/Apple2e.emu').get()
     def pasteFile = providers.gradleProperty('smokePasteFile').orNull

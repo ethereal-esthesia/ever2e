@@ -101,7 +101,7 @@ Windowed run (alias task):
   - Enable emulator stdout logging (logging is quiet by default).
 - `--no-logging`
   - Force quiet mode (kept for compatibility).
-- `--keylog`
+- `--keylog` / `--key-log`
   - Enable keyboard input logging to stderr (`[sdl-key]` and key probe events).
 - `--debug-mouse`
   - Enable SDL mouse/cursor logging to stderr (`[debug] sdl_cursor ... x=.. y=..`).

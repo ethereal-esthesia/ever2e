@@ -3,8 +3,9 @@
 ## Status Snapshot (2026-03-11)
 - Phase 2 (clipboard/toolkit removal): complete in runtime path.
 - Phase 3 (display pixel/color path): complete in runtime path.
-- Phase 1 (input decoupling): partial; adapter exists, but runtime keyboard types still use AWT key constants/interfaces.
-- Phase 4 (runtime AWT-free verification): in progress; remaining runtime AWT usage is focused in keyboard keycode/event types and `java.awt.headless` property naming.
+- Phase 1 (input decoupling): complete in runtime path via internal key model (`EmuKey`).
+- Phase 4 (runtime AWT-free verification): complete for active SDL runtime classes.
+- Headless property now uses `ever2e.headless` (with backward-compatible fallback from `java.awt.headless`).
 - Fullscreen hotkey behavior was intentionally simplified to `F12` only (`F11` no-op).
 
 ## Goal
@@ -25,16 +26,16 @@ File: `src/device/display/DisplayIIe.java`
 
 ### 2. `KeyboardIIe`
 File: `src/device/keyboard/KeyboardIIe.java`
-- Status: partial.
+- Status: complete for runtime path.
 - Complete: AWT clipboard/toolkit removed; paste now uses SDL clipboard path.
-- Remaining: `java.awt.event.KeyEvent` constants are still used for key decoding.
+- Complete: internal `EmuKey` constants replace AWT key constants/interfaces.
 
 ### 3. Keyboard interfaces/types
 Files:
 - `src/device/keyboard/Keyboard.java`
 - callers that provide AWT key codes/modifiers/chars
-- Status: pending.
-- Remaining: replace AWT key/event interfaces with internal input model.
+- Status: complete in runtime path.
+- Complete: keyboard base no longer implements AWT `KeyListener`; SDL path feeds raw internal key values.
 
 ## Current AWT Usage (non-critical / legacy)
 - `src/device/display/Display32x32.java` (AWT windowing)
@@ -72,7 +73,7 @@ Decouple emulator input pipeline from AWT key constants/modifiers.
 - Keyboard input behavior unchanged for normal typing, modifiers, and F-key shortcuts.
 - Status
 - Complete: `DisplayIIe` no longer directly imports AWT key/event classes.
-- Remaining: keyboard interfaces and key constants still AWT-based.
+- Complete: runtime keyboard interfaces and key constants are internalized.
 
 ---
 
@@ -129,12 +130,8 @@ Ensure runtime SDL emulator path is AWT-free.
 - `rg '^import java\.awt|java\.awt\.' src` returns no hits in runtime paths.
 - Emulator runs windowed/fullscreen/headless without AWT dependency.
 - Status
-- In progress.
-- Known remaining runtime references:
-- `src/device/keyboard/AwtInputMapper.java`
-- `src/device/keyboard/Keyboard.java`
-- `src/device/keyboard/KeyboardIIe.java`
-- `src/core/emulator/machine/machine8/Emulator8Coordinator.java` (`java.awt.headless` property name)
+- Complete for active runtime SDL path.
+- Note: `java.awt.headless` is still accepted as a compatibility fallback property name.
 
 ---
 
