@@ -146,7 +146,8 @@ public class Emulator8Coordinator {
 	}
 
 	private static void queueBasicText(KeyboardIIe keyboard, String source, String basicText) {
-		keyboard.queuePasteText(basicText);
+		// Startup script injection should not lock out immediate live typing.
+		keyboard.queuePasteText(basicText, false);
 		System.out.println("Queued BASIC paste from "+source+" ("+basicText.length()+" chars)");
 	}
 

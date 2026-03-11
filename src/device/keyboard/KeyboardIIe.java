@@ -494,10 +494,10 @@ public class KeyboardIIe extends Keyboard {
 		delayCount = 0;
 	}
 
-	private void pushKeyCodeInternal(int i, boolean fromPaste) {
+	private void pushKeyCodeInternal(int i, boolean fromPaste, boolean suppressLiveInput) {
 		keyQueue.add((byte) i);
 		pasteMarkerQueue.add(Boolean.valueOf(fromPaste));
-		if( fromPaste ) {
+		if( fromPaste && suppressLiveInput ) {
 			pasteInputSuppressed = true;
 			pendingPastedKeys++;
 		}
@@ -547,10 +547,14 @@ public class KeyboardIIe extends Keyboard {
 	}
 
 	public void pushKeyCode( int i ) {
-		pushKeyCodeInternal(i, false);
+		pushKeyCodeInternal(i, false, false);
 	}
 
 	public void queuePasteText(String text) {
+		queuePasteText(text, true);
+	}
+
+	public void queuePasteText(String text, boolean suppressLiveInput) {
 		if( text==null || text.isEmpty() )
 			return;
 		for( int i = 0; i<text.length(); i++ ) {
@@ -559,10 +563,10 @@ public class KeyboardIIe extends Keyboard {
 				// Treat CRLF as a single return.
 				if( i+1<text.length() && text.charAt(i+1)==0x0a )
 					i++;
-				pushKeyCodeInternal(0x0d, true);
+				pushKeyCodeInternal(0x0d, true, suppressLiveInput);
 				continue;
 			}
-			pushKeyCodeInternal(c==0x0a ? 0x0d:c, true);
+			pushKeyCodeInternal(c==0x0a ? 0x0d:c, true, suppressLiveInput);
 		}
 	}
 
