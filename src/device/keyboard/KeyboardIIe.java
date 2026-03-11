@@ -266,8 +266,13 @@ public class KeyboardIIe extends Keyboard {
 			break;
 
 		default:
-			if( pasteInputSuppressed )
-				return;
+			if( pasteInputSuppressed ) {
+				// If user starts typing while paste is pending, prefer live input
+				// and drop queued paste to avoid a stuck "no keys work" state.
+				clearQueuedKeys();
+				clearPendingKeyInputQueue();
+				clearHeldKeyState();
+			}
 			// Keep control/navigation on keycode path, but use layout-resolved
 			// printable chars for locale-correct text input timing/repeat.
 			if( (modifierSet&KEY_MASK_CTRL)==0 && !isNumpadKey(keyIndex) ) {
