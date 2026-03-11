@@ -2075,9 +2075,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		boolean altDown = (mods&SDLKeycode.SDL_KMOD_ALT)!=0;
 		boolean metaDown = (mods&SDLKeycode.SDL_KMOD_GUI)!=0;
 		int awtKeyCode = AwtInputMapper.toAwtKeyCodeFromSdlScancode(scancode);
+		if( awtKeyCode==AwtInputMapper.KEY_UNDEFINED )
+			awtKeyCode = AwtInputMapper.toAwtKeyCodeFromSdlKeycode(key);
 		boolean fullscreenToggle = pressed && !repeat &&
-				(scancode==SDLScancode.SDL_SCANCODE_F11 || key==SDLKeycode.SDLK_F11 ||
-				 (!ctrlDown && (scancode==SDLScancode.SDL_SCANCODE_F12 || key==SDLKeycode.SDLK_F12)) ||
+				((!ctrlDown && (scancode==SDLScancode.SDL_SCANCODE_F12 || key==SDLKeycode.SDLK_F12)) ||
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (mods&SDLKeycode.SDL_KMOD_CTRL)!=0 && Character.toLowerCase(keyChar)=='f') ||
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (scancode==SDLScancode.SDL_SCANCODE_RETURN || scancode==SDLScancode.SDL_SCANCODE_KP_ENTER)));
 		if( fullscreenToggle ) {

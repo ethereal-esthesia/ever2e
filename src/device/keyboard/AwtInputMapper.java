@@ -136,4 +136,14 @@ public final class AwtInputMapper {
 			default: return KeyEvent.VK_UNDEFINED;
 		}
 	}
+
+	public static int toAwtKeyCodeFromSdlKeycode(int sdlKeycode) {
+		char c = mapSdlKeyChar(sdlKeycode);
+		if( c==CHAR_UNDEFINED )
+			return KEY_UNDEFINED;
+		if( Character.isLetter(c) )
+			c = Character.toUpperCase(c);
+		int code = KeyEvent.getExtendedKeyCodeForChar(c);
+		return code==KeyEvent.VK_UNDEFINED ? KEY_UNDEFINED : code;
+	}
 }
