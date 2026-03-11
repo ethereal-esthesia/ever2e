@@ -4,6 +4,10 @@ import java.awt.Color;
 import java.awt.Event;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.lwjgl.BufferUtils;
@@ -83,6 +87,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private long fullscreenTransitionGuardUntilNs;
 	private boolean pendingSdlTextInputModeApply;
 	private boolean pendingSdlInputGrabApply;
+	private long startupWindowTraceUntilNs;
 	private boolean initializationComplete;
 	private boolean windowFocused = true;
 	private boolean mouseInsideWindow;
@@ -111,6 +116,8 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int FRAME_H_CYCLES = 65;
 	private static final int FRAME_V_LINES = 262;
 	private static final int FRAME_CYCLES = FRAME_H_CYCLES * FRAME_V_LINES;
+	private static final long SDL_STARTUP_WINDOW_TRACE_NS = 8_000_000_000L;
+	private static final Map<Integer, String> SDL_WINDOW_EVENT_NAMES = buildSdlWindowEventNameMap();
 
 	public static int[] captureFrameBytes(MemoryBusIIe memoryBus) {
 		ScanlineTracer8 frameTracer = new ScanlineTracer8();
@@ -184,6 +191,26 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 
 	public static void setMacAllowProcessSwitching(boolean enabled) {
 		macAllowProcessSwitching = enabled;
+	}
+
+	private static Map<Integer, String> buildSdlWindowEventNameMap() {
+		Map<Integer, String> out = new HashMap<>();
+		try {
+			for( Field field : SDLEvents.class.getFields() ) {
+				int mods = field.getModifiers();
+				if( !Modifier.isStatic(mods) || field.getType()!=int.class )
+					continue;
+				String name = field.getName();
+				if( !name.startsWith("SDL_EVENT_WINDOW_") )
+					continue;
+				int value = field.getInt(null);
+				out.put(value, name);
+			}
+		}
+		catch( Throwable ignored ) {
+			// Best-effort map for debug logging.
+		}
+		return out;
 	}
 
 	public static final TraceMap8 LO40_TRACE;
@@ -1403,6 +1430,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		applyMacPresentationLock("init");
 		pendingSdlTextInputModeApply = true;
 		pendingSdlInputGrabApply = true;
+		startupWindowTraceUntilNs = System.nanoTime() + SDL_STARTUP_WINDOW_TRACE_NS;
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=defer_input_grab");
 		if( sdlTextAnchorDebug )
@@ -2061,6 +2089,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		try( SDL_Event event = SDL_Event.malloc() ) {
 			while( SDLEvents.SDL_PollEvent(event) ) {
 				int type = event.type();
+				logStartupWindowEvent(type);
 				if( type==SDLEvents.SDL_EVENT_QUIT || type==SDLEvents.SDL_EVENT_WINDOW_CLOSE_REQUESTED ) {
 					closeWindow();
 					System.exit(0);
@@ -2113,6 +2142,39 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				}
 			}
 		}
+	}
+
+	private void logStartupWindowEvent(int type) {
+		if( !sdlTextAnchorDebug )
+			return;
+		if( startupWindowTraceUntilNs<=0L )
+			return;
+		if( System.nanoTime()>startupWindowTraceUntilNs )
+			return;
+		String eventName = SDL_WINDOW_EVENT_NAMES.get(type);
+		if( eventName==null )
+			return;
+		long flags = sdlWindow!=0L ? SDLVideo.SDL_GetWindowFlags(sdlWindow) : 0L;
+		java.nio.IntBuffer xBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer yBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer wBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer hBuf = BufferUtils.createIntBuffer(1);
+		if( sdlWindow!=0L ) {
+			SDLVideo.SDL_GetWindowPosition(sdlWindow, xBuf, yBuf);
+			SDLVideo.SDL_GetWindowSize(sdlWindow, wBuf, hBuf);
+		}
+		int x = xBuf.get(0);
+		int y = yBuf.get(0);
+		int w = wBuf.get(0);
+		int h = hBuf.get(0);
+		System.err.println("[debug] sdl_window_event name="+eventName+
+				" type="+type+
+				" fullscreen="+fullscreen+
+				" focused="+windowFocused+
+				" mouseInside="+mouseInsideWindow+
+				" pos="+x+","+y+
+				" size="+w+"x"+h+
+				" flags=0x"+Long.toHexString(flags));
 	}
 
 	private void processSdlKeyboardEvent(org.lwjgl.sdl.SDL_KeyboardEvent keyEvent, boolean pressed) {
