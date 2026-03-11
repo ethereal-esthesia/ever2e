@@ -46,6 +46,7 @@ public class Emulator8Coordinator {
 	private static final int GRANULARITY_BITS_PER_MS = 32;
 	private static final boolean ENABLE_STARTUP_JIT_PRIME = true;
 	private static final int STARTUP_JIT_PRIME_STEPS = 300000;
+	private static final int DEFAULT_SPEAKER_WARMUP_MS = 500;
 	private static final long MONITOR_BLOCKING_DEBUG_THRESHOLD_NS = 2_000_000L; // 2ms
 	private static final int DISPLAY_HSCAN_CYCLES = 65;
 	private static final int DISPLAY_VSCAN_LINES = 262;
@@ -605,6 +606,7 @@ public class Emulator8Coordinator {
 		Cpu65c02 cpu;
 			KeyboardIIe keyboard = null;
 			HeadlessVideoProbe headlessProbe = null;
+			Speaker1Bit speaker = null;
 		if( properties.getLayout()==MachineLayoutType.DEMO_32x32 ) {
 			bus = new MemoryBusDemo8(memory, keyboard);
 			bus.coldReset();
@@ -671,7 +673,8 @@ public class Emulator8Coordinator {
 				}
 				else {
 					try {
-						hardwareManagerQueue.add(new Speaker1Bit((MemoryBusIIe) bus, (long) unitsPerCycle, GRANULARITY_BITS_PER_MS));
+						speaker = new Speaker1Bit((MemoryBusIIe) bus, (long) unitsPerCycle, GRANULARITY_BITS_PER_MS);
+						hardwareManagerQueue.add(speaker);
 					} catch (Exception e) {
 						System.out.println("Warning: Speaker initialization unavailable: " + e.getClass().getSimpleName());
 					}
@@ -730,6 +733,11 @@ public class Emulator8Coordinator {
 					throw (IOException) e;
 				throw new RuntimeException("Startup JIT prime failed", e);
 			}
+		}
+		if( speaker!=null ) {
+			int warmupIterations = (int) Math.max(1L,
+					Math.round((cpuClock*(double) DEFAULT_SPEAKER_WARMUP_MS/1000d)/Speaker1Bit.getSkipCycles()));
+			speaker.warmupIterations(warmupIterations);
 		}
 
 		System.out.println();
