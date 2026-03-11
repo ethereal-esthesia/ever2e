@@ -210,7 +210,7 @@ public class KeyboardIIe extends Keyboard {
 		//System.out.println(EmuKey.getKeyText(keyIndex)+" "+keyIndex+" "+event.getModifiers());
 
 		// Maintain caps-lock state internally; host modifier masks are not reliable
-		// for lock-key state across SDL/AWT bridges.
+		// for lock-key state across host input bridges.
 		if( keyIndex==EmuKey.VK_CAPS_LOCK ) {
 			capsLockState = !capsLockState;
 			applyCapsLockState();

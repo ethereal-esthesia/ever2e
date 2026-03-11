@@ -1307,10 +1307,7 @@ public class Emulator8Coordinator {
 
 	private static boolean isHeadlessMode() {
 		String explicit = System.getProperty("ever2e.headless");
-		if( explicit!=null )
-			return Boolean.parseBoolean(explicit);
-		// Backward compatibility for existing scripts.
-		return Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
+		return explicit!=null && Boolean.parseBoolean(explicit);
 	}
 
 	private static boolean isMemoryReadMnemonic(Cpu65c02.OpcodeMnemonic mnemonic) {

@@ -6,7 +6,7 @@
 - Phase 1 (input decoupling): complete in runtime path via internal key model (`EmuKey`).
 - Phase 4 (runtime AWT-free verification): complete for active SDL runtime classes.
 - Phase 5 (legacy/test cleanup): complete (`Display32x32` SDL migration + removal of AWT test harness files).
-- Headless property now uses `ever2e.headless` (with backward-compatible fallback from `java.awt.headless`).
+- Headless property now uses `ever2e.headless` only.
 - Fullscreen hotkey behavior was intentionally simplified to `F12` only (`F11` no-op).
 
 ## Goal
@@ -40,7 +40,6 @@ Files:
 
 ## Current AWT Usage (non-critical / legacy)
 - None in active source sets.
-- Compatibility note: `java.awt.headless` system property name is still accepted as a fallback alias for `ever2e.headless`.
 
 ---
 
@@ -130,7 +129,7 @@ Ensure runtime SDL emulator path is AWT-free.
 - Emulator runs windowed/fullscreen/headless without AWT dependency.
 - Status
 - Complete for active runtime SDL path.
-- Note: `java.awt.headless` is still accepted as a compatibility fallback property name.
+- Headless mode is controlled via `ever2e.headless`.
 
 ---
 
