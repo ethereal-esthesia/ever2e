@@ -1,6 +1,7 @@
 package device.keyboard;
 
 import java.awt.Event;
+import java.awt.EventQueue;
 import java.awt.HeadlessException;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
@@ -755,7 +756,7 @@ public class KeyboardIIe extends Keyboard {
 		if( keyQueue.size()!=0 || clipboard==null || clipboardPasteRequestInFlight )
 			return;
 		clipboardPasteRequestInFlight = true;
-		Thread fetchThread = new Thread(() -> {
+		Runnable fetchAction = () -> {
 			String text = null;
 			try {
 				Transferable contents = clipboard.getContents(null);
@@ -768,14 +769,26 @@ public class KeyboardIIe extends Keyboard {
 			catch( UnsupportedFlavorException | IOException | IllegalStateException ignored ) {
 				// Ignore unsupported/busy clipboard payloads.
 			}
+			catch( Throwable ignored ) {
+				// Defensive: never let host clipboard issues crash emulator input path.
+			}
 			finally {
 				clipboardPasteText = text;
 				clipboardPasteReady = true;
 				clipboardPasteRequestInFlight = false;
 			}
-		}, "KeyboardIIe-clipboard-paste");
-		fetchThread.setDaemon(true);
-		fetchThread.start();
+		};
+		try {
+			if( EventQueue.isDispatchThread() )
+				fetchAction.run();
+			else
+				EventQueue.invokeLater(fetchAction);
+		}
+		catch( Throwable ignored ) {
+			clipboardPasteText = null;
+			clipboardPasteReady = true;
+			clipboardPasteRequestInFlight = false;
+		}
 	}
 
 	private void drainPendingClipboardPaste() {
