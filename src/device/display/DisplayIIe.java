@@ -1,8 +1,6 @@
 package device.display;
 
 import java.awt.Color;
-import java.awt.Event;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -32,6 +30,7 @@ import core.memory.memory8.Memory8;
 import core.memory.memory8.MemoryBusIIe;
 import device.display.display8.ScanlineTracer8;
 import device.display.display8.TraceMap8;
+import device.keyboard.AwtInputMapper;
 import device.keyboard.KeyboardIIe;
 
 public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
@@ -1559,130 +1558,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 	}
 
-	private int toAwtModifiersFromSdl(short sdlMods) {
-		int mods = 0;
-		if( (sdlMods&SDLKeycode.SDL_KMOD_SHIFT)!=0 )
-			mods |= Event.SHIFT_MASK;
-		if( (sdlMods&SDLKeycode.SDL_KMOD_CTRL)!=0 )
-			mods |= Event.CTRL_MASK;
-		if( (sdlMods&SDLKeycode.SDL_KMOD_ALT)!=0 )
-			mods |= Event.ALT_MASK;
-		if( (sdlMods&SDLKeycode.SDL_KMOD_GUI)!=0 )
-			mods |= Event.META_MASK;
-		if( (sdlMods&SDLKeycode.SDL_KMOD_CAPS)!=0 )
-			mods |= Event.CAPS_LOCK;
-		return mods;
-	}
-
-	private char mapSdlKeyChar(int sdlKeycode) {
-		if( sdlKeycode >= 32 && sdlKeycode <= 126 ) {
-			char out = (char) sdlKeycode;
-			return Character.isLetter(out) ? Character.toLowerCase(out) : out;
-		}
-		return KeyEvent.CHAR_UNDEFINED;
-	}
-
-	private int toAwtKeyCodeFromSdlScancode(int scancode) {
-		switch( scancode ) {
-			case SDLScancode.SDL_SCANCODE_A: return KeyEvent.VK_A;
-			case SDLScancode.SDL_SCANCODE_B: return KeyEvent.VK_B;
-			case SDLScancode.SDL_SCANCODE_C: return KeyEvent.VK_C;
-			case SDLScancode.SDL_SCANCODE_D: return KeyEvent.VK_D;
-			case SDLScancode.SDL_SCANCODE_E: return KeyEvent.VK_E;
-			case SDLScancode.SDL_SCANCODE_F: return KeyEvent.VK_F;
-			case SDLScancode.SDL_SCANCODE_G: return KeyEvent.VK_G;
-			case SDLScancode.SDL_SCANCODE_H: return KeyEvent.VK_H;
-			case SDLScancode.SDL_SCANCODE_I: return KeyEvent.VK_I;
-			case SDLScancode.SDL_SCANCODE_J: return KeyEvent.VK_J;
-			case SDLScancode.SDL_SCANCODE_K: return KeyEvent.VK_K;
-			case SDLScancode.SDL_SCANCODE_L: return KeyEvent.VK_L;
-			case SDLScancode.SDL_SCANCODE_M: return KeyEvent.VK_M;
-			case SDLScancode.SDL_SCANCODE_N: return KeyEvent.VK_N;
-			case SDLScancode.SDL_SCANCODE_O: return KeyEvent.VK_O;
-			case SDLScancode.SDL_SCANCODE_P: return KeyEvent.VK_P;
-			case SDLScancode.SDL_SCANCODE_Q: return KeyEvent.VK_Q;
-			case SDLScancode.SDL_SCANCODE_R: return KeyEvent.VK_R;
-			case SDLScancode.SDL_SCANCODE_S: return KeyEvent.VK_S;
-			case SDLScancode.SDL_SCANCODE_T: return KeyEvent.VK_T;
-			case SDLScancode.SDL_SCANCODE_U: return KeyEvent.VK_U;
-			case SDLScancode.SDL_SCANCODE_V: return KeyEvent.VK_V;
-			case SDLScancode.SDL_SCANCODE_W: return KeyEvent.VK_W;
-			case SDLScancode.SDL_SCANCODE_X: return KeyEvent.VK_X;
-			case SDLScancode.SDL_SCANCODE_Y: return KeyEvent.VK_Y;
-			case SDLScancode.SDL_SCANCODE_Z: return KeyEvent.VK_Z;
-			case SDLScancode.SDL_SCANCODE_0: return KeyEvent.VK_0;
-			case SDLScancode.SDL_SCANCODE_1: return KeyEvent.VK_1;
-			case SDLScancode.SDL_SCANCODE_2: return KeyEvent.VK_2;
-			case SDLScancode.SDL_SCANCODE_3: return KeyEvent.VK_3;
-			case SDLScancode.SDL_SCANCODE_4: return KeyEvent.VK_4;
-			case SDLScancode.SDL_SCANCODE_5: return KeyEvent.VK_5;
-			case SDLScancode.SDL_SCANCODE_6: return KeyEvent.VK_6;
-			case SDLScancode.SDL_SCANCODE_7: return KeyEvent.VK_7;
-			case SDLScancode.SDL_SCANCODE_8: return KeyEvent.VK_8;
-			case SDLScancode.SDL_SCANCODE_9: return KeyEvent.VK_9;
-			case SDLScancode.SDL_SCANCODE_MINUS: return KeyEvent.VK_MINUS;
-			case SDLScancode.SDL_SCANCODE_EQUALS: return KeyEvent.VK_EQUALS;
-			case SDLScancode.SDL_SCANCODE_LEFTBRACKET: return KeyEvent.VK_OPEN_BRACKET;
-			case SDLScancode.SDL_SCANCODE_RIGHTBRACKET: return KeyEvent.VK_CLOSE_BRACKET;
-			case SDLScancode.SDL_SCANCODE_BACKSLASH: return KeyEvent.VK_BACK_SLASH;
-			case SDLScancode.SDL_SCANCODE_SEMICOLON: return KeyEvent.VK_SEMICOLON;
-			case SDLScancode.SDL_SCANCODE_APOSTROPHE: return KeyEvent.VK_QUOTE;
-			case SDLScancode.SDL_SCANCODE_COMMA: return KeyEvent.VK_COMMA;
-			case SDLScancode.SDL_SCANCODE_PERIOD: return KeyEvent.VK_PERIOD;
-			case SDLScancode.SDL_SCANCODE_SLASH: return KeyEvent.VK_SLASH;
-			case SDLScancode.SDL_SCANCODE_GRAVE: return KeyEvent.VK_BACK_QUOTE;
-			case SDLScancode.SDL_SCANCODE_RETURN: return KeyEvent.VK_ENTER;
-			case SDLScancode.SDL_SCANCODE_BACKSPACE: return KeyEvent.VK_BACK_SPACE;
-			case SDLScancode.SDL_SCANCODE_TAB: return KeyEvent.VK_TAB;
-			case SDLScancode.SDL_SCANCODE_ESCAPE: return KeyEvent.VK_ESCAPE;
-			case SDLScancode.SDL_SCANCODE_SPACE: return KeyEvent.VK_SPACE;
-			case SDLScancode.SDL_SCANCODE_LEFT: return KeyEvent.VK_LEFT;
-			case SDLScancode.SDL_SCANCODE_RIGHT: return KeyEvent.VK_RIGHT;
-			case SDLScancode.SDL_SCANCODE_UP: return KeyEvent.VK_UP;
-			case SDLScancode.SDL_SCANCODE_DOWN: return KeyEvent.VK_DOWN;
-			case SDLScancode.SDL_SCANCODE_LSHIFT:
-			case SDLScancode.SDL_SCANCODE_RSHIFT: return KeyEvent.VK_SHIFT;
-			case SDLScancode.SDL_SCANCODE_LCTRL:
-			case SDLScancode.SDL_SCANCODE_RCTRL: return KeyEvent.VK_CONTROL;
-			case SDLScancode.SDL_SCANCODE_CAPSLOCK: return KeyEvent.VK_CAPS_LOCK;
-			case SDLScancode.SDL_SCANCODE_LALT:
-			case SDLScancode.SDL_SCANCODE_RALT: return KeyEvent.VK_ALT;
-			case SDLScancode.SDL_SCANCODE_LGUI:
-			case SDLScancode.SDL_SCANCODE_RGUI: return KeyEvent.VK_META;
-			case SDLScancode.SDL_SCANCODE_INSERT: return KeyEvent.VK_INSERT;
-			case SDLScancode.SDL_SCANCODE_F1: return KeyEvent.VK_F1;
-			case SDLScancode.SDL_SCANCODE_F2: return KeyEvent.VK_F2;
-			case SDLScancode.SDL_SCANCODE_F3: return KeyEvent.VK_F3;
-			case SDLScancode.SDL_SCANCODE_F4: return KeyEvent.VK_F4;
-			case SDLScancode.SDL_SCANCODE_F5: return KeyEvent.VK_F5;
-			case SDLScancode.SDL_SCANCODE_F6: return KeyEvent.VK_F6;
-			case SDLScancode.SDL_SCANCODE_F7: return KeyEvent.VK_F7;
-			case SDLScancode.SDL_SCANCODE_F8: return KeyEvent.VK_F8;
-			case SDLScancode.SDL_SCANCODE_F9: return KeyEvent.VK_F9;
-			case SDLScancode.SDL_SCANCODE_F10: return KeyEvent.VK_F10;
-			case SDLScancode.SDL_SCANCODE_F11: return KeyEvent.VK_F11;
-			case SDLScancode.SDL_SCANCODE_F12: return KeyEvent.VK_F12;
-			case SDLScancode.SDL_SCANCODE_KP_0: return KeyEvent.VK_NUMPAD0;
-			case SDLScancode.SDL_SCANCODE_KP_1: return KeyEvent.VK_NUMPAD1;
-			case SDLScancode.SDL_SCANCODE_KP_2: return KeyEvent.VK_NUMPAD2;
-			case SDLScancode.SDL_SCANCODE_KP_3: return KeyEvent.VK_NUMPAD3;
-			case SDLScancode.SDL_SCANCODE_KP_4: return KeyEvent.VK_NUMPAD4;
-			case SDLScancode.SDL_SCANCODE_KP_5: return KeyEvent.VK_NUMPAD5;
-			case SDLScancode.SDL_SCANCODE_KP_6: return KeyEvent.VK_NUMPAD6;
-			case SDLScancode.SDL_SCANCODE_KP_7: return KeyEvent.VK_NUMPAD7;
-			case SDLScancode.SDL_SCANCODE_KP_8: return KeyEvent.VK_NUMPAD8;
-			case SDLScancode.SDL_SCANCODE_KP_9: return KeyEvent.VK_NUMPAD9;
-			case SDLScancode.SDL_SCANCODE_KP_PERIOD: return KeyEvent.VK_DECIMAL;
-			case SDLScancode.SDL_SCANCODE_KP_DIVIDE: return KeyEvent.VK_DIVIDE;
-			case SDLScancode.SDL_SCANCODE_KP_MULTIPLY: return KeyEvent.VK_MULTIPLY;
-			case SDLScancode.SDL_SCANCODE_KP_MINUS: return KeyEvent.VK_SUBTRACT;
-			case SDLScancode.SDL_SCANCODE_KP_PLUS: return KeyEvent.VK_ADD;
-			case SDLScancode.SDL_SCANCODE_KP_ENTER: return KeyEvent.VK_ENTER;
-			case SDLScancode.SDL_SCANCODE_KP_EQUALS: return KeyEvent.VK_EQUALS;
-			default: return KeyEvent.VK_UNDEFINED;
-		}
-	}
-
 	public void setShowFps(boolean showFps) {
 		this.showFps = showFps;
 		this.fpsWindowStartNs = System.nanoTime();
@@ -2194,30 +2069,30 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		int key = keyEvent.key();
 		short mods = keyEvent.mod();
 		boolean repeat = keyEvent.repeat();
-		char keyChar = mapSdlKeyChar(key);
+		char keyChar = AwtInputMapper.mapSdlKeyChar(key);
 		boolean shiftDown = (mods&SDLKeycode.SDL_KMOD_SHIFT)!=0;
 		boolean ctrlDown = (mods&SDLKeycode.SDL_KMOD_CTRL)!=0;
 		boolean altDown = (mods&SDLKeycode.SDL_KMOD_ALT)!=0;
 		boolean metaDown = (mods&SDLKeycode.SDL_KMOD_GUI)!=0;
-		int awtKeyCode = toAwtKeyCodeFromSdlScancode(scancode);
+		int awtKeyCode = AwtInputMapper.toAwtKeyCodeFromSdlScancode(scancode);
 		boolean fullscreenToggle = pressed && !repeat &&
-				(scancode==SDLScancode.SDL_SCANCODE_F11 || awtKeyCode==KeyEvent.VK_F11 || key==SDLKeycode.SDLK_F11 ||
-				 (!ctrlDown && (scancode==SDLScancode.SDL_SCANCODE_F12 || awtKeyCode==KeyEvent.VK_F12 || key==SDLKeycode.SDLK_F12)) ||
+				(scancode==SDLScancode.SDL_SCANCODE_F11 || key==SDLKeycode.SDLK_F11 ||
+				 (!ctrlDown && (scancode==SDLScancode.SDL_SCANCODE_F12 || key==SDLKeycode.SDLK_F12)) ||
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (mods&SDLKeycode.SDL_KMOD_CTRL)!=0 && Character.toLowerCase(keyChar)=='f') ||
 				 ((mods&SDLKeycode.SDL_KMOD_GUI)!=0 && (scancode==SDLScancode.SDL_SCANCODE_RETURN || scancode==SDLScancode.SDL_SCANCODE_KP_ENTER)));
 		if( fullscreenToggle ) {
 			toggleFullscreen();
 			return;
 		}
-		if( awtKeyCode==KeyEvent.VK_UNDEFINED )
+		if( awtKeyCode==AwtInputMapper.KEY_UNDEFINED )
 			return;
-		int awtModifiers = toAwtModifiersFromSdl(mods);
+		int awtModifiers = AwtInputMapper.toAwtModifiersFromSdl(mods);
 		if( keyLoggingEnabled ) {
 			System.err.println("[sdl-key] action="+(pressed ? 1 : 0)+
 					" scancode="+scancode+
 					" key="+key+
 					" awt="+awtKeyCode+
-					" char="+(keyChar==KeyEvent.CHAR_UNDEFINED ? "undef":Integer.toString((int) keyChar))+
+					" char="+(keyChar==AwtInputMapper.CHAR_UNDEFINED ? "undef":Integer.toString((int) keyChar))+
 					" shift="+shiftDown+
 					" ctrl="+ctrlDown+
 					" alt="+altDown+
