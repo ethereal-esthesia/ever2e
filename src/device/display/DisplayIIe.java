@@ -1,7 +1,5 @@
 package device.display;
 
-import java.awt.Color;
-import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -51,7 +49,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 
 	private int textMod;
 	private DisplayType displayType;
-	private BufferedImage [] rawDisplay;
+	private int[][] rawDisplay;
 
 	private int bufferPage;
 	private int paintPage;
@@ -97,6 +95,9 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int PAL_INDEX_MONO = 48;
 	private static final int PAL_INDEX_MONO_GREEN = 2*48;
 	private static final int PAL_BRIGHTNESS = 160;
+	private static final int COLOR_BLACK = 0xFF000000;
+	private static final int COLOR_WHITE = 0xFFFFFFFF;
+	private static final int COLOR_GREEN = 0xFF00FF00;
 	private static final int OFFSET40 = 7;
 
 	private static final int XSIZE = 567;
@@ -1742,39 +1743,39 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		if( xPaint==552 )
 			colorWordSize += 3;
 		
-		BufferedImage display = rawDisplay[bufferPage];
+		int[] display = rawDisplay[bufferPage];
 		while( colorWordSize>=4 ) {
 			int colorCode = palIndex+(colorWord&0x0f);
 			int outColor = pal[colorCode];
 			int bleedColor = pal[colorCode+16];
 			int scanColor = pal[colorCode+32];
 			if( (colorCode&1)!=0 ) {
-				display.setRGB(xPaint, yPaint, outColor);
-				display.setRGB(xPaint++, yPaint+1, scanColor);
+				setDisplayPixel(display, xPaint, yPaint, outColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, scanColor);
 			} else {
-				display.setRGB(xPaint, yPaint, bleedColor);
-				display.setRGB(xPaint++, yPaint+1, bleedColor);
+				setDisplayPixel(display, xPaint, yPaint, bleedColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, bleedColor);
 			}
 			if( (colorCode&2)!=0 ) {
-				display.setRGB(xPaint, yPaint, outColor);
-				display.setRGB(xPaint++, yPaint+1, scanColor);
+				setDisplayPixel(display, xPaint, yPaint, outColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, scanColor);
 			} else {
-				display.setRGB(xPaint, yPaint, bleedColor);
-				display.setRGB(xPaint++, yPaint+1, bleedColor);
+				setDisplayPixel(display, xPaint, yPaint, bleedColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, bleedColor);
 			}
 			if( (colorCode&4)!=0 ) {
-				display.setRGB(xPaint, yPaint, outColor);
-				display.setRGB(xPaint++, yPaint+1, scanColor);
+				setDisplayPixel(display, xPaint, yPaint, outColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, scanColor);
 			} else {
-				display.setRGB(xPaint, yPaint, bleedColor);
-				display.setRGB(xPaint++, yPaint+1, bleedColor);
+				setDisplayPixel(display, xPaint, yPaint, bleedColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, bleedColor);
 			}
 			if( (colorCode&8)!=0 ) {
-				display.setRGB(xPaint, yPaint, outColor);
-				display.setRGB(xPaint++, yPaint+1, scanColor);
+				setDisplayPixel(display, xPaint, yPaint, outColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, scanColor);
 			} else {
-				display.setRGB(xPaint, yPaint, bleedColor);
-				display.setRGB(xPaint++, yPaint+1, bleedColor);
+				setDisplayPixel(display, xPaint, yPaint, bleedColor);
+				setDisplayPixel(display, xPaint++, yPaint+1, bleedColor);
 			}
 			colorWord >>= 4;
 			colorWordSize -= 4;
@@ -1799,11 +1800,11 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		}
 	}
 
-	private void blitToWindow(BufferedImage image) {
-		blitToSdl(image);
+	private void blitToWindow(int[] pixels) {
+		blitToSdl(pixels);
 	}
 
-	private void blitToSdl(BufferedImage image) {
+	private void blitToSdl(int[] pixels) {
 		if( sdlWindow==0L )
 			return;
 		if( pendingSdlTextInputModeApply && initializationComplete ) {
@@ -1814,7 +1815,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			pendingSdlInputGrabApply = false;
 			setSdlInputGrab(windowFocused, "deferred_init_apply");
 		}
-		int[] pixels = image.getRGB(0, 0, CONTENT_WIDTH, CONTENT_HEIGHT, null, 0, CONTENT_WIDTH);
 		sdlTextureInts.clear();
 		sdlTextureInts.put(pixels);
 		sdlTextureInts.flip();
@@ -2124,12 +2124,12 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	}
 
 	private void cleanEdges() {
-		BufferedImage display = rawDisplay[bufferPage];
+		int[] display = rawDisplay[bufferPage];
 		for( int yb = 0; yb < 24*16; yb++ ) {
 			for( int xb = 0; xb < 7; xb++ )
-				display.setRGB(xb, yb, 0);
+				setDisplayPixel(display, xb, yb, COLOR_BLACK);
 			for( int xb = 80*7; xb < 81*7; xb++ )
-				display.setRGB(xb, yb, 0);
+				setDisplayPixel(display, xb, yb, COLOR_BLACK);
 		}
 	}
 
@@ -2161,14 +2161,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		lastSwitchIteration = -1;
 		evaluateSwitchChange();
 		tracer.coldReset();
-		rawDisplay = new BufferedImage[2];
+		rawDisplay = new int[2][];
 		bufferPage = 0;
 		paintPage = 1;
 		fpsWindowStartNs = System.nanoTime();
 		fpsFrameCount = 0;
 		yPaint = YSIZE-2;
-		rawDisplay[0] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
-		rawDisplay[1] = new BufferedImage(XSIZE+2, YSIZE, BufferedImage.TYPE_INT_RGB);
+		rawDisplay[0] = new int[CONTENT_WIDTH * CONTENT_HEIGHT];
+		rawDisplay[1] = new int[CONTENT_WIDTH * CONTENT_HEIGHT];
 		generatePalette();
 		// Randomly position the first scan to simulate an always-on screen
 		int randScans = new Random().nextInt(17030);
@@ -2185,43 +2185,43 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 
 		// Add main color palette
 		pal = new int[48*3];
-		Color [] basePal = new Color[4];
+		int[] basePal = new int[4];
 
 		for( int palIndex = 0; palIndex<4; palIndex++ )
-			basePal[palIndex] = new Color(Color.HSBtoRGB((((3-palIndex)<<6)+hueShift)/256f, 1f, PAL_BRIGHTNESS/256f));
+			basePal[palIndex] = hsbToArgb((((3-palIndex)<<6)+hueShift)/256f, 1f, PAL_BRIGHTNESS/256f);
 
 		for( int palIndex = 1; palIndex<16; palIndex++ ) {
 
-			Color mix = new Color(0);
+			int redMix = 0;
+			int greenMix = 0;
+			int blueMix = 0;
 			int baseIndex = 0;
 			int bits = 0;
 			for( int bitMask = palIndex; bitMask>0; bitMask >>= 1, baseIndex++ ){
 				if( (bitMask&0x01)!=0 ) {
 					bits++;
-					int red = Math.min((int)(basePal[baseIndex].getRed())+mix.getRed(), 255);
-					int green = Math.min((int)(basePal[baseIndex].getGreen())+mix.getGreen(), 255);
-					int blue = Math.min((int)(basePal[baseIndex].getBlue())+mix.getBlue(), 255);
-					mix = new Color(red, green, blue);
+					redMix = Math.min(redMix + red(basePal[baseIndex]), 255);
+					greenMix = Math.min(greenMix + green(basePal[baseIndex]), 255);
+					blueMix = Math.min(blueMix + blue(basePal[baseIndex]), 255);
 				}
 			}
 
 			if( bits==1 ) {
-				int red = Math.min(mix.getRed()*2, 255);
-				int green = Math.min(mix.getGreen()*2, 255);
-				int blue = Math.min(mix.getBlue()*2, 255);
-				mix = new Color(red, green, blue);
+				redMix = Math.min(redMix * 2, 255);
+				greenMix = Math.min(greenMix * 2, 255);
+				blueMix = Math.min(blueMix * 2, 255);
 			}
 
-			pal[palIndex] = mix.getRGB();
+			pal[palIndex] = toArgb(redMix, greenMix, blueMix);
 
 		}
 
 		// Add monochrome
-		pal[PAL_INDEX_MONO] = Color.BLACK.getRGB();
-		pal[PAL_INDEX_MONO_GREEN] = Color.BLACK.getRGB();
+		pal[PAL_INDEX_MONO] = COLOR_BLACK;
+		pal[PAL_INDEX_MONO_GREEN] = COLOR_BLACK;
 		for( int index = 1; index<16; index++ ) {
-			pal[PAL_INDEX_MONO+index] = Color.WHITE.getRGB();
-			pal[PAL_INDEX_MONO_GREEN+index] = Color.GREEN.getRGB();
+			pal[PAL_INDEX_MONO+index] = COLOR_WHITE;
+			pal[PAL_INDEX_MONO_GREEN+index] = COLOR_GREEN;
 		}
 
 		// Add color bleed palettes
@@ -2229,14 +2229,87 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			for( int index = 0; index<16; index++ ) {
 				// Pixel bleed
 				if( palSet*48==PAL_INDEX_COLOR )
-					pal[palSet*48+index+16] = new Color(pal[palSet*48+index]).darker().darker().darker().darker().darker().getRGB();
+					pal[palSet*48+index+16] = darker(darker(darker(darker(darker(pal[palSet*48+index])))));
 				else
-					pal[palSet*48+index+16] = Color.BLACK.getRGB();
+					pal[palSet*48+index+16] = COLOR_BLACK;
 				// Blank scanline bleed
-				pal[palSet*48+index+32] = new Color(pal[palSet*48+index]).darker().darker().darker().darker().getRGB();
+				pal[palSet*48+index+32] = darker(darker(darker(darker(pal[palSet*48+index]))));
 			}
 		}
 
+	}
+
+	private static void setDisplayPixel(int[] display, int x, int y, int color) {
+		display[(y * CONTENT_WIDTH) + x] = color;
+	}
+
+	private static int toArgb(int red, int green, int blue) {
+		return 0xFF000000 | ((red & 0xFF) << 16) | ((green & 0xFF) << 8) | (blue & 0xFF);
+	}
+
+	private static int red(int color) {
+		return (color >>> 16) & 0xFF;
+	}
+
+	private static int green(int color) {
+		return (color >>> 8) & 0xFF;
+	}
+
+	private static int blue(int color) {
+		return color & 0xFF;
+	}
+
+	private static int darker(int color) {
+		return toArgb((int) (red(color) * 0.7), (int) (green(color) * 0.7), (int) (blue(color) * 0.7));
+	}
+
+	private static int hsbToArgb(float hue, float saturation, float brightness) {
+		int red = 0;
+		int green = 0;
+		int blue = 0;
+		if( saturation==0 ) {
+			red = green = blue = (int) (brightness * 255.0f + 0.5f);
+		}
+		else {
+			float h = (hue - (float) Math.floor(hue)) * 6.0f;
+			float f = h - (float) java.lang.Math.floor(h);
+			float p = brightness * (1.0f - saturation);
+			float q = brightness * (1.0f - saturation * f);
+			float t = brightness * (1.0f - (saturation * (1.0f - f)));
+			switch( (int) h ) {
+				case 0:
+					red = (int) (brightness * 255.0f + 0.5f);
+					green = (int) (t * 255.0f + 0.5f);
+					blue = (int) (p * 255.0f + 0.5f);
+					break;
+				case 1:
+					red = (int) (q * 255.0f + 0.5f);
+					green = (int) (brightness * 255.0f + 0.5f);
+					blue = (int) (p * 255.0f + 0.5f);
+					break;
+				case 2:
+					red = (int) (p * 255.0f + 0.5f);
+					green = (int) (brightness * 255.0f + 0.5f);
+					blue = (int) (t * 255.0f + 0.5f);
+					break;
+				case 3:
+					red = (int) (p * 255.0f + 0.5f);
+					green = (int) (q * 255.0f + 0.5f);
+					blue = (int) (brightness * 255.0f + 0.5f);
+					break;
+				case 4:
+					red = (int) (t * 255.0f + 0.5f);
+					green = (int) (p * 255.0f + 0.5f);
+					blue = (int) (brightness * 255.0f + 0.5f);
+					break;
+				default:
+					red = (int) (brightness * 255.0f + 0.5f);
+					green = (int) (p * 255.0f + 0.5f);
+					blue = (int) (q * 255.0f + 0.5f);
+					break;
+			}
+		}
+		return toArgb(red, green, blue);
 	}
 
 	public int getLastRead() {
