@@ -655,9 +655,6 @@ public class KeyboardIIe extends Keyboard {
 		keyEventQueue = new ConcurrentLinkedQueue<>();
 		keyQueue = new LinkedList<>();
 		pasteMarkerQueue = new LinkedList<>();
-		modifierSet = 0;
-		optionKey = false;
-		appleKey = false;
 		isHalted = false;
 		cycleCount = 0;
 		delayCount = 0;
