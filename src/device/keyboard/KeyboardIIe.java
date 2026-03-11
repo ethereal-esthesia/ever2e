@@ -446,7 +446,9 @@ public class KeyboardIIe extends Keyboard {
 			return 0x0d;
 		if( Character.isLetter(keyChar) ) {
 			boolean capsDown = (modifierSet&KEY_MASK_CAPS)!=0;
-			char normalized = (capsDown ^ shiftDown) ? Character.toUpperCase(keyChar) : Character.toLowerCase(keyChar);
+			// Apple II-style behavior: with caps lock enabled, shift does not
+			// invert letters back to lowercase.
+			char normalized = (capsDown || shiftDown) ? Character.toUpperCase(keyChar) : Character.toLowerCase(keyChar);
 			return (int) normalized;
 		}
 		if( shiftDown && keyChar>='0' && keyChar<='9' ) {
