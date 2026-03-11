@@ -226,7 +226,7 @@ public class Emulator8Coordinator {
 			boolean keyLogging = false;
 		String windowBackend = "sdl";
 		boolean startFullscreen = false;
-		boolean macDisableProcessSwitching = false;
+		boolean macAllowProcessSwitching = false;
 		String textInputMode = "off";
 		String sdlFullscreenMode = "exclusive";
 		boolean sdlImeUiSelf = false;
@@ -339,12 +339,16 @@ public class Emulator8Coordinator {
 			else if( "--start-fullscreen".equals(arg) ) {
 				startFullscreen = true;
 			}
+			else if( "--mac-allow-process-switching".equals(arg) ) {
+				macAllowProcessSwitching = true;
+			}
 			else if( "--mac-disable-process-switching".equals(arg) ) {
-				macDisableProcessSwitching = true;
+				// Backward-compatible alias: lock is now the default in fullscreen.
+				macAllowProcessSwitching = false;
 			}
 			else if( "--mac-kiosk-grab".equals(arg) ) {
-				// Alias kept for convenience while tuning startup behavior.
-				macDisableProcessSwitching = true;
+				// Backward-compatible alias: lock is now the default in fullscreen.
+				macAllowProcessSwitching = false;
 			}
 			else if( "--text-input-mode".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -545,7 +549,7 @@ public class Emulator8Coordinator {
 		DisplayIIe.setKeyLoggingEnabled(keyLogging);
 		DisplayIIe.setWindowBackend(windowBackend);
 		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
-		DisplayIIe.setMacDisableProcessSwitching(macDisableProcessSwitching);
+		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
 		DisplayIIe.setSdlTextInputMode(textInputMode);
 		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
 		DisplayIIe.setSdlImeUiSelfImplemented(sdlImeUiSelf);
@@ -553,7 +557,7 @@ public class Emulator8Coordinator {
 		if( debugLogging ) {
 			System.err.println("[debug] launch_config windowBackend="+windowBackend+
 					" startFullscreen="+startFullscreen+
-					" macDisableProcessSwitching="+macDisableProcessSwitching+
+					" macAllowProcessSwitching="+macAllowProcessSwitching+
 					" sdlImeUiSelf="+sdlImeUiSelf+
 					" textInputMode="+textInputMode+
 					" sdlFullscreenMode="+sdlFullscreenMode);
