@@ -42,9 +42,9 @@ public class MemoryBusIIe extends MemoryBus8 {
 	private SwitchState switchSpeakerToggle = new SwitchState();
 
 	private int switchIteration;
-	// MAME/IIe behavior at boot shows PB2 high unless a game IO device drives it low.
-	// We do not yet model game IO buttons here, so keep the default asserted.
-	private boolean pb2DefaultHigh = true;
+	// Default PB2 low so boot does not enter self-test paths unintentionally.
+	// Game-input devices can drive this high when modeled.
+	private boolean pb2DefaultHigh = false;
 
 	public class SwitchState {
 
