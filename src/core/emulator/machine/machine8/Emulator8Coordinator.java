@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 import peripherals.PeripheralIIe;
@@ -43,14 +44,18 @@ import device.speaker.Speaker1Bit;
 public class Emulator8Coordinator {
 
 	private static final String DEFAULT_MACHINE = "ROMS/Apple2e.emu";
+	private static final String STARTUP_PRIMER_MACHINE = "ROMS/Apple2eNoSlots.emu";
+	private static final String STARTUP_PRIMER_PASTE_FILE = "ROMS/opcode_smoke_loader_hgr_mem_32k.mon";
 	private static final int GRANULARITY_BITS_PER_MS = 32;
 	private static final boolean ENABLE_STARTUP_JIT_PRIME = true;
 	private static final int STARTUP_JIT_PRIME_STEPS = 300000;
+	private static final long STARTUP_PRIMER_STEPS = 8_000_000L;
 	private static final int DEFAULT_SPEAKER_WARMUP_MS = 500;
 	private static final long MONITOR_BLOCKING_DEBUG_THRESHOLD_NS = 2_000_000L; // 2ms
 	private static final int DISPLAY_HSCAN_CYCLES = 65;
 	private static final int DISPLAY_VSCAN_LINES = 262;
 	private static final int DISPLAY_VBL_LINES = 70;
+	private static final AtomicBoolean STARTUP_PRIMER_DONE = new AtomicBoolean(false);
 
 	private static int parseByteArg(String value, String argName) {
 		String raw = value.trim();
@@ -176,6 +181,35 @@ public class Emulator8Coordinator {
 				" elapsedMs="+(elapsedNs/1_000_000.0));
 	}
 
+	private static boolean shouldRunStartupPrimer(boolean startupPrimerInternal, boolean textConsole, boolean runningHeadless) {
+		if( startupPrimerInternal || textConsole || runningHeadless )
+			return false;
+		if( !Boolean.parseBoolean(System.getProperty("ever2e.startupPrimer", "true")) )
+			return false;
+		if( !STARTUP_PRIMER_DONE.compareAndSet(false, true) )
+			return false;
+		return Files.exists(Paths.get(STARTUP_PRIMER_MACHINE)) && Files.exists(Paths.get(STARTUP_PRIMER_PASTE_FILE));
+	}
+
+	private static void runStartupPrimer() {
+		String[] primerArgs = new String[] {
+				STARTUP_PRIMER_MACHINE,
+				"--startup-primer-internal",
+				"--steps", Long.toString(STARTUP_PRIMER_STEPS),
+				"--start-hidden",
+				"--no-sound",
+				"--no-logging",
+				"--paste-file", STARTUP_PRIMER_PASTE_FILE
+		};
+		try {
+			runSilently(() -> main(primerArgs));
+		}
+		catch( Exception e ) {
+			System.err.println("Warning: startup primer skipped: "+e.getClass().getSimpleName()+
+					(e.getMessage()==null ? "":(" - "+e.getMessage())));
+		}
+	}
+
 	private static void loadProgramImage(VirtualMachineProperties properties, Memory8 memory, MemoryBus8 bus, byte[] rom16k) {
 		Arrays.fill(rom16k, (byte) 0);
 		byte [] program = properties.getCode();
@@ -227,6 +261,7 @@ public class Emulator8Coordinator {
 			boolean keyLogging = false;
 			boolean mouseDebug = false;
 		boolean startFullscreen = false;
+		boolean startHidden = false;
 		boolean macAllowProcessSwitching = false;
 		String textInputMode = "off";
 		String sdlFullscreenMode = "exclusive";
@@ -249,6 +284,7 @@ public class Emulator8Coordinator {
 		List<int[]> monitorSequenceWrites = new ArrayList<>();
 		Set<Integer> haltExecutions = new LinkedHashSet<>();
 		Set<Integer> requireHaltPcs = new LinkedHashSet<>();
+		boolean startupPrimerInternal = false;
 			String pasteFile = null;
 		String pasteText = null;
 		for( int i = 0; i<argList.length; i++ ) {
@@ -337,6 +373,12 @@ public class Emulator8Coordinator {
 			}
 			else if( "--start-fullscreen".equals(arg) ) {
 				startFullscreen = true;
+			}
+			else if( "--start-hidden".equals(arg) ) {
+				startHidden = true;
+			}
+			else if( arg.startsWith("--start-hidden=") ) {
+				startHidden = Boolean.parseBoolean(arg.substring("--start-hidden=".length()));
 			}
 			else if( "--mac-allow-process-switching".equals(arg) ) {
 				macAllowProcessSwitching = true;
@@ -504,6 +546,9 @@ public class Emulator8Coordinator {
 			else if( "--dump-all-raw-ram-rom".equals(arg) ) {
 				dumpAllRawRam = true;
 			}
+			else if( "--startup-primer-internal".equals(arg) ) {
+				startupPrimerInternal = true;
+			}
 			else if( "--monitor-seq-write".equals(arg) ) {
 				if( i+1>=argList.length )
 					throw new IllegalArgumentException("Missing value for --monitor-seq-write");
@@ -547,6 +592,7 @@ public class Emulator8Coordinator {
 		KeyboardIIe.setKeyLoggingEnabled(keyLogging);
 		DisplayIIe.setKeyLoggingEnabled(keyLogging);
 		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
+		DisplayIIe.setStartHiddenOnLaunch(startHidden);
 		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
 		DisplayIIe.setSdlTextInputMode(textInputMode);
 		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
@@ -556,12 +602,15 @@ public class Emulator8Coordinator {
 		if( debugLogging ) {
 			System.err.println("[debug] launch_config windowBackend=sdl"+
 					" startFullscreen="+startFullscreen+
+					" startHidden="+startHidden+
 					" macAllowProcessSwitching="+macAllowProcessSwitching+
 					" mouseDebug="+mouseDebug+
 					" sdlImeUiSelf="+sdlImeUiSelf+
 					" textInputMode="+textInputMode+
 					" sdlFullscreenMode="+sdlFullscreenMode);
 		}
+		if( shouldRunStartupPrimer(startupPrimerInternal, textConsole, isHeadlessMode()) )
+			runStartupPrimer();
 			if( !debugLogging && !printTextAtExit && lastFrameOut==null )
 				System.setOut(new PrintStream(OutputStream.nullOutputStream()));
 		tracePhase = tracePhase.trim().toLowerCase();
