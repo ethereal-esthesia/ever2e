@@ -47,8 +47,8 @@ public class Emulator8Coordinator {
 	private static final String STARTUP_PRIMER_MACHINE = "ROMS/Apple2eNoSlots.emu";
 	private static final String STARTUP_PRIMER_PASTE_FILE = "ROMS/opcode_smoke_loader_hgr_mem_32k.mon";
 	private static final int GRANULARITY_BITS_PER_MS = 32;
-	private static final boolean ENABLE_STARTUP_JIT_PRIME = false;
-	private static final int STARTUP_JIT_PRIME_STEPS = 300000;
+	private static final boolean ENABLE_STARTUP_JIT_PRIME = true;
+	private static final int STARTUP_JIT_PRIME_STEPS = 20_000;
 	private static final long STARTUP_PRIMER_STEPS = 8_000_000L;
 	private static final int DEFAULT_SPEAKER_WARMUP_MS = 500;
 	private static final long MONITOR_BLOCKING_DEBUG_THRESHOLD_NS = 2_000_000L; // 2ms
@@ -196,7 +196,7 @@ public class Emulator8Coordinator {
 			return false;
 		if( !ENABLE_STARTUP_JIT_PRIME )
 			return false;
-		return Boolean.parseBoolean(System.getProperty("ever2e.startupJitPrime", "false"));
+		return Boolean.parseBoolean(System.getProperty("ever2e.startupJitPrime", "true"));
 	}
 
 	private static void runStartupPrimer() {
