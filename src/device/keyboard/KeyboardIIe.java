@@ -218,10 +218,9 @@ public class KeyboardIIe extends Keyboard {
 		
 		//System.out.println(KeyEvent.getKeyText(keyIndex)+" "+keyIndex+" "+event.getModifiers());
 
-		// Workaround for action keys mistaken as caps-key AWT bug
+		// Caps lock state now comes from modifier bits; do not toggle manually.
 		if( keyIndex==KeyEvent.VK_CAPS_LOCK ) {
-			capsLockState = !capsLockState;
-			applyCapsLockState();
+			syncCapsLockState(keyModifiers);
 			if( (keyModifiers&Event.SHIFT_MASK)!=0 )
 				modifierSet |= KEY_MASK_SHIFT;
 			if( (keyModifiers&Event.CTRL_MASK)!=0 )
