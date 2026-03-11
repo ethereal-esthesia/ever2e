@@ -111,11 +111,15 @@ public final class SdlImeProbe {
 		boolean textInputBelow = false;
 		boolean textInputNegative = true;
 		boolean fullscreen = true;
+		boolean startWindowed = hasArg(args, "--start-windowed");
+		if( startWindowed )
+			fullscreen = false;
 		boolean fullscreenTransitionPending = false;
 		boolean pendingFullscreenTarget = fullscreen;
 		long fullscreenTransitionStartNs = 0L;
 		final long fullscreenTransitionTimeoutNs = 2_000_000_000L;
 		boolean startupExclusive = hasArg(args, "--startup-exclusive");
+		boolean macFullscreenSpacesOff = hasArg(args, "--mac-fullscreen-spaces-off");
 		boolean macAllowProcessSwitching =
 				hasArg(args, "--mac-allow-process-switching") && !hasArg(args, "--mac-disable-process-switching");
 		MacPresentationLock macPresentationLock = new MacPresentationLock();
@@ -123,8 +127,9 @@ public final class SdlImeProbe {
 		trace(traceSdl, "SDL_SetHint(VIDEO_MINIMIZE_ON_FOCUS_LOSS,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 		if( IS_MAC ) {
-			trace(traceSdl, "SDL_SetHint(VIDEO_MAC_FULLSCREEN_SPACES,1)");
-			SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "1");
+			String spacesValue = macFullscreenSpacesOff ? "0" : "1";
+			trace(traceSdl, "SDL_SetHint(VIDEO_MAC_FULLSCREEN_SPACES," + spacesValue + ")");
+			SDLHints.SDL_SetHint(SDLHints.SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, spacesValue);
 		}
 		trace(traceSdl, "SDL_SetHint(MAC_PRESS_AND_HOLD,0)");
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MAC_PRESS_AND_HOLD, "0");
@@ -202,7 +207,9 @@ public final class SdlImeProbe {
 				+ ", textBelow=" + textInputBelow
 				+ ", textNegative=" + textInputNegative
 				+ ", fullscreen=" + fullscreen
-				+ ", startupExclusive=" + startupExclusive);
+				+ ", startupExclusive=" + startupExclusive
+				+ ", startWindowed=" + startWindowed
+				+ ", macFullscreenSpacesOff=" + macFullscreenSpacesOff);
 		System.out.println("mouseDebug=" + mouseDebug);
 		System.out.println("keyDebug=" + keyDebug);
 		System.out.println("macAllowProcessSwitching=" + macAllowProcessSwitching
