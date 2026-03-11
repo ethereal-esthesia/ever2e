@@ -225,7 +225,6 @@ public class Emulator8Coordinator {
 			boolean debugLogging = false;
 			boolean keyLogging = false;
 			boolean mouseDebug = false;
-		String windowBackend = "sdl";
 		boolean startFullscreen = false;
 		boolean macAllowProcessSwitching = false;
 		String textInputMode = "off";
@@ -331,14 +330,6 @@ public class Emulator8Coordinator {
 			}
 			else if( "--debug-mouse".equals(arg) ) {
 				mouseDebug = true;
-			}
-			else if( "--window-backend".equals(arg) ) {
-				if( i+1>=argList.length )
-					throw new IllegalArgumentException("Missing value for --window-backend");
-				windowBackend = argList[++i];
-			}
-			else if( arg.startsWith("--window-backend=") ) {
-				windowBackend = arg.substring("--window-backend=".length());
 			}
 			else if( "--start-fullscreen".equals(arg) ) {
 				startFullscreen = true;
@@ -551,7 +542,6 @@ public class Emulator8Coordinator {
 		Speaker1Bit.setBlockingDebugEnabled(debugLogging);
 		KeyboardIIe.setKeyLoggingEnabled(keyLogging);
 		DisplayIIe.setKeyLoggingEnabled(keyLogging);
-		DisplayIIe.setWindowBackend(windowBackend);
 		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
 		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
 		DisplayIIe.setSdlTextInputMode(textInputMode);
@@ -560,7 +550,7 @@ public class Emulator8Coordinator {
 		DisplayIIe.setSdlTextAnchorDebug(debugLogging);
 		DisplayIIe.setSdlMouseDebug(mouseDebug);
 		if( debugLogging ) {
-			System.err.println("[debug] launch_config windowBackend="+windowBackend+
+			System.err.println("[debug] launch_config windowBackend=sdl"+
 					" startFullscreen="+startFullscreen+
 					" macAllowProcessSwitching="+macAllowProcessSwitching+
 					" mouseDebug="+mouseDebug+
@@ -661,7 +651,7 @@ public class Emulator8Coordinator {
 				hardwareManagerQueue.add(headlessProbe);
 				hardwareManagerQueue.add(new DisplayConsoleAppleIIe((MemoryBusIIe) bus, (long) (unitsPerCycle/displayMultiplier)));
 			}
-			else if( isHeadlessMode(windowBackend) ) {
+			else if( isHeadlessMode() ) {
 				System.out.println("Running headless: using headless video probe");
 				headlessProbe = new HeadlessVideoProbe((MemoryBusIIe) bus, (long) (unitsPerCycle/displayMultiplier));
 				display = headlessProbe;
@@ -721,7 +711,7 @@ public class Emulator8Coordinator {
 		}
 		
 		Emulator emulator = new Emulate65c02(hardwareManagerQueue, GRANULARITY_BITS_PER_MS);
-		boolean runningHeadless = isHeadlessMode(windowBackend);
+		boolean runningHeadless = isHeadlessMode();
 		if( runningHeadless )
 			emulator.setRealtimeThrottleEnabled(false);
 		if( ENABLE_STARTUP_JIT_PRIME && !noSound ) {
@@ -1324,10 +1314,8 @@ public class Emulator8Coordinator {
 		return Cpu65c02.getHexString(value, 2);
 	}
 
-	private static boolean isHeadlessMode(String windowBackend) {
-		if( "sdl".equalsIgnoreCase(windowBackend) )
-			return Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
-		return GraphicsEnvironment.isHeadless();
+	private static boolean isHeadlessMode() {
+		return Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
 	}
 
 	private static boolean isMemoryReadMnemonic(Cpu65c02.OpcodeMnemonic mnemonic) {

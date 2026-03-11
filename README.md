@@ -105,8 +105,6 @@ Windowed run (alias task):
   - Enable keyboard input logging to stderr (`[sdl-key]` and key probe events).
 - `--debug-mouse`
   - Enable SDL mouse/cursor logging to stderr (`[debug] sdl_cursor ... x=.. y=..`).
-- `--window-backend sdl`
-  - Window backend selection (SDL only).
 - `--start-fullscreen`
   - Start directly in fullscreen mode.
 - `--mac-allow-process-switching`

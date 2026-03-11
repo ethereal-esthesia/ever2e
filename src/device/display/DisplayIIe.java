@@ -37,7 +37,6 @@ import device.keyboard.KeyboardIIe;
 public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
 	private static volatile boolean keyLoggingEnabled;
-	private static volatile String windowBackend = "sdl";
 	private static volatile boolean startFullscreenOnLaunch;
 	private static volatile String sdlTextInputMode = "off";
 	private static volatile String sdlFullscreenMode = "exclusive";
@@ -134,19 +133,6 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			bytes[i] = memoryBus.peekByteNoSideEffects(frameTracer.getAddress());
 		}
 		return bytes;
-	}
-
-	public static void setWindowBackend(String backend) {
-		if( backend==null ) {
-			windowBackend = "sdl";
-			return;
-		}
-		String normalized = backend.trim().toLowerCase();
-		if( normalized.isEmpty() )
-			normalized = "sdl";
-		if( !"sdl".equals(normalized) )
-			throw new IllegalArgumentException("Unsupported window backend: "+backend+" (expected sdl)");
-		windowBackend = normalized;
 	}
 
 	public static void setStartFullscreenOnLaunch(boolean enabled) {
