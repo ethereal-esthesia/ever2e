@@ -45,6 +45,9 @@ public class KeyboardIIe extends Keyboard {
 	private long consumedQueuedKeyCount;
 	private int pendingPastedKeys;
 	private boolean pasteInputSuppressed;
+	private volatile boolean clipboardPasteRequestInFlight;
+	private volatile boolean clipboardPasteReady;
+	private volatile String clipboardPasteText;
 	
 	private static final int PRE_REPEAT_FLOP_COUNT = 11;
 	private static final int FLOP_DELAY_CYCLES = 4;
@@ -626,6 +629,7 @@ public class KeyboardIIe extends Keyboard {
 
 		incSleepCycles(1);
 		cycleCount++;
+		drainPendingClipboardPaste();
 		
 		// Check for key-repeat
 		if( delayCount>0 && (keyCode&0x80)==0 && (cycleCount&(FLOP_DELAY_CYCLES-1))==0 && keyQueue.size()==0 ) {
@@ -658,17 +662,7 @@ public class KeyboardIIe extends Keyboard {
 			break;
 			
 		case KEY_MASK_F12|KEY_MASK_SHIFT:
-			ensureToolkitInitialized();
-			if( keyQueue.size()==0 && clipboard!=null ) {
-				Transferable contents = clipboard.getContents(null);
-				if( contents!=null && contents.isDataFlavorSupported(DataFlavor.stringFlavor) ) {
-					try {
-						queuePasteText(trimTrailingClipboardNewline(contents.getTransferData(DataFlavor.stringFlavor).toString()));
-					} catch( UnsupportedFlavorException | IOException | IllegalStateException e ) {
-						System.err.println("Warning: unsupported clipboard contents");
-					}
-				}
-			}
+			requestClipboardPasteAsync();
 			break;
 			
 		}
@@ -687,6 +681,9 @@ public class KeyboardIIe extends Keyboard {
 		consumedQueuedKeyCount = 0L;
 		pendingPastedKeys = 0;
 		pasteInputSuppressed = false;
+		clipboardPasteRequestInFlight = false;
+		clipboardPasteReady = false;
+		clipboardPasteText = null;
 		// Keep reset path independent from host toolkit initialization.
 		// We sync caps-lock lazily when real keyboard input arrives.
 		capsLockState = false;
@@ -751,6 +748,43 @@ public class KeyboardIIe extends Keyboard {
 				" altDown="+altDown+
 				" metaDown="+metaDown+
 				" modifiersEx=0x"+Integer.toHexString(modifiersEx));
+	}
+
+	private void requestClipboardPasteAsync() {
+		ensureToolkitInitialized();
+		if( keyQueue.size()!=0 || clipboard==null || clipboardPasteRequestInFlight )
+			return;
+		clipboardPasteRequestInFlight = true;
+		Thread fetchThread = new Thread(() -> {
+			String text = null;
+			try {
+				Transferable contents = clipboard.getContents(null);
+				if( contents!=null && contents.isDataFlavorSupported(DataFlavor.stringFlavor) ) {
+					Object data = contents.getTransferData(DataFlavor.stringFlavor);
+					if( data!=null )
+						text = trimTrailingClipboardNewline(data.toString());
+				}
+			}
+			catch( UnsupportedFlavorException | IOException | IllegalStateException ignored ) {
+				// Ignore unsupported/busy clipboard payloads.
+			}
+			finally {
+				clipboardPasteText = text;
+				clipboardPasteReady = true;
+				clipboardPasteRequestInFlight = false;
+			}
+		}, "KeyboardIIe-clipboard-paste");
+		fetchThread.setDaemon(true);
+		fetchThread.start();
+	}
+
+	private void drainPendingClipboardPaste() {
+		if( !clipboardPasteReady )
+			return;
+		String text = clipboardPasteText;
+		clipboardPasteText = null;
+		clipboardPasteReady = false;
+		queuePasteText(text);
 	}
 
 }
