@@ -226,7 +226,7 @@ public class Emulator8Coordinator {
 			boolean keyLogging = false;
 		String windowBackend = "sdl";
 		boolean startFullscreen = false;
-		boolean macAllowProcessSwitching = true;
+		boolean macAllowProcessSwitching = false;
 		String textInputMode = "off";
 		String sdlFullscreenMode = "exclusive";
 		boolean sdlImeUiSelf = false;
@@ -343,11 +343,11 @@ public class Emulator8Coordinator {
 				macAllowProcessSwitching = true;
 			}
 			else if( "--mac-disable-process-switching".equals(arg) ) {
-				// Explicitly enable kiosk-style lock in fullscreen.
+				// Backward-compatible alias: lock is now the default in fullscreen.
 				macAllowProcessSwitching = false;
 			}
 			else if( "--mac-kiosk-grab".equals(arg) ) {
-				// Backward-compatible alias for kiosk-style lock in fullscreen.
+				// Backward-compatible alias: lock is now the default in fullscreen.
 				macAllowProcessSwitching = false;
 			}
 			else if( "--text-input-mode".equals(arg) ) {
