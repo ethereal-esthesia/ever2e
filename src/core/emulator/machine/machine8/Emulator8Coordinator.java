@@ -807,8 +807,6 @@ public class Emulator8Coordinator {
 			int warmupIterations = (int) Math.max(1L,
 					Math.round((cpuClock*(double) DEFAULT_SPEAKER_WARMUP_MS/1000d)/Speaker1Bit.getSkipCycles()));
 			speaker.warmupIterations(warmupIterations);
-			// Warmup intentionally exercises audio writes; reset clears any queued silence before real boot.
-			speaker.coldReset();
 			if( bus instanceof MemoryBusIIe )
 				((MemoryBusIIe) bus).setSpeakerToggle(false);
 			hardwareManagerQueue.add(speaker);
