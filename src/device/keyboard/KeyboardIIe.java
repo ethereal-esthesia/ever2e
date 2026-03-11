@@ -1,14 +1,7 @@
 package device.keyboard;
 
 import java.awt.Event;
-import java.awt.HeadlessException;
-import java.awt.Toolkit;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -28,9 +21,6 @@ public class KeyboardIIe extends Keyboard {
 	private ConcurrentLinkedQueue<Integer> keyEventQueue = new ConcurrentLinkedQueue<>();
 	private Queue<Byte> keyQueue = new LinkedList<>();
 	private Queue<Boolean> pasteMarkerQueue = new LinkedList<>();
-	private Toolkit toolKit;
-	private Clipboard clipboard;
-	private boolean toolkitInitAttempted;
 
 	private int modifierSet;
 	private int functionKeySet;
@@ -47,7 +37,6 @@ public class KeyboardIIe extends Keyboard {
 	private long consumedQueuedKeyCount;
 	private int pendingPastedKeys;
 	private boolean pasteInputSuppressed;
-	private static volatile boolean awtClipboardFallbackEnabled = Boolean.getBoolean("ever2e.clipboard.awt.fallback");
 	
 	private static final int PRE_REPEAT_FLOP_COUNT = 11;
 	private static final int FLOP_DELAY_CYCLES = 4;
@@ -211,10 +200,6 @@ public class KeyboardIIe extends Keyboard {
 		keyLoggingEnabled = enabled;
 	}
 
-	public static void setAwtClipboardFallbackEnabled(boolean enabled) {
-		awtClipboardFallbackEnabled = enabled;
-	}
-
 	@Override
 	public void keyPressed( KeyEvent event ) {
 		handleKeyPressed(event.getKeyCode(), event.getModifiers(), event.getKeyChar(),
@@ -228,7 +213,7 @@ public class KeyboardIIe extends Keyboard {
 
 	private void handleKeyPressed(int keyIndex, int keyModifiers, char keyChar,
 			boolean shiftDown, boolean ctrlDown, boolean altDown, boolean metaDown) {
-		syncCapsLockState();
+		syncCapsLockState(keyModifiers);
 		logKeyProbe("pressed", keyIndex, keyChar, shiftDown, ctrlDown, altDown, metaDown, keyModifiers);
 		
 		//System.out.println(KeyEvent.getKeyText(keyIndex)+" "+keyIndex+" "+event.getModifiers());
@@ -360,7 +345,7 @@ public class KeyboardIIe extends Keyboard {
 
 	private void handleKeyReleased(int keyIndex, int keyModifiers, char keyChar,
 			boolean shiftDown, boolean ctrlDown, boolean altDown, boolean metaDown) {
-		syncCapsLockState();
+		syncCapsLockState(keyModifiers);
 		logKeyProbe("released", keyIndex, keyChar, shiftDown, ctrlDown, altDown, metaDown, keyModifiers);
 		
 		switch( keyIndex ) {
@@ -684,44 +669,12 @@ public class KeyboardIIe extends Keyboard {
 		consumedQueuedKeyCount = 0L;
 		pendingPastedKeys = 0;
 		pasteInputSuppressed = false;
-		// Keep reset path independent from host toolkit initialization.
-		// We sync caps-lock lazily when real keyboard input arrives.
 		capsLockState = false;
 		applyCapsLockState();
 	}
 
-	private void ensureToolkitInitialized() {
-		if( toolkitInitAttempted )
-			return;
-		toolkitInitAttempted = true;
-		try {
-			toolKit = Toolkit.getDefaultToolkit();
-		} catch( HeadlessException e ) {
-			toolKit = null;
-		}
-		if( toolKit!=null ) {
-			try {
-				clipboard = toolKit.getSystemClipboard();
-			} catch( HeadlessException | SecurityException e ) {
-				clipboard = null;
-			}
-		}
-	}
-
-	private boolean isCapsLockDown() {
-		ensureToolkitInitialized();
-		if( toolKit==null )
-			return false;
-		try {
-			return toolKit.getLockingKeyState(KeyEvent.VK_CAPS_LOCK);
-		} catch( UnsupportedOperationException e ) {
-			return false;
-		}
-	}
-
-	private void syncCapsLockState() {
-		if( toolKit!=null )
-			capsLockState = isCapsLockDown();
+	private void syncCapsLockState(int keyModifiers) {
+		capsLockState = (keyModifiers&Event.CAPS_LOCK)!=0;
 		applyCapsLockState();
 	}
 
@@ -753,24 +706,14 @@ public class KeyboardIIe extends Keyboard {
 	private void requestClipboardPaste() {
 		if( keyQueue.size()!=0 )
 			return;
-		String text = readClipboardText();
+		String text = readClipboardTextFromSdl();
 		if( keyLoggingEnabled ) {
 			System.err.println("[debug] paste_request source=shift_insert"+
 					" clipboardTextPresent="+(text!=null && !text.isEmpty())+
-					" queueDepth="+keyQueue.size()+
-					" awtFallback="+awtClipboardFallbackEnabled);
+					" queueDepth="+keyQueue.size());
 		}
 		if( text!=null )
 			queuePasteText(trimTrailingClipboardNewline(text));
-	}
-
-	private String readClipboardText() {
-		String text = readClipboardTextFromSdl();
-		if( text!=null )
-			return text;
-		if( !awtClipboardFallbackEnabled )
-			return null;
-		return readClipboardTextFromAwt();
 	}
 
 	private String readClipboardTextFromSdl() {
@@ -784,22 +727,6 @@ public class KeyboardIIe extends Keyboard {
 		}
 		catch( Throwable ignored ) {
 			// Keep paste path resilient if SDL clipboard fails.
-			return null;
-		}
-	}
-
-	private String readClipboardTextFromAwt() {
-		ensureToolkitInitialized();
-		if( clipboard==null )
-			return null;
-		try {
-			Transferable contents = clipboard.getContents(null);
-			if( contents==null || !contents.isDataFlavorSupported(DataFlavor.stringFlavor) )
-				return null;
-			Object data = contents.getTransferData(DataFlavor.stringFlavor);
-			return data==null ? null : data.toString();
-		}
-		catch( UnsupportedFlavorException | IOException | IllegalStateException ignored ) {
 			return null;
 		}
 	}
