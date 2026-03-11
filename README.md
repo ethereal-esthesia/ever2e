@@ -103,6 +103,8 @@ Windowed run (alias task):
   - Force quiet mode (kept for compatibility).
 - `--keylog`
   - Enable keyboard input logging to stderr (`[sdl-key]` and key probe events).
+- `--debug-mouse`
+  - Enable SDL mouse/cursor logging to stderr (`[debug] sdl_cursor ... x=.. y=..`).
 - `--window-backend sdl`
   - Window backend selection (SDL only).
 - `--start-fullscreen`

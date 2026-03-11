@@ -224,6 +224,7 @@ public class Emulator8Coordinator {
 			boolean noSound = false;
 			boolean debugLogging = false;
 			boolean keyLogging = false;
+			boolean mouseDebug = false;
 		String windowBackend = "sdl";
 		boolean startFullscreen = false;
 		boolean macAllowProcessSwitching = false;
@@ -327,6 +328,9 @@ public class Emulator8Coordinator {
 			}
 			else if( "--keylog".equals(arg) ) {
 				keyLogging = true;
+			}
+			else if( "--debug-mouse".equals(arg) ) {
+				mouseDebug = true;
 			}
 			else if( "--window-backend".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -554,10 +558,12 @@ public class Emulator8Coordinator {
 		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
 		DisplayIIe.setSdlImeUiSelfImplemented(sdlImeUiSelf);
 		DisplayIIe.setSdlTextAnchorDebug(debugLogging);
+		DisplayIIe.setSdlMouseDebug(mouseDebug);
 		if( debugLogging ) {
 			System.err.println("[debug] launch_config windowBackend="+windowBackend+
 					" startFullscreen="+startFullscreen+
 					" macAllowProcessSwitching="+macAllowProcessSwitching+
+					" mouseDebug="+mouseDebug+
 					" sdlImeUiSelf="+sdlImeUiSelf+
 					" textInputMode="+textInputMode+
 					" sdlFullscreenMode="+sdlFullscreenMode);

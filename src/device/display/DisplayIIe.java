@@ -39,6 +39,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static volatile String sdlFullscreenMode = "exclusive";
 	private static volatile boolean sdlImeUiSelfImplemented;
 	private static volatile boolean sdlTextAnchorDebug;
+	private static volatile boolean sdlMouseDebug;
 	private static volatile boolean macAllowProcessSwitching;
 
 	private ScanlineTracer8 tracer;
@@ -175,6 +176,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 
 	public static void setSdlTextAnchorDebug(boolean enabled) {
 		sdlTextAnchorDebug = enabled;
+	}
+
+	public static void setSdlMouseDebug(boolean enabled) {
+		sdlMouseDebug = enabled;
 	}
 
 	public static void setMacAllowProcessSwitching(boolean enabled) {
@@ -1976,12 +1981,19 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
 		else
 			org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
-		if( sdlTextAnchorDebug ) {
+		if( sdlMouseDebug ) {
+			java.nio.FloatBuffer mouseX = BufferUtils.createFloatBuffer(1);
+			java.nio.FloatBuffer mouseY = BufferUtils.createFloatBuffer(1);
+			org.lwjgl.sdl.SDLMouse.SDL_GetMouseState(mouseX, mouseY);
+			int x = Math.round(mouseX.get(0));
+			int y = Math.round(mouseY.get(0));
 			System.err.println("[debug] sdl_cursor source="+source+
 					" hide="+hideCursor+
 					" fullscreen="+fullscreen+
 					" focused="+windowFocused+
-					" mouseInside="+mouseInsideWindow);
+					" mouseInside="+mouseInsideWindow+
+					" x="+x+
+					" y="+y);
 		}
 	}
 
