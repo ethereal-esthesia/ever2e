@@ -11,10 +11,10 @@
 - `smoke` task default machine was changed to `ROMS/Apple2eNoSlots.emu`.
 
 ## Post-Migration Notes (2026-03-11)
-- Fixed: PB2 default line now boots low in `MemoryBusIIe` to avoid unintended ROM self-test (`System OK`) paths at startup.
+- Fixed: deprecated PB2 force-high behavior was removed from `MemoryBusIIe` so SHIFT/PB2 state is keyboard-driven only.
 - Verified: PB1/PB2 modifier reads (`C062/C063`) sample keyboard state on each access.
-- Known issue: no-slots smoke still queues `--paste-file` text but may not consume it during bounded runs (`basic_queue consumed=0`) depending on startup path/state.
-- Current recommendation: use explicit Apple IIe slot/disk machine profiles for paste-loader opcode smoke flows until no-slots paste consumption is stabilized.
+- Verified: with corrected stock ROM content, no-slots smoke consumes startup paste in bounded runs.
+- Note: `ROMS/Apple2eMemTest.emu` exists for explicit memory-test ROM validation; use it only when mem-test behavior is the target.
 
 ## Goal
 Remove runtime dependency on `java.awt` from the SDL emulator path, while preserving current behavior for:
