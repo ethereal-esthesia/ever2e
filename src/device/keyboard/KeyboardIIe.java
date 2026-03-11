@@ -1,6 +1,5 @@
 package device.keyboard;
 
-import java.awt.Event;
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -213,18 +212,15 @@ public class KeyboardIIe extends Keyboard {
 
 	private void handleKeyPressed(int keyIndex, int keyModifiers, char keyChar,
 			boolean shiftDown, boolean ctrlDown, boolean altDown, boolean metaDown) {
-		syncCapsLockState(keyModifiers);
 		logKeyProbe("pressed", keyIndex, keyChar, shiftDown, ctrlDown, altDown, metaDown, keyModifiers);
 		
 		//System.out.println(KeyEvent.getKeyText(keyIndex)+" "+keyIndex+" "+event.getModifiers());
 
-		// Caps lock state now comes from modifier bits; do not toggle manually.
+		// Maintain caps-lock state internally; host modifier masks are not reliable
+		// for lock-key state across SDL/AWT bridges.
 		if( keyIndex==KeyEvent.VK_CAPS_LOCK ) {
-			syncCapsLockState(keyModifiers);
-			if( (keyModifiers&Event.SHIFT_MASK)!=0 )
-				modifierSet |= KEY_MASK_SHIFT;
-			if( (keyModifiers&Event.CTRL_MASK)!=0 )
-				modifierSet |= KEY_MASK_CTRL;
+			capsLockState = !capsLockState;
+			applyCapsLockState();
 			return;
 		}
 		
@@ -349,7 +345,6 @@ public class KeyboardIIe extends Keyboard {
 
 	private void handleKeyReleased(int keyIndex, int keyModifiers, char keyChar,
 			boolean shiftDown, boolean ctrlDown, boolean altDown, boolean metaDown) {
-		syncCapsLockState(keyModifiers);
 		logKeyProbe("released", keyIndex, keyChar, shiftDown, ctrlDown, altDown, metaDown, keyModifiers);
 		
 		switch( keyIndex ) {
@@ -674,11 +669,6 @@ public class KeyboardIIe extends Keyboard {
 		pendingPastedKeys = 0;
 		pasteInputSuppressed = false;
 		capsLockState = false;
-		applyCapsLockState();
-	}
-
-	private void syncCapsLockState(int keyModifiers) {
-		capsLockState = (keyModifiers&Event.CAPS_LOCK)!=0;
 		applyCapsLockState();
 	}
 
