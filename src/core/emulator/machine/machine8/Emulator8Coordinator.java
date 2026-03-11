@@ -775,6 +775,9 @@ public class Emulator8Coordinator {
 	   		long warmed = emulator.start(startupCpuManagerCalls, cpu, null);
 	   		System.out.println("Startup pre-run: "+warmed+" CPU manager calls");
 	   	}
+		if( pasteText!=null ) {
+			queueBasicText(keyboard, pasteFile, pasteText);
+		}
 	   	if( maxCpuSteps>=0 ) {
 	   		PrintWriter traceWriter = null;
 	   		if( traceFile!=null ) {
@@ -801,15 +804,8 @@ public class Emulator8Coordinator {
 	   		final int[] subCycleIndex = new int[] { 0 };
 	   		final String[] lastRetiredSignature = new String[] { null };
 	   		final boolean[] cpuStepPreWasSub = new boolean[] { false };
-	   		final String finalPasteFile = pasteFile;
-	   		final String finalPasteText = pasteText;
-	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
 	   		final boolean finalDebugLogging = debugLogging;
 	   		long steps = emulator.startWithStepPhases(maxCpuSteps, cpu, (step, manager, preCycle) -> {
-	   			if( !basicQueued[0] && manager==cpu && preCycle ) {
-	   				queueBasicText(finalKeyboard, finalPasteFile, finalPasteText);
-	   				basicQueued[0] = true;
-	   			}
 	   			if( manager==cpu && preCycle )
 	   				cpuStepPreWasSub[0] = cpu.hasPendingInFlightMicroEvent();
 	   			if( finalTraceWriter==null && finalHaltExecutions.isEmpty() )
@@ -1111,16 +1107,8 @@ public class Emulator8Coordinator {
 	   	}
 	   	else {
 	   		final HeadlessVideoProbe finalHeadlessProbe = headlessProbe;
-	   		final KeyboardIIe finalKeyboard = keyboard;
-	   		final String finalPasteFile = pasteFile;
-	   		final String finalPasteText = pasteText;
-	   		final boolean[] basicQueued = new boolean[] { finalPasteText==null };
 	   		final boolean finalDebugLogging = debugLogging;
 	   		emulator.startWithStepPhases(-1, cpu, (step, manager, preCycle) -> {
-	   			if( !basicQueued[0] && manager==cpu && preCycle ) {
-	   				queueBasicText(finalKeyboard, finalPasteFile, finalPasteText);
-	   				basicQueued[0] = true;
-	   			}
 	   			return true;
 	   		});
 			System.out.println("Done");

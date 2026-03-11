@@ -495,9 +495,10 @@ public class KeyboardIIe extends Keyboard {
 	}
 
 	private void pushKeyCodeInternal(int i, boolean fromPaste, boolean suppressLiveInput) {
+		boolean suppressionTrackedPaste = fromPaste && suppressLiveInput;
 		keyQueue.add((byte) i);
-		pasteMarkerQueue.add(Boolean.valueOf(fromPaste));
-		if( fromPaste && suppressLiveInput ) {
+		pasteMarkerQueue.add(Boolean.valueOf(suppressionTrackedPaste));
+		if( suppressionTrackedPaste ) {
 			pasteInputSuppressed = true;
 			pendingPastedKeys++;
 		}
