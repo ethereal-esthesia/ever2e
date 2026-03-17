@@ -250,8 +250,8 @@ public class KeyboardIIe extends Keyboard {
 			break;
 		case EmuKey.VK_INSERT:
 		case EmuKey.VK_HELP:
-			pushKeyEvent(KEY_MASK_F12, shiftDown ? KEY_MASK_SHIFT:0);
-			break;
+			requestClipboardPaste();
+			return;
 
 		default:
 			if( pasteInputSuppressed ) {

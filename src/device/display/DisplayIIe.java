@@ -42,6 +42,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static volatile boolean sdlTextAnchorDebug;
 	private static volatile boolean sdlMouseDebug;
 	private static volatile boolean macAllowProcessSwitching;
+	private static volatile Runnable closeRequestHook;
 
 	private ScanlineTracer8 tracer;
 
@@ -140,7 +141,11 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		startFullscreenOnLaunch = enabled;
 	}
 
-	public static void setStartHiddenOnLaunch(boolean enabled) {
+		public static void setCloseRequestHook(Runnable hook) {
+		closeRequestHook = hook;
+	}
+
+public static void setStartHiddenOnLaunch(boolean enabled) {
 		startHiddenOnLaunch = enabled;
 	}
 
@@ -1969,6 +1974,15 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				logStartupWindowEvent(type);
 				guardStartupWindowVisibility(type);
 				if( type==SDLEvents.SDL_EVENT_QUIT || type==SDLEvents.SDL_EVENT_WINDOW_CLOSE_REQUESTED ) {
+					Runnable hook = closeRequestHook;
+					if( hook!=null ) {
+						try {
+							hook.run();
+						}
+						catch( Exception e ) {
+							System.err.println("Warning: close-request hook failed: " + e.getMessage());
+						}
+					}
 					closeWindow();
 					System.exit(0);
 					return;

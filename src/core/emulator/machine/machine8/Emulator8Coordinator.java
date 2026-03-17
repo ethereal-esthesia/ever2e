@@ -789,6 +789,34 @@ public class Emulator8Coordinator {
 		boolean runningHeadless = isHeadlessMode();
 		if( runningHeadless )
 			emulator.setRealtimeThrottleEnabled(false);
+
+			final AtomicBoolean exitDebugOutputsEmitted = new AtomicBoolean(false);
+			final Integer hookDumpPageAddress = dumpPageAddress;
+			final int hookDumpRangeStart = dumpRangeStart;
+			final int hookDumpRangeEnd = dumpRangeEnd;
+			final boolean hookDumpAllMapped = dumpAllMapped;
+			final boolean hookDumpAllRawRam = dumpAllRawRam;
+			final boolean hookPrintTextAtExit = printTextAtExit;
+			final String hookLastFrameOut = lastFrameOut;
+			final boolean wantsDebugExitOutputs = hookDumpPageAddress!=null || hookDumpRangeStart>=0 || hookDumpAllMapped || hookDumpAllRawRam || hookPrintTextAtExit || hookLastFrameOut!=null;
+			if( bus instanceof MemoryBusIIe && ((MemoryBusIIe) bus).getDisplay() instanceof DisplayIIe ) {
+				if( wantsDebugExitOutputs ) {
+					DisplayIIe.setCloseRequestHook(() -> runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, hookDumpPageAddress, hookDumpRangeStart, hookDumpRangeEnd, hookDumpAllMapped, hookDumpAllRawRam, hookPrintTextAtExit, hookLastFrameOut));
+				}
+				else {
+					DisplayIIe.setCloseRequestHook(null);
+				}
+			}
+			if( wantsDebugExitOutputs ) {
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+					try {
+						runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, hookDumpPageAddress, hookDumpRangeStart, hookDumpRangeEnd, hookDumpAllMapped, hookDumpAllRawRam, hookPrintTextAtExit, hookLastFrameOut);
+					}
+					catch( Exception e ) {
+						System.err.println("Warning: shutdown debug output failed: " + e.getMessage());
+					}
+				}, "ever2e-debug-exit-outputs"));
+			}
 		if( shouldRunStartupJitPrime(noSound, startupPrimerInternal, startupPrimerRan) ) {
 			try {
 				runSilently(() -> emulator.startWithStepPhases(STARTUP_JIT_PRIME_STEPS, cpu, (step, manager, preCycle) -> true));
@@ -1155,14 +1183,7 @@ public class Emulator8Coordinator {
 					" S="+Cpu65c02.getHexString(cpu.getRegister().getS(), 2));
 			if( printCpuStateAtExit )
 				printCpuState(maxCpuSteps, steps, haltedAtAddress[0], haltedAtPc[0], cpu);
-			if( dumpPageAddress!=null )
-				printPageDump(bus, dumpPageAddress);
-			if( dumpRangeStart>=0 )
-				printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
-			if( dumpAllMapped )
-				printRangeDump(bus, 0x0000, 0xffff);
-			if( dumpAllRawRam )
-				printRawRangeDump(memory, 0x00000, 0x1ffff);
+			runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, dumpPageAddress, dumpRangeStart, dumpRangeEnd, dumpAllMapped, dumpAllRawRam, printTextAtExit, lastFrameOut);
 			if( !requireHaltPcs.isEmpty() ) {
 				int finalPc = haltedAtAddress[0] ? (haltedAtPc[0]&0xffff) : (cpu.getRegister().getPC()&0xffff);
 				if( !requireHaltPcs.contains(finalPc) ) {
@@ -1176,10 +1197,6 @@ public class Emulator8Coordinator {
 						" remaining="+keyboard.getQueuedKeyDepth());
 				if( traceFile!=null )
 					System.out.println("Trace written: "+traceFile);
-				if( printTextAtExit && bus instanceof MemoryBusIIe )
-					printTextScreen((MemoryBusIIe) bus, memory);
-				if( lastFrameOut!=null && bus instanceof MemoryBusIIe )
-					writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
 				// In windowed mode, GUI/event threads can keep the process alive after bounded runs.
 				// Exit explicitly so `--steps` behaves as a finite run.
 				if( !startupPrimerInternal && !runningHeadless && !textConsole )
@@ -1194,20 +1211,43 @@ public class Emulator8Coordinator {
 			System.out.println("Done");
 			if( printCpuStateAtExit )
 				printCpuState(maxCpuSteps, -1, false, -1, cpu);
-			if( dumpPageAddress!=null )
-				printPageDump(bus, dumpPageAddress);
-			if( dumpRangeStart>=0 )
-				printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
-			if( dumpAllMapped )
-				printRangeDump(bus, 0x0000, 0xffff);
-			if( dumpAllRawRam )
-				printRawRangeDump(memory, 0x00000, 0x1ffff);
-			if( printTextAtExit && bus instanceof MemoryBusIIe )
-				printTextScreen((MemoryBusIIe) bus, memory);
-			if( lastFrameOut!=null && bus instanceof MemoryBusIIe )
-				writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
+			runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, dumpPageAddress, dumpRangeStart, dumpRangeEnd, dumpAllMapped, dumpAllRawRam, printTextAtExit, lastFrameOut);
 	   	}
 
+	}
+
+	private static void runDebugExitOutputsOnce(
+			AtomicBoolean once,
+			MemoryBus8 bus,
+			Memory8 memory,
+			Integer dumpPageAddress,
+			int dumpRangeStart,
+			int dumpRangeEnd,
+			boolean dumpAllMapped,
+			boolean dumpAllRawRam,
+			boolean printTextAtExit,
+			String lastFrameOut
+	) {
+		if( !once.compareAndSet(false, true) )
+			return;
+		if( dumpPageAddress!=null )
+			printPageDump(bus, dumpPageAddress);
+		if( dumpRangeStart>=0 )
+			printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
+		if( dumpAllMapped )
+			printRangeDump(bus, 0x0000, 0xffff);
+		if( dumpAllRawRam )
+			printRawRangeDump(memory, 0x00000, 0x1ffff);
+		if( printTextAtExit && bus instanceof MemoryBusIIe )
+			printTextScreen((MemoryBusIIe) bus, memory);
+		if( lastFrameOut!=null && bus instanceof MemoryBusIIe ) {
+			try {
+				writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
+			}
+			catch( IOException e ) {
+				System.err.println("Warning: failed to write last frame dump: " + e.getMessage());
+			}
+		}
 	}
 
 	private static int getDisplayFrameCycle(MemoryBus8 bus) {
