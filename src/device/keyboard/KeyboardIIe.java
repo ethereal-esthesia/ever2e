@@ -250,7 +250,11 @@ public class KeyboardIIe extends Keyboard {
 			break;
 		case EmuKey.VK_INSERT:
 		case EmuKey.VK_HELP:
-			pushKeyEvent(KEY_MASK_F12, shiftDown ? KEY_MASK_SHIFT:0);
+			if( shiftDown || (modifierSet&KEY_MASK_SHIFT)!=0 || (keyModifiers&EmuKey.SHIFT_MASK)!=0 ) {
+				requestClipboardPaste();
+				return;
+			}
+			pushKeyEvent(KEY_MASK_F12);
 			break;
 
 		default:
@@ -644,6 +648,7 @@ public class KeyboardIIe extends Keyboard {
 			
 		case KEY_MASK_F12|KEY_MASK_SHIFT:
 			requestClipboardPaste();
+			endPressedKeyEvent(KEY_MASK_F12);
 			break;
 			
 		}

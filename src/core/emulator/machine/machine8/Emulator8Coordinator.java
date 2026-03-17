@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 import peripherals.PeripheralIIe;
@@ -43,14 +44,18 @@ import device.speaker.Speaker1Bit;
 public class Emulator8Coordinator {
 
 	private static final String DEFAULT_MACHINE = "ROMS/Apple2e.emu";
+	private static final String STARTUP_PRIMER_MACHINE = "ROMS/Apple2eNoSlots.emu";
+	private static final String STARTUP_PRIMER_PASTE_FILE = "ROMS/opcode_smoke_loader_hgr_mem_32k.mon";
 	private static final int GRANULARITY_BITS_PER_MS = 32;
 	private static final boolean ENABLE_STARTUP_JIT_PRIME = true;
-	private static final int STARTUP_JIT_PRIME_STEPS = 300000;
+	private static final int STARTUP_JIT_PRIME_STEPS = 20_000;
+	private static final long STARTUP_PRIMER_STEPS = 8_000_000L;
 	private static final int DEFAULT_SPEAKER_WARMUP_MS = 500;
 	private static final long MONITOR_BLOCKING_DEBUG_THRESHOLD_NS = 2_000_000L; // 2ms
 	private static final int DISPLAY_HSCAN_CYCLES = 65;
 	private static final int DISPLAY_VSCAN_LINES = 262;
 	private static final int DISPLAY_VBL_LINES = 70;
+	private static final AtomicBoolean STARTUP_PRIMER_DONE = new AtomicBoolean(false);
 
 	private static int parseByteArg(String value, String argName) {
 		String raw = value.trim();
@@ -176,6 +181,43 @@ public class Emulator8Coordinator {
 				" elapsedMs="+(elapsedNs/1_000_000.0));
 	}
 
+	private static boolean shouldRunStartupPrimer(boolean startupPrimerInternal, boolean textConsole, boolean runningHeadless) {
+		if( startupPrimerInternal || textConsole || runningHeadless )
+			return false;
+		if( !Boolean.parseBoolean(System.getProperty("ever2e.startupPrimer", "true")) )
+			return false;
+		if( !STARTUP_PRIMER_DONE.compareAndSet(false, true) )
+			return false;
+		return Files.exists(Paths.get(STARTUP_PRIMER_MACHINE)) && Files.exists(Paths.get(STARTUP_PRIMER_PASTE_FILE));
+	}
+
+	private static boolean shouldRunStartupJitPrime(boolean noSound, boolean startupPrimerInternal, boolean startupPrimerRan) {
+		if( noSound || startupPrimerInternal || startupPrimerRan )
+			return false;
+		if( !ENABLE_STARTUP_JIT_PRIME )
+			return false;
+		return Boolean.parseBoolean(System.getProperty("ever2e.startupJitPrime", "true"));
+	}
+
+	private static void runStartupPrimer() {
+		String[] primerArgs = new String[] {
+				STARTUP_PRIMER_MACHINE,
+				"--startup-primer-internal",
+				"--steps", Long.toString(STARTUP_PRIMER_STEPS),
+				"--start-hidden",
+				"--no-sound",
+				"--no-logging",
+				"--paste-file", STARTUP_PRIMER_PASTE_FILE
+		};
+		try {
+			runSilently(() -> main(primerArgs));
+		}
+		catch( Exception e ) {
+			System.err.println("Warning: startup primer skipped: "+e.getClass().getSimpleName()+
+					(e.getMessage()==null ? "":(" - "+e.getMessage())));
+		}
+	}
+
 	private static void loadProgramImage(VirtualMachineProperties properties, Memory8 memory, MemoryBus8 bus, byte[] rom16k) {
 		Arrays.fill(rom16k, (byte) 0);
 		byte [] program = properties.getCode();
@@ -227,6 +269,7 @@ public class Emulator8Coordinator {
 			boolean keyLogging = false;
 			boolean mouseDebug = false;
 		boolean startFullscreen = false;
+		boolean startHidden = false;
 		boolean macAllowProcessSwitching = false;
 		String textInputMode = "off";
 		String sdlFullscreenMode = "exclusive";
@@ -249,6 +292,7 @@ public class Emulator8Coordinator {
 		List<int[]> monitorSequenceWrites = new ArrayList<>();
 		Set<Integer> haltExecutions = new LinkedHashSet<>();
 		Set<Integer> requireHaltPcs = new LinkedHashSet<>();
+		boolean startupPrimerInternal = false;
 			String pasteFile = null;
 		String pasteText = null;
 		for( int i = 0; i<argList.length; i++ ) {
@@ -337,6 +381,12 @@ public class Emulator8Coordinator {
 			}
 			else if( "--start-fullscreen".equals(arg) ) {
 				startFullscreen = true;
+			}
+			else if( "--start-hidden".equals(arg) ) {
+				startHidden = true;
+			}
+			else if( arg.startsWith("--start-hidden=") ) {
+				startHidden = Boolean.parseBoolean(arg.substring("--start-hidden=".length()));
 			}
 			else if( "--mac-allow-process-switching".equals(arg) ) {
 				macAllowProcessSwitching = true;
@@ -504,6 +554,9 @@ public class Emulator8Coordinator {
 			else if( "--dump-all-raw-ram-rom".equals(arg) ) {
 				dumpAllRawRam = true;
 			}
+			else if( "--startup-primer-internal".equals(arg) ) {
+				startupPrimerInternal = true;
+			}
 			else if( "--monitor-seq-write".equals(arg) ) {
 				if( i+1>=argList.length )
 					throw new IllegalArgumentException("Missing value for --monitor-seq-write");
@@ -547,6 +600,7 @@ public class Emulator8Coordinator {
 		KeyboardIIe.setKeyLoggingEnabled(keyLogging);
 		DisplayIIe.setKeyLoggingEnabled(keyLogging);
 		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
+		DisplayIIe.setStartHiddenOnLaunch(startHidden);
 		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
 		DisplayIIe.setSdlTextInputMode(textInputMode);
 		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
@@ -556,12 +610,28 @@ public class Emulator8Coordinator {
 		if( debugLogging ) {
 			System.err.println("[debug] launch_config windowBackend=sdl"+
 					" startFullscreen="+startFullscreen+
+					" startHidden="+startHidden+
 					" macAllowProcessSwitching="+macAllowProcessSwitching+
 					" mouseDebug="+mouseDebug+
 					" sdlImeUiSelf="+sdlImeUiSelf+
 					" textInputMode="+textInputMode+
 					" sdlFullscreenMode="+sdlFullscreenMode);
 		}
+		boolean startupPrimerRan = shouldRunStartupPrimer(startupPrimerInternal, textConsole, isHeadlessMode());
+		if( startupPrimerRan )
+			runStartupPrimer();
+		// Primer uses nested main(...) and mutates static display/keyboard launch config.
+		// Re-apply outer invocation config so real boot cannot inherit primer flags.
+		KeyboardIIe.setKeyLoggingEnabled(keyLogging);
+		DisplayIIe.setKeyLoggingEnabled(keyLogging);
+		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
+		DisplayIIe.setStartHiddenOnLaunch(startHidden);
+		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
+		DisplayIIe.setSdlTextInputMode(textInputMode);
+		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
+		DisplayIIe.setSdlImeUiSelfImplemented(sdlImeUiSelf);
+		DisplayIIe.setSdlTextAnchorDebug(debugLogging);
+		DisplayIIe.setSdlMouseDebug(mouseDebug);
 			if( !debugLogging && !printTextAtExit && lastFrameOut==null )
 				System.setOut(new PrintStream(OutputStream.nullOutputStream()));
 		tracePhase = tracePhase.trim().toLowerCase();
@@ -719,7 +789,35 @@ public class Emulator8Coordinator {
 		boolean runningHeadless = isHeadlessMode();
 		if( runningHeadless )
 			emulator.setRealtimeThrottleEnabled(false);
-		if( ENABLE_STARTUP_JIT_PRIME && !noSound ) {
+
+			final AtomicBoolean exitDebugOutputsEmitted = new AtomicBoolean(false);
+			final Integer hookDumpPageAddress = dumpPageAddress;
+			final int hookDumpRangeStart = dumpRangeStart;
+			final int hookDumpRangeEnd = dumpRangeEnd;
+			final boolean hookDumpAllMapped = dumpAllMapped;
+			final boolean hookDumpAllRawRam = dumpAllRawRam;
+			final boolean hookPrintTextAtExit = printTextAtExit;
+			final String hookLastFrameOut = lastFrameOut;
+			final boolean wantsDebugExitOutputs = hookDumpPageAddress!=null || hookDumpRangeStart>=0 || hookDumpAllMapped || hookDumpAllRawRam || hookPrintTextAtExit || hookLastFrameOut!=null;
+			if( bus instanceof MemoryBusIIe && ((MemoryBusIIe) bus).getDisplay() instanceof DisplayIIe ) {
+				if( wantsDebugExitOutputs ) {
+					DisplayIIe.setCloseRequestHook(() -> runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, hookDumpPageAddress, hookDumpRangeStart, hookDumpRangeEnd, hookDumpAllMapped, hookDumpAllRawRam, hookPrintTextAtExit, hookLastFrameOut));
+				}
+				else {
+					DisplayIIe.setCloseRequestHook(null);
+				}
+			}
+			if( wantsDebugExitOutputs ) {
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+					try {
+						runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, hookDumpPageAddress, hookDumpRangeStart, hookDumpRangeEnd, hookDumpAllMapped, hookDumpAllRawRam, hookPrintTextAtExit, hookLastFrameOut);
+					}
+					catch( Exception e ) {
+						System.err.println("Warning: shutdown debug output failed: " + e.getMessage());
+					}
+				}, "ever2e-debug-exit-outputs"));
+			}
+		if( shouldRunStartupJitPrime(noSound, startupPrimerInternal, startupPrimerRan) ) {
 			try {
 				runSilently(() -> emulator.startWithStepPhases(STARTUP_JIT_PRIME_STEPS, cpu, (step, manager, preCycle) -> true));
 			}
@@ -1085,14 +1183,7 @@ public class Emulator8Coordinator {
 					" S="+Cpu65c02.getHexString(cpu.getRegister().getS(), 2));
 			if( printCpuStateAtExit )
 				printCpuState(maxCpuSteps, steps, haltedAtAddress[0], haltedAtPc[0], cpu);
-			if( dumpPageAddress!=null )
-				printPageDump(bus, dumpPageAddress);
-			if( dumpRangeStart>=0 )
-				printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
-			if( dumpAllMapped )
-				printRangeDump(bus, 0x0000, 0xffff);
-			if( dumpAllRawRam )
-				printRawRangeDump(memory, 0x00000, 0x1ffff);
+			runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, dumpPageAddress, dumpRangeStart, dumpRangeEnd, dumpAllMapped, dumpAllRawRam, printTextAtExit, lastFrameOut);
 			if( !requireHaltPcs.isEmpty() ) {
 				int finalPc = haltedAtAddress[0] ? (haltedAtPc[0]&0xffff) : (cpu.getRegister().getPC()&0xffff);
 				if( !requireHaltPcs.contains(finalPc) ) {
@@ -1106,13 +1197,9 @@ public class Emulator8Coordinator {
 						" remaining="+keyboard.getQueuedKeyDepth());
 				if( traceFile!=null )
 					System.out.println("Trace written: "+traceFile);
-				if( printTextAtExit && bus instanceof MemoryBusIIe )
-					printTextScreen((MemoryBusIIe) bus, memory);
-				if( lastFrameOut!=null && bus instanceof MemoryBusIIe )
-					writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
 				// In windowed mode, GUI/event threads can keep the process alive after bounded runs.
 				// Exit explicitly so `--steps` behaves as a finite run.
-				if( !runningHeadless && !textConsole )
+				if( !startupPrimerInternal && !runningHeadless && !textConsole )
 					System.exit(0);
 	   	}
 	   	else {
@@ -1124,20 +1211,43 @@ public class Emulator8Coordinator {
 			System.out.println("Done");
 			if( printCpuStateAtExit )
 				printCpuState(maxCpuSteps, -1, false, -1, cpu);
-			if( dumpPageAddress!=null )
-				printPageDump(bus, dumpPageAddress);
-			if( dumpRangeStart>=0 )
-				printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
-			if( dumpAllMapped )
-				printRangeDump(bus, 0x0000, 0xffff);
-			if( dumpAllRawRam )
-				printRawRangeDump(memory, 0x00000, 0x1ffff);
-			if( printTextAtExit && bus instanceof MemoryBusIIe )
-				printTextScreen((MemoryBusIIe) bus, memory);
-			if( lastFrameOut!=null && bus instanceof MemoryBusIIe )
-				writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
+			runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, dumpPageAddress, dumpRangeStart, dumpRangeEnd, dumpAllMapped, dumpAllRawRam, printTextAtExit, lastFrameOut);
 	   	}
 
+	}
+
+	private static void runDebugExitOutputsOnce(
+			AtomicBoolean once,
+			MemoryBus8 bus,
+			Memory8 memory,
+			Integer dumpPageAddress,
+			int dumpRangeStart,
+			int dumpRangeEnd,
+			boolean dumpAllMapped,
+			boolean dumpAllRawRam,
+			boolean printTextAtExit,
+			String lastFrameOut
+	) {
+		if( !once.compareAndSet(false, true) )
+			return;
+		if( dumpPageAddress!=null )
+			printPageDump(bus, dumpPageAddress);
+		if( dumpRangeStart>=0 )
+			printRangeDump(bus, dumpRangeStart, dumpRangeEnd);
+		if( dumpAllMapped )
+			printRangeDump(bus, 0x0000, 0xffff);
+		if( dumpAllRawRam )
+			printRawRangeDump(memory, 0x00000, 0x1ffff);
+		if( printTextAtExit && bus instanceof MemoryBusIIe )
+			printTextScreen((MemoryBusIIe) bus, memory);
+		if( lastFrameOut!=null && bus instanceof MemoryBusIIe ) {
+			try {
+				writeLastFrameDump((MemoryBusIIe) bus, lastFrameOut);
+			}
+			catch( IOException e ) {
+				System.err.println("Warning: failed to write last frame dump: " + e.getMessage());
+			}
+		}
 	}
 
 	private static int getDisplayFrameCycle(MemoryBus8 bus) {

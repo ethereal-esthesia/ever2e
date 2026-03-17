@@ -35,12 +35,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
 	private static volatile boolean keyLoggingEnabled;
 	private static volatile boolean startFullscreenOnLaunch;
+	private static volatile boolean startHiddenOnLaunch;
 	private static volatile String sdlTextInputMode = "off";
 	private static volatile String sdlFullscreenMode = "exclusive";
 	private static volatile boolean sdlImeUiSelfImplemented;
 	private static volatile boolean sdlTextAnchorDebug;
 	private static volatile boolean sdlMouseDebug;
 	private static volatile boolean macAllowProcessSwitching;
+	private static volatile Runnable closeRequestHook;
 
 	private ScanlineTracer8 tracer;
 
@@ -137,6 +139,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 
 	public static void setStartFullscreenOnLaunch(boolean enabled) {
 		startFullscreenOnLaunch = enabled;
+	}
+
+		public static void setCloseRequestHook(Runnable hook) {
+		closeRequestHook = hook;
+	}
+
+public static void setStartHiddenOnLaunch(boolean enabled) {
+		startHiddenOnLaunch = enabled;
 	}
 
 	public static void setSdlTextInputMode(String mode) {
@@ -1381,8 +1391,11 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			System.err.println("[debug] sdl_init step=create_window");
 		boolean startupInit = !initializationComplete;
 		long createFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
+		boolean hideOnStartup = startupInit && startHiddenOnLaunch;
 		if( startupInit && startFullscreenOnLaunch && "exclusive".equals(sdlFullscreenMode) )
 			createFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
+		if( hideOnStartup )
+			createFlags |= SDLVideo.SDL_WINDOW_HIDDEN;
 		sdlWindow = SDLVideo.SDL_CreateWindow("Ever2e", WINDOW_WIDTH, WINDOW_HEIGHT, createFlags);
 		if( sdlWindow==0L ) {
 			SDLInit.SDL_Quit();
@@ -1415,14 +1428,16 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			enterSdlFullscreenStartup();
 			setSdlInputGrab(true, "startup_fullscreen");
 		}
-		SDLVideo.SDL_ShowWindow(sdlWindow);
-		SDLVideo.SDL_RestoreWindow(sdlWindow);
-		SDLVideo.SDL_RaiseWindow(sdlWindow);
+		if( !hideOnStartup ) {
+			SDLVideo.SDL_ShowWindow(sdlWindow);
+			SDLVideo.SDL_RestoreWindow(sdlWindow);
+			SDLVideo.SDL_RaiseWindow(sdlWindow);
+		}
 		applyMacPresentationLock("init");
 		pendingSdlTextInputModeApply = true;
 		pendingSdlInputGrabApply = true;
 		startupWindowTraceUntilNs = System.nanoTime() + SDL_STARTUP_WINDOW_TRACE_NS;
-		startupVisibilityGuardUntilNs = System.nanoTime() + SDL_STARTUP_VISIBILITY_GUARD_NS;
+		startupVisibilityGuardUntilNs = hideOnStartup ? 0L : (System.nanoTime() + SDL_STARTUP_VISIBILITY_GUARD_NS);
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=defer_input_grab");
 		if( sdlTextAnchorDebug )
@@ -1959,6 +1974,15 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				logStartupWindowEvent(type);
 				guardStartupWindowVisibility(type);
 				if( type==SDLEvents.SDL_EVENT_QUIT || type==SDLEvents.SDL_EVENT_WINDOW_CLOSE_REQUESTED ) {
+					Runnable hook = closeRequestHook;
+					if( hook!=null ) {
+						try {
+							hook.run();
+						}
+						catch( Exception e ) {
+							System.err.println("Warning: close-request hook failed: " + e.getMessage());
+						}
+					}
 					closeWindow();
 					System.exit(0);
 					return;
