@@ -2229,6 +2229,13 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		if( sdlWindow==0L )
 			return;
 		if( targetFullscreen ) {
+			// If macOS native titlebar fullscreen already engaged, force a
+			// transition back through our managed path so behavior matches F12.
+			if( fullscreen ) {
+				appFullscreenTransitionRequested = true;
+				SDLVideo.SDL_SetWindowFullscreen(sdlWindow, false);
+				fullscreen = false;
+			}
 			enterConfiguredFullscreenMode();
 			setSdlInputGrab(windowFocused, source+"_enter");
 			updateSdlCursorVisibility(source+"_enter");
