@@ -4,7 +4,7 @@ JVM reference implementation and trace source for Apple IIe / 65C02 behavior.
 
 ## What this repo is for
 
-- Emulate the beloved classic Apple IIe Platinum
+- Emulate the beloved classic Apple IIe Platinum.
 - Run the JVM Apple IIe emulator from `.emu` machine configs.
 - Generate per-step CPU traces.
 - Experiment with soft-switch, slot ROM, and reset behavior.
