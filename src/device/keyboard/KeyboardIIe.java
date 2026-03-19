@@ -250,7 +250,14 @@ public class KeyboardIIe extends Keyboard {
 			break;
 		case EmuKey.VK_INSERT:
 		case EmuKey.VK_HELP:
-			requestClipboardPaste();
+			if( shiftDown || (modifierSet&KEY_MASK_SHIFT)!=0 ) {
+				requestClipboardPaste();
+			}
+			else {
+				clearQueuedKeys();
+				clearPendingKeyInputQueue();
+				clearHeldKeyState();
+			}
 			return;
 
 		default:
