@@ -1,6 +1,8 @@
 package core.emulator.machine;
 
 import java.util.PriorityQueue;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import core.exception.HardwareException;
 import core.emulator.HardwareManager;
@@ -62,22 +64,24 @@ public class Emulator {
 	public long startWithStepPhases( long maxSteps, HardwareManager stepManager, StepPhaseListener stepPhaseListener ) throws HardwareException, InterruptedException {
 		long schedulerStartNs = System.nanoTime();
 		long steps = 0;
-		final long[] lastProgressNs = new long[] { System.nanoTime() };
-		final long[] opStartNs = new long[] { 0L };
-		final long[] lastHangReportNs = new long[] { 0L };
-		final String[] currentOperation = new String[] { "init" };
+		final AtomicLong lastProgressNs = new AtomicLong(System.nanoTime());
+		final AtomicLong opStartNs = new AtomicLong(0L);
+		final AtomicLong lastHangReportNs = new AtomicLong(0L);
+		final AtomicReference<String> currentOperation = new AtomicReference<>("init");
 		final Thread emulatorThread = Thread.currentThread();
 		Thread hangWatchdog = null;
 		if( blockingDebugEnabled ) {
 			hangWatchdog = new Thread(() -> {
 				while( !Thread.currentThread().isInterrupted() ) {
 					long now = System.nanoTime();
-					long progressAgeNs = now - lastProgressNs[0];
-					if( progressAgeNs>=HANG_WATCHDOG_WARN_NS && !currentOperation[0].startsWith("scheduler_sleep(") ) {
-						long opAgeNs = opStartNs[0]==0L ? progressAgeNs : (now-opStartNs[0]);
-						if( now-lastHangReportNs[0]>=HANG_WATCHDOG_WARN_NS ) {
-							lastHangReportNs[0] = now;
-							System.out.println("[debug] potential_hang op="+currentOperation[0]+
+					long progressAgeNs = now - lastProgressNs.get();
+					String op = currentOperation.get();
+					if( progressAgeNs>=HANG_WATCHDOG_WARN_NS && !op.startsWith("scheduler_sleep(") ) {
+						long startedAt = opStartNs.get();
+						long opAgeNs = startedAt==0L ? progressAgeNs : (now-startedAt);
+						long previousReport = lastHangReportNs.get();
+						if( now-previousReport>=HANG_WATCHDOG_WARN_NS && lastHangReportNs.compareAndSet(previousReport, now) ) {
+							System.out.println("[debug] potential_hang op="+op+
 									" stuckMs="+(opAgeNs/1_000_000.0)+
 									" thread="+emulatorThread.getName()+
 									" state="+emulatorThread.getState());
@@ -108,8 +112,8 @@ public class Emulator {
 				long waitTime = (nextManager.getNextCycleUnits()>>granularityBitsPerSecond)-clockTime;
 				if( waitTime>0 ) {
 					if( blockingDebugEnabled ) {
-						currentOperation[0] = "scheduler_sleep("+nextManager.getClass().getSimpleName()+")";
-						opStartNs[0] = System.nanoTime();
+						currentOperation.set("scheduler_sleep("+nextManager.getClass().getSimpleName()+")");
+						opStartNs.set(System.nanoTime());
 						if( waitTime>=ABNORMAL_SLEEP_REQUEST_MS ) {
 							System.out.println("[debug] scheduler_sleep_request_abnormal manager="+nextManager.getClass().getSimpleName()+
 									" requestedMs="+waitTime+
@@ -145,8 +149,8 @@ public class Emulator {
 				boolean continueRun = true;
 				if( stepPhaseListener!=null ) {
 					if( blockingDebugEnabled ) {
-						currentOperation[0] = "step_listener_pre("+nextManager.getClass().getSimpleName()+")";
-						opStartNs[0] = System.nanoTime();
+						currentOperation.set("step_listener_pre("+nextManager.getClass().getSimpleName()+")");
+						opStartNs.set(System.nanoTime());
 						long startNs = System.nanoTime();
 						continueRun = stepPhaseListener.onStepPhase(stepNumber, nextManager, true);
 						long elapsedNs = System.nanoTime()-startNs;
@@ -166,8 +170,8 @@ public class Emulator {
 				steps = stepNumber;
 			}
 			if( blockingDebugEnabled ) {
-				currentOperation[0] = "manager_cycle("+nextManager.getClass().getSimpleName()+")";
-				opStartNs[0] = System.nanoTime();
+				currentOperation.set("manager_cycle("+nextManager.getClass().getSimpleName()+")");
+				opStartNs.set(System.nanoTime());
 				long startNs = System.nanoTime();
 				nextManager.cycle();
 				long elapsedNs = System.nanoTime()-startNs;
@@ -184,8 +188,8 @@ public class Emulator {
 				boolean continueRun = true;
 				if( stepPhaseListener!=null ) {
 					if( blockingDebugEnabled ) {
-						currentOperation[0] = "step_listener_post("+nextManager.getClass().getSimpleName()+")";
-						opStartNs[0] = System.nanoTime();
+						currentOperation.set("step_listener_post("+nextManager.getClass().getSimpleName()+")");
+						opStartNs.set(System.nanoTime());
 						long startNs = System.nanoTime();
 						continueRun = stepPhaseListener.onStepPhase(steps, nextManager, false);
 						long elapsedNs = System.nanoTime()-startNs;
@@ -209,9 +213,10 @@ public class Emulator {
 			}
 			hardwareManagerQueue.add(nextManager);
 			if( blockingDebugEnabled ) {
-				lastProgressNs[0] = System.nanoTime();
-				currentOperation[0] = "idle";
-				opStartNs[0] = lastProgressNs[0];
+				long now = System.nanoTime();
+				lastProgressNs.set(now);
+				currentOperation.set("idle");
+				opStartNs.set(now);
 			}
 		} while(true);
 		}

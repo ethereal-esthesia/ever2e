@@ -33,16 +33,53 @@ import device.keyboard.KeyboardIIe;
 
 public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
-	private static volatile boolean keyLoggingEnabled;
-	private static volatile boolean startFullscreenOnLaunch;
-	private static volatile boolean startHiddenOnLaunch;
-	private static volatile String sdlTextInputMode = "off";
-	private static volatile String sdlFullscreenMode = "exclusive";
-	private static volatile boolean sdlImeUiSelfImplemented;
-	private static volatile boolean sdlTextAnchorDebug;
-	private static volatile boolean sdlMouseDebug;
-	private static volatile boolean macAllowProcessSwitching;
-	private static volatile Runnable closeRequestHook;
+	private final boolean keyLoggingEnabled;
+	private final boolean startFullscreenOnLaunch;
+	private final boolean startHiddenOnLaunch;
+	private final String sdlTextInputMode;
+	private final String sdlFullscreenMode;
+	private final boolean sdlImeUiSelfImplemented;
+	private final boolean sdlTextAnchorDebug;
+	private final boolean sdlMouseDebug;
+	private final boolean macAllowProcessSwitching;
+	private volatile Runnable closeRequestHook;
+
+	public static final class LaunchConfig {
+		public final boolean keyLoggingEnabled;
+		public final boolean startFullscreenOnLaunch;
+		public final boolean startHiddenOnLaunch;
+		public final String sdlTextInputMode;
+		public final String sdlFullscreenMode;
+		public final boolean sdlImeUiSelfImplemented;
+		public final boolean sdlTextAnchorDebug;
+		public final boolean sdlMouseDebug;
+		public final boolean macAllowProcessSwitching;
+
+		public LaunchConfig(
+				boolean keyLoggingEnabled,
+				boolean startFullscreenOnLaunch,
+				boolean startHiddenOnLaunch,
+				String sdlTextInputMode,
+				String sdlFullscreenMode,
+				boolean sdlImeUiSelfImplemented,
+				boolean sdlTextAnchorDebug,
+				boolean sdlMouseDebug,
+				boolean macAllowProcessSwitching) {
+			this.keyLoggingEnabled = keyLoggingEnabled;
+			this.startFullscreenOnLaunch = startFullscreenOnLaunch;
+			this.startHiddenOnLaunch = startHiddenOnLaunch;
+			this.sdlTextInputMode = normalizeSdlTextInputMode(sdlTextInputMode);
+			this.sdlFullscreenMode = normalizeSdlFullscreenMode(sdlFullscreenMode);
+			this.sdlImeUiSelfImplemented = sdlImeUiSelfImplemented;
+			this.sdlTextAnchorDebug = sdlTextAnchorDebug;
+			this.sdlMouseDebug = sdlMouseDebug;
+			this.macAllowProcessSwitching = macAllowProcessSwitching;
+		}
+
+		public static LaunchConfig defaults() {
+			return new LaunchConfig(false, false, false, "off", "exclusive", false, false, false, false);
+		}
+	}
 
 	private ScanlineTracer8 tracer;
 
@@ -85,8 +122,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private long fullscreenTransitionGuardUntilNs;
 	private boolean pendingSdlTextInputModeApply;
 	private boolean pendingSdlInputGrabApply;
+	private boolean pendingNormalizeFullscreenMode;
+	private boolean pendingNormalizeTargetFullscreen;
+	private boolean appFullscreenTransitionRequested;
 	private long startupWindowTraceUntilNs;
 	private long startupVisibilityGuardUntilNs;
+	private boolean pendingStartupShow;
+	private long startupAutoFocusUntilNs;
+	private long startupNextFocusAttemptNs;
 	private boolean initializationComplete;
 	private boolean windowFocused = true;
 	private boolean mouseInsideWindow;
@@ -120,6 +163,8 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int FRAME_CYCLES = FRAME_H_CYCLES * FRAME_V_LINES;
 	private static final long SDL_STARTUP_WINDOW_TRACE_NS = 8_000_000_000L;
 	private static final long SDL_STARTUP_VISIBILITY_GUARD_NS = 8_000_000_000L;
+	private static final long SDL_STARTUP_AUTOFOCUS_WINDOW_NS = 2_000_000_000L;
+	private static final long SDL_STARTUP_AUTOFOCUS_RETRY_NS = 200_000_000L;
 	private static final Map<Integer, String> SDL_WINDOW_EVENT_NAMES = buildSdlWindowEventNameMap();
 
 	public static int[] captureFrameBytes(MemoryBusIIe memoryBus) {
@@ -137,58 +182,30 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		return bytes;
 	}
 
-	public static void setStartFullscreenOnLaunch(boolean enabled) {
-		startFullscreenOnLaunch = enabled;
-	}
-
-		public static void setCloseRequestHook(Runnable hook) {
+	public void setCloseRequestHook(Runnable hook) {
 		closeRequestHook = hook;
 	}
 
-public static void setStartHiddenOnLaunch(boolean enabled) {
-		startHiddenOnLaunch = enabled;
-	}
-
-	public static void setSdlTextInputMode(String mode) {
-		if( mode==null ) {
-			sdlTextInputMode = "off";
-			return;
-		}
+	private static String normalizeSdlTextInputMode(String mode) {
+		if( mode==null )
+			return "off";
 		String normalized = mode.trim().toLowerCase();
 		if( normalized.isEmpty() )
 			normalized = "off";
 		if( !"off".equals(normalized) && !"offscreen".equals(normalized) && !"normal".equals(normalized) && !"center".equals(normalized) )
 			throw new IllegalArgumentException("Unsupported text input mode: "+mode+" (expected off, offscreen, normal, or center)");
-		sdlTextInputMode = normalized;
+		return normalized;
 	}
 
-	public static void setSdlFullscreenMode(String mode) {
-		if( mode==null ) {
-			sdlFullscreenMode = "exclusive";
-			return;
-		}
+	private static String normalizeSdlFullscreenMode(String mode) {
+		if( mode==null )
+			return "exclusive";
 		String normalized = mode.trim().toLowerCase();
 		if( normalized.isEmpty() )
 			normalized = "exclusive";
 		if( !"exclusive".equals(normalized) && !"desktop".equals(normalized) )
 			throw new IllegalArgumentException("Unsupported SDL fullscreen mode: "+mode+" (expected exclusive or desktop)");
-		sdlFullscreenMode = normalized;
-	}
-
-	public static void setSdlImeUiSelfImplemented(boolean enabled) {
-		sdlImeUiSelfImplemented = enabled;
-	}
-
-	public static void setSdlTextAnchorDebug(boolean enabled) {
-		sdlTextAnchorDebug = enabled;
-	}
-
-	public static void setSdlMouseDebug(boolean enabled) {
-		sdlMouseDebug = enabled;
-	}
-
-	public static void setMacAllowProcessSwitching(boolean enabled) {
-		macAllowProcessSwitching = enabled;
+		return normalized;
 	}
 
 	private static Map<Integer, String> buildSdlWindowEventNameMap() {
@@ -1349,8 +1366,21 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 	}
 
 	public DisplayIIe(MemoryBusIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle) throws HardwareException {
-	
+		this(memoryBus, keyboard, unitsPerCycle, LaunchConfig.defaults());
+	}
+
+	public DisplayIIe(MemoryBusIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle, LaunchConfig config) throws HardwareException {
 		super(unitsPerCycle);
+		LaunchConfig effectiveConfig = config==null ? LaunchConfig.defaults() : config;
+		this.keyLoggingEnabled = effectiveConfig.keyLoggingEnabled;
+		this.startFullscreenOnLaunch = effectiveConfig.startFullscreenOnLaunch;
+		this.startHiddenOnLaunch = effectiveConfig.startHiddenOnLaunch;
+		this.sdlTextInputMode = effectiveConfig.sdlTextInputMode;
+		this.sdlFullscreenMode = effectiveConfig.sdlFullscreenMode;
+		this.sdlImeUiSelfImplemented = effectiveConfig.sdlImeUiSelfImplemented;
+		this.sdlTextAnchorDebug = effectiveConfig.sdlTextAnchorDebug;
+		this.sdlMouseDebug = effectiveConfig.sdlMouseDebug;
+		this.macAllowProcessSwitching = effectiveConfig.macAllowProcessSwitching;
 		this.keyboard = keyboard;
 		
 		setMemoryBus(memoryBus);
@@ -1360,10 +1390,6 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		initializeWindow();
 		coldReset();
 		initializationComplete = true;
-	}
-
-	public static void setKeyLoggingEnabled(boolean enabled) {
-		keyLoggingEnabled = enabled;
 	}
 
 	private void initializeWindow() throws HardwareException {
@@ -1391,7 +1417,8 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 			System.err.println("[debug] sdl_init step=create_window");
 		boolean startupInit = !initializationComplete;
 		long createFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
-		boolean hideOnStartup = startupInit && startHiddenOnLaunch;
+		boolean deferShowUntilFirstFrame = startupInit && !startHiddenOnLaunch;
+		boolean hideOnStartup = startupInit && (startHiddenOnLaunch || deferShowUntilFirstFrame);
 		if( startupInit && startFullscreenOnLaunch && "exclusive".equals(sdlFullscreenMode) )
 			createFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
 		if( hideOnStartup )
@@ -1432,10 +1459,18 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 			SDLVideo.SDL_ShowWindow(sdlWindow);
 			SDLVideo.SDL_RestoreWindow(sdlWindow);
 			SDLVideo.SDL_RaiseWindow(sdlWindow);
+			if( IS_MAC )
+				macPresentation.requestActivation();
+		}
+		else {
+			windowFocused = false;
 		}
 		applyMacPresentationLock("init");
 		pendingSdlTextInputModeApply = true;
 		pendingSdlInputGrabApply = true;
+		pendingStartupShow = deferShowUntilFirstFrame;
+		startupAutoFocusUntilNs = 0L;
+		startupNextFocusAttemptNs = 0L;
 		startupWindowTraceUntilNs = System.nanoTime() + SDL_STARTUP_WINDOW_TRACE_NS;
 		startupVisibilityGuardUntilNs = hideOnStartup ? 0L : (System.nanoTime() + SDL_STARTUP_VISIBILITY_GUARD_NS);
 		if( sdlTextAnchorDebug )
@@ -1822,6 +1857,8 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 	private void blitToSdl(int[] pixels) {
 		if( sdlWindow==0L )
 			return;
+		snapshotWindowedBounds();
+		ensureStartupWindowShownAndFocused();
 		if( pendingSdlTextInputModeApply && initializationComplete ) {
 			pendingSdlTextInputModeApply = false;
 			applySdlTextInputMode();
@@ -1829,6 +1866,10 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		if( pendingSdlInputGrabApply && initializationComplete ) {
 			pendingSdlInputGrabApply = false;
 			setSdlInputGrab(windowFocused, "deferred_init_apply");
+		}
+		if( pendingNormalizeFullscreenMode && initializationComplete ) {
+			pendingNormalizeFullscreenMode = false;
+			applyManagedFullscreenTarget(pendingNormalizeTargetFullscreen, "native_button_normalize");
 		}
 		sdlTextureInts.clear();
 		sdlTextureInts.put(pixels);
@@ -1864,6 +1905,41 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		if( sdlImeUiSelfImplemented && ("offscreen".equals(sdlTextInputMode) || "center".equals(sdlTextInputMode)) )
 			applySdlTextInputAreaForMode("frame_tick");
 		pollSdlEvents();
+	}
+
+	private void ensureStartupWindowShownAndFocused() {
+		if( sdlWindow==0L )
+			return;
+		if( pendingStartupShow && initializationComplete ) {
+			pendingStartupShow = false;
+			SDLVideo.SDL_ShowWindow(sdlWindow);
+			SDLVideo.SDL_RestoreWindow(sdlWindow);
+			SDLVideo.SDL_RaiseWindow(sdlWindow);
+			if( IS_MAC )
+				macPresentation.requestActivation();
+			long now = System.nanoTime();
+			startupAutoFocusUntilNs = now + SDL_STARTUP_AUTOFOCUS_WINDOW_NS;
+			startupNextFocusAttemptNs = now + SDL_STARTUP_AUTOFOCUS_RETRY_NS;
+			startupVisibilityGuardUntilNs = now + SDL_STARTUP_VISIBILITY_GUARD_NS;
+			if( sdlTextAnchorDebug )
+				System.err.println("[debug] sdl_startup_show action=show_restore_raise_activate");
+			return;
+		}
+		if( startupAutoFocusUntilNs<=0L || windowFocused )
+			return;
+		long now = System.nanoTime();
+		if( now>startupAutoFocusUntilNs ) {
+			startupAutoFocusUntilNs = 0L;
+			return;
+		}
+		if( now<startupNextFocusAttemptNs )
+			return;
+		SDLVideo.SDL_RaiseWindow(sdlWindow);
+		if( IS_MAC )
+			macPresentation.requestActivation();
+		startupNextFocusAttemptNs = now + SDL_STARTUP_AUTOFOCUS_RETRY_NS;
+		if( sdlTextAnchorDebug )
+			System.err.println("[debug] sdl_startup_show action=retry_raise_activate");
 	}
 
 	private void setSdlInputGrab(boolean enabled, String source) {
@@ -1933,6 +2009,7 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 			if( mode!=null )
 				SDLVideo.SDL_SetWindowFullscreenMode(sdlWindow, mode);
 		}
+		appFullscreenTransitionRequested = true;
 		SDLVideo.SDL_SetWindowFullscreen(sdlWindow, true);
 		fullscreen = true;
 		mouseInsideWindow = true;
@@ -1989,6 +2066,9 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST ) {
 					windowFocused = false;
+					// Stop startup anti-hide behavior once focus leaves the window so
+					// we do not fight OS/user focus changes during launch.
+					startupVisibilityGuardUntilNs = 0L;
 					SDLKeyboard.SDL_StopTextInput(sdlWindow);
 					if( sdlTextAnchorDebug )
 						System.err.println("[debug] sdl_text_anchor source=focus_lost action=stop_text_input");
@@ -2006,17 +2086,31 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_ENTER_FULLSCREEN ) {
+					boolean appRequested = appFullscreenTransitionRequested;
+					appFullscreenTransitionRequested = false;
 					fullscreen = true;
 					mouseInsideWindow = true;
 					// macOS green-button fullscreen performs an animated native transition.
 					// Avoid mutating SDL window/grab state in this callback; defer it.
 					pendingSdlInputGrabApply = true;
+					if( IS_MAC && !appRequested ) {
+						// Route native titlebar fullscreen into the same managed mode as F12.
+						pendingNormalizeTargetFullscreen = true;
+						pendingNormalizeFullscreenMode = true;
+					}
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN ) {
+					boolean appRequested = appFullscreenTransitionRequested;
+					appFullscreenTransitionRequested = false;
 					fullscreen = false;
 					// Same as enter: defer mutable SDL state changes until frame tick.
 					pendingSdlInputGrabApply = true;
+					if( IS_MAC && !appRequested ) {
+						// Route native titlebar exit into the same managed mode as F12.
+						pendingNormalizeTargetFullscreen = false;
+						pendingNormalizeFullscreenMode = true;
+					}
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_MOUSE_ENTER ) {
@@ -2071,6 +2165,8 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 
 	private void guardStartupWindowVisibility(int type) {
 		if( sdlWindow==0L )
+			return;
+		if( !windowFocused )
 			return;
 		if( startupVisibilityGuardUntilNs<=0L )
 			return;
@@ -2130,6 +2226,49 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		else {
 			keyboard.keyReleasedRaw(awtKeyCode, awtModifiers, keyChar, shiftDown, ctrlDown, altDown, metaDown);
 		}
+	}
+
+	private void snapshotWindowedBounds() {
+		if( sdlWindow==0L || fullscreen )
+			return;
+		java.nio.IntBuffer xBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer yBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer wBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer hBuf = BufferUtils.createIntBuffer(1);
+		SDLVideo.SDL_GetWindowPosition(sdlWindow, xBuf, yBuf);
+		SDLVideo.SDL_GetWindowSize(sdlWindow, wBuf, hBuf);
+		windowedX = xBuf.get(0);
+		windowedY = yBuf.get(0);
+		windowedWidth = wBuf.get(0);
+		windowedHeight = hBuf.get(0);
+	}
+
+	private void applyManagedFullscreenTarget(boolean targetFullscreen, String source) {
+		if( sdlWindow==0L )
+			return;
+		if( targetFullscreen ) {
+			// If macOS native titlebar fullscreen already engaged, force a
+			// transition back through our managed path so behavior matches F12.
+			if( fullscreen ) {
+				appFullscreenTransitionRequested = true;
+				SDLVideo.SDL_SetWindowFullscreen(sdlWindow, false);
+				fullscreen = false;
+			}
+			enterConfiguredFullscreenMode();
+			setSdlInputGrab(windowFocused, source+"_enter");
+			updateSdlCursorVisibility(source+"_enter");
+			applyMacPresentationLock(source+"_enter");
+			return;
+		}
+		appFullscreenTransitionRequested = true;
+		SDLVideo.SDL_SetWindowFullscreen(sdlWindow, false);
+		fullscreen = false;
+		SDLVideo.SDL_SetWindowPosition(sdlWindow, windowedX, windowedY);
+		SDLVideo.SDL_SetWindowSize(sdlWindow, windowedWidth, windowedHeight);
+		SDLVideo.SDL_RaiseWindow(sdlWindow);
+		setSdlInputGrab(windowFocused, source+"_leave");
+		updateSdlCursorVisibility(source+"_leave");
+		applyMacPresentationLock(source+"_leave");
 	}
 
 	private void applyMacPresentationLock(String source) {

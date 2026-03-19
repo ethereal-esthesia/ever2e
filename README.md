@@ -1,20 +1,44 @@
 # Ever2e
 
-JVM reference implementation and trace source for Apple IIe / 65C02 behavior.
+JVM reference implementation and trace source for Apple IIe / CMD G65SC02 behavior.
 
 ## What this repo is for
 
+- Emulate the beloved classic Apple IIe Platinum.
 - Run the JVM Apple IIe emulator from `.emu` machine configs.
 - Generate per-step CPU traces.
-- Compare behavior against the Python port and MAME traces.
 - Experiment with soft-switch, slot ROM, and reset behavior.
 
 ## Repo layout
 
-- `src/core/emulator/machine/machine8/Emulator8Coordinator.java`: main runner
-- `src/core/cpu/cpu8/Cpu65c02.java`: 65C02 core
-- `src/core/memory/memory8/MemoryBusIIe.java`: Apple IIe memory map + soft switches
-- `ROMS/`: machine configs and ROM binaries
+- `src/core/`
+  - Core emulator logic (CPU, memory bus, machine coordination).
+  - Key files:
+    - `src/core/emulator/machine/machine8/Emulator8Coordinator.java` (main run loop)
+    - `src/core/cpu/cpu8/Cpu65c02.java` (65C02 core)
+    - `src/core/memory/memory8/MemoryBusIIe.java` (IIe memory map + soft switches)
+- `src/device/`
+  - Host-facing devices (display, keyboard, speaker).
+- `src/peripherals/`
+  - Peripheral emulation (including 5.25" floppy support).
+- `src/test/`
+  - Unit/integration tests for CPU and device behavior.
+- `src/tools/`
+  - Utility code used by emulator tooling.
+- `ROMS/`
+  - Machine `.emu` configs and ROM binaries used at runtime.
+- `DISKS/`
+  - Disk images used for boot/test workflows.
+- `samples/`
+  - Sample assembly sources and generated loader outputs.
+- `scripts/`
+  - Trace, MAME comparison, and sample-build helper scripts.
+- `docs/`
+  - Datasheets, reverse-engineering notes, opcode/cycle analysis, and references.
+- `gradle/`, `build.gradle`, `settings.gradle`
+  - Build system wrapper and Gradle project config.
+- `target/` and `out/`
+  - Build/test output directories.
 
 ## Build
 
@@ -261,24 +285,5 @@ Override example:
 
 ## Known gaps
 
-- Expansion ROM behavior is still under active parity work.
-- Full peripheral fidelity and cycle-accurate parity are incomplete.
-
-## macOS Caps Lock popup workaround
-
-On some macOS versions, the system Caps Lock HUD can still appear over fullscreen emulator output.
-If needed, an OS-level workaround from community reports is:
-
-```bash
-sudo defaults write /Library/Preferences/FeatureFlags/Domain/UIKit.plist redesigned_text_cursor -dict-add Enabled -bool NO
-```
-
-Then reboot macOS.
-
-To revert:
-
-```bash
-sudo defaults delete /Library/Preferences/FeatureFlags/Domain/UIKit.plist redesigned_text_cursor
-```
-
-Then reboot macOS again.
+- Revamping sound routines
+- The only card currently supported outside of the stock 64K expansion board is a virtualized 5.25" Floppy Controller Card

@@ -644,6 +644,7 @@ public class KeyboardIIe extends Keyboard {
 			
 		case KEY_MASK_F12|KEY_MASK_SHIFT:
 			requestClipboardPaste();
+			endPressedKeyEvent(KEY_MASK_F12);
 			break;
 			
 		}
