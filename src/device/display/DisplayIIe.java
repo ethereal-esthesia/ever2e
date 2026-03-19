@@ -33,16 +33,53 @@ import device.keyboard.KeyboardIIe;
 
 public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final boolean IS_MAC = System.getProperty("os.name", "").toLowerCase().contains("mac");
-	private static volatile boolean keyLoggingEnabled;
-	private static volatile boolean startFullscreenOnLaunch;
-	private static volatile boolean startHiddenOnLaunch;
-	private static volatile String sdlTextInputMode = "off";
-	private static volatile String sdlFullscreenMode = "exclusive";
-	private static volatile boolean sdlImeUiSelfImplemented;
-	private static volatile boolean sdlTextAnchorDebug;
-	private static volatile boolean sdlMouseDebug;
-	private static volatile boolean macAllowProcessSwitching;
-	private static volatile Runnable closeRequestHook;
+	private final boolean keyLoggingEnabled;
+	private final boolean startFullscreenOnLaunch;
+	private final boolean startHiddenOnLaunch;
+	private final String sdlTextInputMode;
+	private final String sdlFullscreenMode;
+	private final boolean sdlImeUiSelfImplemented;
+	private final boolean sdlTextAnchorDebug;
+	private final boolean sdlMouseDebug;
+	private final boolean macAllowProcessSwitching;
+	private volatile Runnable closeRequestHook;
+
+	public static final class LaunchConfig {
+		public final boolean keyLoggingEnabled;
+		public final boolean startFullscreenOnLaunch;
+		public final boolean startHiddenOnLaunch;
+		public final String sdlTextInputMode;
+		public final String sdlFullscreenMode;
+		public final boolean sdlImeUiSelfImplemented;
+		public final boolean sdlTextAnchorDebug;
+		public final boolean sdlMouseDebug;
+		public final boolean macAllowProcessSwitching;
+
+		public LaunchConfig(
+				boolean keyLoggingEnabled,
+				boolean startFullscreenOnLaunch,
+				boolean startHiddenOnLaunch,
+				String sdlTextInputMode,
+				String sdlFullscreenMode,
+				boolean sdlImeUiSelfImplemented,
+				boolean sdlTextAnchorDebug,
+				boolean sdlMouseDebug,
+				boolean macAllowProcessSwitching) {
+			this.keyLoggingEnabled = keyLoggingEnabled;
+			this.startFullscreenOnLaunch = startFullscreenOnLaunch;
+			this.startHiddenOnLaunch = startHiddenOnLaunch;
+			this.sdlTextInputMode = normalizeSdlTextInputMode(sdlTextInputMode);
+			this.sdlFullscreenMode = normalizeSdlFullscreenMode(sdlFullscreenMode);
+			this.sdlImeUiSelfImplemented = sdlImeUiSelfImplemented;
+			this.sdlTextAnchorDebug = sdlTextAnchorDebug;
+			this.sdlMouseDebug = sdlMouseDebug;
+			this.macAllowProcessSwitching = macAllowProcessSwitching;
+		}
+
+		public static LaunchConfig defaults() {
+			return new LaunchConfig(false, false, false, "off", "exclusive", false, false, false, false);
+		}
+	}
 
 	private ScanlineTracer8 tracer;
 
@@ -145,58 +182,30 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		return bytes;
 	}
 
-	public static void setStartFullscreenOnLaunch(boolean enabled) {
-		startFullscreenOnLaunch = enabled;
-	}
-
-		public static void setCloseRequestHook(Runnable hook) {
+	public void setCloseRequestHook(Runnable hook) {
 		closeRequestHook = hook;
 	}
 
-public static void setStartHiddenOnLaunch(boolean enabled) {
-		startHiddenOnLaunch = enabled;
-	}
-
-	public static void setSdlTextInputMode(String mode) {
-		if( mode==null ) {
-			sdlTextInputMode = "off";
-			return;
-		}
+	private static String normalizeSdlTextInputMode(String mode) {
+		if( mode==null )
+			return "off";
 		String normalized = mode.trim().toLowerCase();
 		if( normalized.isEmpty() )
 			normalized = "off";
 		if( !"off".equals(normalized) && !"offscreen".equals(normalized) && !"normal".equals(normalized) && !"center".equals(normalized) )
 			throw new IllegalArgumentException("Unsupported text input mode: "+mode+" (expected off, offscreen, normal, or center)");
-		sdlTextInputMode = normalized;
+		return normalized;
 	}
 
-	public static void setSdlFullscreenMode(String mode) {
-		if( mode==null ) {
-			sdlFullscreenMode = "exclusive";
-			return;
-		}
+	private static String normalizeSdlFullscreenMode(String mode) {
+		if( mode==null )
+			return "exclusive";
 		String normalized = mode.trim().toLowerCase();
 		if( normalized.isEmpty() )
 			normalized = "exclusive";
 		if( !"exclusive".equals(normalized) && !"desktop".equals(normalized) )
 			throw new IllegalArgumentException("Unsupported SDL fullscreen mode: "+mode+" (expected exclusive or desktop)");
-		sdlFullscreenMode = normalized;
-	}
-
-	public static void setSdlImeUiSelfImplemented(boolean enabled) {
-		sdlImeUiSelfImplemented = enabled;
-	}
-
-	public static void setSdlTextAnchorDebug(boolean enabled) {
-		sdlTextAnchorDebug = enabled;
-	}
-
-	public static void setSdlMouseDebug(boolean enabled) {
-		sdlMouseDebug = enabled;
-	}
-
-	public static void setMacAllowProcessSwitching(boolean enabled) {
-		macAllowProcessSwitching = enabled;
+		return normalized;
 	}
 
 	private static Map<Integer, String> buildSdlWindowEventNameMap() {
@@ -1357,8 +1366,21 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 	}
 
 	public DisplayIIe(MemoryBusIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle) throws HardwareException {
-	
+		this(memoryBus, keyboard, unitsPerCycle, LaunchConfig.defaults());
+	}
+
+	public DisplayIIe(MemoryBusIIe memoryBus, KeyboardIIe keyboard, long unitsPerCycle, LaunchConfig config) throws HardwareException {
 		super(unitsPerCycle);
+		LaunchConfig effectiveConfig = config==null ? LaunchConfig.defaults() : config;
+		this.keyLoggingEnabled = effectiveConfig.keyLoggingEnabled;
+		this.startFullscreenOnLaunch = effectiveConfig.startFullscreenOnLaunch;
+		this.startHiddenOnLaunch = effectiveConfig.startHiddenOnLaunch;
+		this.sdlTextInputMode = effectiveConfig.sdlTextInputMode;
+		this.sdlFullscreenMode = effectiveConfig.sdlFullscreenMode;
+		this.sdlImeUiSelfImplemented = effectiveConfig.sdlImeUiSelfImplemented;
+		this.sdlTextAnchorDebug = effectiveConfig.sdlTextAnchorDebug;
+		this.sdlMouseDebug = effectiveConfig.sdlMouseDebug;
+		this.macAllowProcessSwitching = effectiveConfig.macAllowProcessSwitching;
 		this.keyboard = keyboard;
 		
 		setMemoryBus(memoryBus);
@@ -1368,10 +1390,6 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		initializeWindow();
 		coldReset();
 		initializationComplete = true;
-	}
-
-	public static void setKeyLoggingEnabled(boolean enabled) {
-		keyLoggingEnabled = enabled;
 	}
 
 	private void initializeWindow() throws HardwareException {

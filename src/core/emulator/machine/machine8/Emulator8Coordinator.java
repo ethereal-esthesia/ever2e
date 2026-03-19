@@ -598,15 +598,16 @@ public class Emulator8Coordinator {
 		Emulator.setBlockingDebugEnabled(debugLogging);
 		Speaker1Bit.setBlockingDebugEnabled(debugLogging);
 		KeyboardIIe.setKeyLoggingEnabled(keyLogging);
-		DisplayIIe.setKeyLoggingEnabled(keyLogging);
-		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
-		DisplayIIe.setStartHiddenOnLaunch(startHidden);
-		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
-		DisplayIIe.setSdlTextInputMode(textInputMode);
-		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
-		DisplayIIe.setSdlImeUiSelfImplemented(sdlImeUiSelf);
-		DisplayIIe.setSdlTextAnchorDebug(debugLogging);
-		DisplayIIe.setSdlMouseDebug(mouseDebug);
+		DisplayIIe.LaunchConfig displayLaunchConfig = new DisplayIIe.LaunchConfig(
+				keyLogging,
+				startFullscreen,
+				startHidden,
+				textInputMode,
+				sdlFullscreenMode,
+				sdlImeUiSelf,
+				debugLogging,
+				mouseDebug,
+				macAllowProcessSwitching);
 		if( debugLogging ) {
 			System.err.println("[debug] launch_config windowBackend=sdl"+
 					" startFullscreen="+startFullscreen+
@@ -620,18 +621,7 @@ public class Emulator8Coordinator {
 		boolean startupPrimerRan = shouldRunStartupPrimer(startupPrimerInternal, textConsole, isHeadlessMode());
 		if( startupPrimerRan )
 			runStartupPrimer();
-		// Primer uses nested main(...) and mutates static display/keyboard launch config.
-		// Re-apply outer invocation config so real boot cannot inherit primer flags.
 		KeyboardIIe.setKeyLoggingEnabled(keyLogging);
-		DisplayIIe.setKeyLoggingEnabled(keyLogging);
-		DisplayIIe.setStartFullscreenOnLaunch(startFullscreen);
-		DisplayIIe.setStartHiddenOnLaunch(startHidden);
-		DisplayIIe.setMacAllowProcessSwitching(macAllowProcessSwitching);
-		DisplayIIe.setSdlTextInputMode(textInputMode);
-		DisplayIIe.setSdlFullscreenMode(sdlFullscreenMode);
-		DisplayIIe.setSdlImeUiSelfImplemented(sdlImeUiSelf);
-		DisplayIIe.setSdlTextAnchorDebug(debugLogging);
-		DisplayIIe.setSdlMouseDebug(mouseDebug);
 			if( !debugLogging && !printTextAtExit && lastFrameOut==null )
 				System.setOut(new PrintStream(OutputStream.nullOutputStream()));
 		tracePhase = tracePhase.trim().toLowerCase();
@@ -674,9 +664,10 @@ public class Emulator8Coordinator {
 		Memory8 memory = new Memory8(0x20000);
 		MemoryBus8 bus;
 		Cpu65c02 cpu;
-			KeyboardIIe keyboard = null;
-			HeadlessVideoProbe headlessProbe = null;
-			Speaker1Bit speaker = null;
+		KeyboardIIe keyboard = null;
+		HeadlessVideoProbe headlessProbe = null;
+		Speaker1Bit speaker = null;
+		DisplayIIe windowDisplay = null;
 		if( properties.getLayout()==MachineLayoutType.DEMO_32x32 ) {
 			bus = new MemoryBusDemo8(memory, keyboard);
 			bus.coldReset();
@@ -733,7 +724,7 @@ public class Emulator8Coordinator {
 				hardwareManagerQueue.add(headlessProbe);
 			}
 			else {
-				DisplayIIe windowDisplay = new DisplayIIe((MemoryBusIIe) bus, keyboard, (long) (unitsPerCycle/displayMultiplier));
+				windowDisplay = new DisplayIIe((MemoryBusIIe) bus, keyboard, (long) (unitsPerCycle/displayMultiplier), displayLaunchConfig);
 				windowDisplay.setShowFps(showFps);
 				display = windowDisplay;
 				hardwareManagerQueue.add(windowDisplay);
@@ -799,14 +790,10 @@ public class Emulator8Coordinator {
 			final boolean hookPrintTextAtExit = printTextAtExit;
 			final String hookLastFrameOut = lastFrameOut;
 			final boolean wantsDebugExitOutputs = hookDumpPageAddress!=null || hookDumpRangeStart>=0 || hookDumpAllMapped || hookDumpAllRawRam || hookPrintTextAtExit || hookLastFrameOut!=null;
-			if( bus instanceof MemoryBusIIe && ((MemoryBusIIe) bus).getDisplay() instanceof DisplayIIe ) {
-				if( wantsDebugExitOutputs ) {
-					DisplayIIe.setCloseRequestHook(() -> runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, hookDumpPageAddress, hookDumpRangeStart, hookDumpRangeEnd, hookDumpAllMapped, hookDumpAllRawRam, hookPrintTextAtExit, hookLastFrameOut));
-				}
-				else {
-					DisplayIIe.setCloseRequestHook(null);
-				}
-			}
+			if( windowDisplay!=null )
+				windowDisplay.setCloseRequestHook(wantsDebugExitOutputs
+						? () -> runDebugExitOutputsOnce(exitDebugOutputsEmitted, bus, memory, hookDumpPageAddress, hookDumpRangeStart, hookDumpRangeEnd, hookDumpAllMapped, hookDumpAllRawRam, hookPrintTextAtExit, hookLastFrameOut)
+						: null);
 			if( wantsDebugExitOutputs ) {
 				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 					try {
