@@ -1,6 +1,6 @@
 # Ever2e
 
-JVM reference implementation and trace source for Apple IIe / 65C02 behavior.
+JVM reference implementation and trace source for Apple IIe / CMD G65SC02 behavior.
 
 ## What this repo is for
 
