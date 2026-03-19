@@ -18,6 +18,7 @@ final class MacPresentationController {
 	private final long nsApplicationClass;
 	private final long selSharedApplication;
 	private final long selSetPresentationOptions;
+	private final long selActivateIgnoringOtherApps;
 
 	private long cachedAppInstance;
 	private boolean processSwitchingDisabled;
@@ -29,6 +30,7 @@ final class MacPresentationController {
 			nsApplicationClass = 0L;
 			selSharedApplication = 0L;
 			selSetPresentationOptions = 0L;
+			selActivateIgnoringOtherApps = 0L;
 			return;
 		}
 		try {
@@ -39,6 +41,7 @@ final class MacPresentationController {
 			nsApplicationClass = objcGetClass.invokeLong(new Object[] {"NSApplication"});
 			selSharedApplication = selRegisterName.invokeLong(new Object[] {"sharedApplication"});
 			selSetPresentationOptions = selRegisterName.invokeLong(new Object[] {"setPresentationOptions:"});
+			selActivateIgnoringOtherApps = selRegisterName.invokeLong(new Object[] {"activateIgnoringOtherApps:"});
 			available = nsApplicationClass!=0L && selSharedApplication!=0L && selSetPresentationOptions!=0L;
 		}
 		catch( Throwable t ) {
@@ -64,6 +67,17 @@ final class MacPresentationController {
 				: 0L;
 		objcMsgSend.invokeVoid(new Object[] {app, selSetPresentationOptions, options});
 		processSwitchingDisabled = enabled;
+	}
+
+	void requestActivation() {
+		if( !available )
+			return;
+		if( selActivateIgnoringOtherApps==0L )
+			return;
+		long app = appInstance();
+		if( app==0L )
+			return;
+		objcMsgSend.invokeVoid(new Object[] {app, selActivateIgnoringOtherApps, true});
 	}
 
 	private long appInstance() {

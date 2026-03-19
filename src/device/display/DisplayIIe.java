@@ -1432,6 +1432,8 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 			SDLVideo.SDL_ShowWindow(sdlWindow);
 			SDLVideo.SDL_RestoreWindow(sdlWindow);
 			SDLVideo.SDL_RaiseWindow(sdlWindow);
+			if( IS_MAC )
+				macPresentation.requestActivation();
 		}
 		applyMacPresentationLock("init");
 		pendingSdlTextInputModeApply = true;
@@ -1989,6 +1991,9 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST ) {
 					windowFocused = false;
+					// Stop startup anti-hide behavior once focus leaves the window so
+					// we do not fight OS/user focus changes during launch.
+					startupVisibilityGuardUntilNs = 0L;
 					SDLKeyboard.SDL_StopTextInput(sdlWindow);
 					if( sdlTextAnchorDebug )
 						System.err.println("[debug] sdl_text_anchor source=focus_lost action=stop_text_input");
@@ -2071,6 +2076,8 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 
 	private void guardStartupWindowVisibility(int type) {
 		if( sdlWindow==0L )
+			return;
+		if( !windowFocused )
 			return;
 		if( startupVisibilityGuardUntilNs<=0L )
 			return;
