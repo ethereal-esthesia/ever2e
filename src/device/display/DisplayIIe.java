@@ -85,8 +85,14 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private long fullscreenTransitionGuardUntilNs;
 	private boolean pendingSdlTextInputModeApply;
 	private boolean pendingSdlInputGrabApply;
+	private boolean pendingNormalizeFullscreenMode;
+	private boolean pendingNormalizeTargetFullscreen;
+	private boolean appFullscreenTransitionRequested;
 	private long startupWindowTraceUntilNs;
 	private long startupVisibilityGuardUntilNs;
+	private boolean pendingStartupShow;
+	private long startupAutoFocusUntilNs;
+	private long startupNextFocusAttemptNs;
 	private boolean initializationComplete;
 	private boolean windowFocused = true;
 	private boolean mouseInsideWindow;
@@ -120,6 +126,8 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int FRAME_CYCLES = FRAME_H_CYCLES * FRAME_V_LINES;
 	private static final long SDL_STARTUP_WINDOW_TRACE_NS = 8_000_000_000L;
 	private static final long SDL_STARTUP_VISIBILITY_GUARD_NS = 8_000_000_000L;
+	private static final long SDL_STARTUP_AUTOFOCUS_WINDOW_NS = 2_000_000_000L;
+	private static final long SDL_STARTUP_AUTOFOCUS_RETRY_NS = 200_000_000L;
 	private static final Map<Integer, String> SDL_WINDOW_EVENT_NAMES = buildSdlWindowEventNameMap();
 
 	public static int[] captureFrameBytes(MemoryBusIIe memoryBus) {
@@ -1391,7 +1399,8 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 			System.err.println("[debug] sdl_init step=create_window");
 		boolean startupInit = !initializationComplete;
 		long createFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
-		boolean hideOnStartup = startupInit && startHiddenOnLaunch;
+		boolean deferShowUntilFirstFrame = startupInit && !startHiddenOnLaunch;
+		boolean hideOnStartup = startupInit && (startHiddenOnLaunch || deferShowUntilFirstFrame);
 		if( startupInit && startFullscreenOnLaunch && "exclusive".equals(sdlFullscreenMode) )
 			createFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
 		if( hideOnStartup )
@@ -1435,9 +1444,15 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 			if( IS_MAC )
 				macPresentation.requestActivation();
 		}
+		else {
+			windowFocused = false;
+		}
 		applyMacPresentationLock("init");
 		pendingSdlTextInputModeApply = true;
 		pendingSdlInputGrabApply = true;
+		pendingStartupShow = deferShowUntilFirstFrame;
+		startupAutoFocusUntilNs = 0L;
+		startupNextFocusAttemptNs = 0L;
 		startupWindowTraceUntilNs = System.nanoTime() + SDL_STARTUP_WINDOW_TRACE_NS;
 		startupVisibilityGuardUntilNs = hideOnStartup ? 0L : (System.nanoTime() + SDL_STARTUP_VISIBILITY_GUARD_NS);
 		if( sdlTextAnchorDebug )
@@ -1824,6 +1839,8 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 	private void blitToSdl(int[] pixels) {
 		if( sdlWindow==0L )
 			return;
+		snapshotWindowedBounds();
+		ensureStartupWindowShownAndFocused();
 		if( pendingSdlTextInputModeApply && initializationComplete ) {
 			pendingSdlTextInputModeApply = false;
 			applySdlTextInputMode();
@@ -1831,6 +1848,10 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		if( pendingSdlInputGrabApply && initializationComplete ) {
 			pendingSdlInputGrabApply = false;
 			setSdlInputGrab(windowFocused, "deferred_init_apply");
+		}
+		if( pendingNormalizeFullscreenMode && initializationComplete ) {
+			pendingNormalizeFullscreenMode = false;
+			applyManagedFullscreenTarget(pendingNormalizeTargetFullscreen, "native_button_normalize");
 		}
 		sdlTextureInts.clear();
 		sdlTextureInts.put(pixels);
@@ -1866,6 +1887,41 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		if( sdlImeUiSelfImplemented && ("offscreen".equals(sdlTextInputMode) || "center".equals(sdlTextInputMode)) )
 			applySdlTextInputAreaForMode("frame_tick");
 		pollSdlEvents();
+	}
+
+	private void ensureStartupWindowShownAndFocused() {
+		if( sdlWindow==0L )
+			return;
+		if( pendingStartupShow && initializationComplete ) {
+			pendingStartupShow = false;
+			SDLVideo.SDL_ShowWindow(sdlWindow);
+			SDLVideo.SDL_RestoreWindow(sdlWindow);
+			SDLVideo.SDL_RaiseWindow(sdlWindow);
+			if( IS_MAC )
+				macPresentation.requestActivation();
+			long now = System.nanoTime();
+			startupAutoFocusUntilNs = now + SDL_STARTUP_AUTOFOCUS_WINDOW_NS;
+			startupNextFocusAttemptNs = now + SDL_STARTUP_AUTOFOCUS_RETRY_NS;
+			startupVisibilityGuardUntilNs = now + SDL_STARTUP_VISIBILITY_GUARD_NS;
+			if( sdlTextAnchorDebug )
+				System.err.println("[debug] sdl_startup_show action=show_restore_raise_activate");
+			return;
+		}
+		if( startupAutoFocusUntilNs<=0L || windowFocused )
+			return;
+		long now = System.nanoTime();
+		if( now>startupAutoFocusUntilNs ) {
+			startupAutoFocusUntilNs = 0L;
+			return;
+		}
+		if( now<startupNextFocusAttemptNs )
+			return;
+		SDLVideo.SDL_RaiseWindow(sdlWindow);
+		if( IS_MAC )
+			macPresentation.requestActivation();
+		startupNextFocusAttemptNs = now + SDL_STARTUP_AUTOFOCUS_RETRY_NS;
+		if( sdlTextAnchorDebug )
+			System.err.println("[debug] sdl_startup_show action=retry_raise_activate");
 	}
 
 	private void setSdlInputGrab(boolean enabled, String source) {
@@ -1935,6 +1991,7 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 			if( mode!=null )
 				SDLVideo.SDL_SetWindowFullscreenMode(sdlWindow, mode);
 		}
+		appFullscreenTransitionRequested = true;
 		SDLVideo.SDL_SetWindowFullscreen(sdlWindow, true);
 		fullscreen = true;
 		mouseInsideWindow = true;
@@ -2011,17 +2068,31 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_ENTER_FULLSCREEN ) {
+					boolean appRequested = appFullscreenTransitionRequested;
+					appFullscreenTransitionRequested = false;
 					fullscreen = true;
 					mouseInsideWindow = true;
 					// macOS green-button fullscreen performs an animated native transition.
 					// Avoid mutating SDL window/grab state in this callback; defer it.
 					pendingSdlInputGrabApply = true;
+					if( IS_MAC && !appRequested ) {
+						// Route native titlebar fullscreen into the same managed mode as F12.
+						pendingNormalizeTargetFullscreen = true;
+						pendingNormalizeFullscreenMode = true;
+					}
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN ) {
+					boolean appRequested = appFullscreenTransitionRequested;
+					appFullscreenTransitionRequested = false;
 					fullscreen = false;
 					// Same as enter: defer mutable SDL state changes until frame tick.
 					pendingSdlInputGrabApply = true;
+					if( IS_MAC && !appRequested ) {
+						// Route native titlebar exit into the same managed mode as F12.
+						pendingNormalizeTargetFullscreen = false;
+						pendingNormalizeFullscreenMode = true;
+					}
 					continue;
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_MOUSE_ENTER ) {
@@ -2137,6 +2208,42 @@ public static void setStartHiddenOnLaunch(boolean enabled) {
 		else {
 			keyboard.keyReleasedRaw(awtKeyCode, awtModifiers, keyChar, shiftDown, ctrlDown, altDown, metaDown);
 		}
+	}
+
+	private void snapshotWindowedBounds() {
+		if( sdlWindow==0L || fullscreen )
+			return;
+		java.nio.IntBuffer xBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer yBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer wBuf = BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer hBuf = BufferUtils.createIntBuffer(1);
+		SDLVideo.SDL_GetWindowPosition(sdlWindow, xBuf, yBuf);
+		SDLVideo.SDL_GetWindowSize(sdlWindow, wBuf, hBuf);
+		windowedX = xBuf.get(0);
+		windowedY = yBuf.get(0);
+		windowedWidth = wBuf.get(0);
+		windowedHeight = hBuf.get(0);
+	}
+
+	private void applyManagedFullscreenTarget(boolean targetFullscreen, String source) {
+		if( sdlWindow==0L )
+			return;
+		if( targetFullscreen ) {
+			enterConfiguredFullscreenMode();
+			setSdlInputGrab(windowFocused, source+"_enter");
+			updateSdlCursorVisibility(source+"_enter");
+			applyMacPresentationLock(source+"_enter");
+			return;
+		}
+		appFullscreenTransitionRequested = true;
+		SDLVideo.SDL_SetWindowFullscreen(sdlWindow, false);
+		fullscreen = false;
+		SDLVideo.SDL_SetWindowPosition(sdlWindow, windowedX, windowedY);
+		SDLVideo.SDL_SetWindowSize(sdlWindow, windowedWidth, windowedHeight);
+		SDLVideo.SDL_RaiseWindow(sdlWindow);
+		setSdlInputGrab(windowFocused, source+"_leave");
+		updateSdlCursorVisibility(source+"_leave");
+		applyMacPresentationLock(source+"_leave");
 	}
 
 	private void applyMacPresentationLock(String source) {
