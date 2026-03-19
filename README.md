@@ -11,10 +11,34 @@ JVM reference implementation and trace source for Apple IIe / 65C02 behavior.
 
 ## Repo layout
 
-- `src/core/emulator/machine/machine8/Emulator8Coordinator.java`: main runner
-- `src/core/cpu/cpu8/Cpu65c02.java`: 65C02 core
-- `src/core/memory/memory8/MemoryBusIIe.java`: Apple IIe memory map + soft switches
-- `ROMS/`: machine configs and ROM binaries
+- `src/core/`
+  - Core emulator logic (CPU, memory bus, machine coordination).
+  - Key files:
+    - `src/core/emulator/machine/machine8/Emulator8Coordinator.java` (main run loop)
+    - `src/core/cpu/cpu8/Cpu65c02.java` (65C02 core)
+    - `src/core/memory/memory8/MemoryBusIIe.java` (IIe memory map + soft switches)
+- `src/device/`
+  - Host-facing devices (display, keyboard, speaker).
+- `src/peripherals/`
+  - Peripheral emulation (including 5.25" floppy support).
+- `src/test/`
+  - Unit/integration tests for CPU and device behavior.
+- `src/tools/`
+  - Utility code used by emulator tooling.
+- `ROMS/`
+  - Machine `.emu` configs and ROM binaries used at runtime.
+- `DISKS/`
+  - Disk images used for boot/test workflows.
+- `samples/`
+  - Sample assembly sources and generated loader outputs.
+- `scripts/`
+  - Trace, MAME comparison, and sample-build helper scripts.
+- `docs/`
+  - Datasheets, reverse-engineering notes, opcode/cycle analysis, and references.
+- `gradle/`, `build.gradle`, `settings.gradle`
+  - Build system wrapper and Gradle project config.
+- `target/` and `out/`
+  - Build/test output directories.
 
 ## Build
 
