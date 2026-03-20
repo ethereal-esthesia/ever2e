@@ -206,12 +206,13 @@ public class KeyboardIIe extends Keyboard {
 	private void handleKeyPressed(int keyIndex, int keyModifiers, char keyChar,
 			boolean shiftDown, boolean ctrlDown, boolean altDown, boolean metaDown) {
 		logKeyProbe("pressed", keyIndex, keyChar, shiftDown, ctrlDown, altDown, metaDown, keyModifiers);
+		syncTransientModifiersFromHost(shiftDown, ctrlDown, altDown, metaDown);
 		
 		//System.out.println(EmuKey.getKeyText(keyIndex)+" "+keyIndex+" "+event.getModifiers());
 
 		// Maintain caps-lock state internally; host modifier masks are not reliable
 		// for lock-key state across host input bridges.
-		if( keyIndex==EmuKey.VK_CAPS_LOCK ) {
+		if( keyIndex==EmuKey.VK_CAPS_LOCK && !ctrlDown && !altDown && !metaDown ) {
 			capsLockState = !capsLockState;
 			applyCapsLockState();
 			return;
@@ -268,10 +269,27 @@ public class KeyboardIIe extends Keyboard {
 				clearPendingKeyInputQueue();
 				clearHeldKeyState();
 			}
+			boolean effectiveShiftDown = shiftDown || (modifierSet&KEY_MASK_SHIFT)!=0;
+			// For Ctrl+printable input, prefer the host-mapped printable character
+			// (layout-aware, e.g. Dvorak) and derive control codes from that.
+			if( (modifierSet&KEY_MASK_CTRL)!=0 && !isNumpadKey(keyIndex) ) {
+				Integer printableChar = mapPrintableChar(keyChar, effectiveShiftDown);
+				Integer ctrlChar = mapCtrlPrintableChar(printableChar);
+				if( ctrlChar!=null ) {
+					int printablePressToken = toPrintablePressToken(keyIndex);
+					if( !isKeyPressed(printablePressToken) ) {
+						if( keyQueue.size()==0 )
+							keyCode = (byte) (0x80|ctrlChar.intValue());
+						keyPressed.add(printablePressToken);
+						keyCount++;
+						delayCount = PRE_REPEAT_FLOP_COUNT;
+					}
+					return;
+				}
+			}
 			// Keep control/navigation on keycode path, but use layout-resolved
 			// printable chars for locale-correct text input timing/repeat.
 			if( (modifierSet&KEY_MASK_CTRL)==0 && !isNumpadKey(keyIndex) ) {
-				boolean effectiveShiftDown = shiftDown || (modifierSet&KEY_MASK_SHIFT)!=0;
 				Integer printableChar = mapPrintableChar(keyChar, effectiveShiftDown);
 				if( printableChar!=null ) {
 					int printablePressToken = toPrintablePressToken(keyIndex);
@@ -340,6 +358,7 @@ public class KeyboardIIe extends Keyboard {
 	private void handleKeyReleased(int keyIndex, int keyModifiers, char keyChar,
 			boolean shiftDown, boolean ctrlDown, boolean altDown, boolean metaDown) {
 		logKeyProbe("released", keyIndex, keyChar, shiftDown, ctrlDown, altDown, metaDown, keyModifiers);
+		syncTransientModifiersFromHost(shiftDown, ctrlDown, altDown, metaDown);
 		
 		switch( keyIndex ) {
 
@@ -403,7 +422,24 @@ public class KeyboardIIe extends Keyboard {
 			break;
 		
 		}
+		if( isHalted && (modifierSet&KEY_MASK_CTRL)==0 ) {
+			cpu.setInterruptPending(Cpu65c02.INTERRUPT_RES);
+			isHalted = false;
+		}
 
+	}
+
+	private void syncTransientModifiersFromHost(boolean shiftDown, boolean ctrlDown, boolean altDown, boolean metaDown) {
+		if( shiftDown )
+			modifierSet |= KEY_MASK_SHIFT;
+		else
+			modifierSet &= ~KEY_MASK_SHIFT;
+		if( ctrlDown )
+			modifierSet |= KEY_MASK_CTRL;
+		else
+			modifierSet &= ~KEY_MASK_CTRL;
+		appleKey = altDown;
+		optionKey = metaDown;
 	}
 
 	private static int toPrintablePressToken(int keyIndex) {
@@ -479,6 +515,33 @@ public class KeyboardIIe extends Keyboard {
 		if( keyChar>=0x20 && keyChar<=0x7e )
 			return (int) keyChar;
 		return null;
+	}
+
+	private static Integer mapCtrlPrintableChar(Integer printableChar) {
+		if( printableChar==null )
+			return null;
+		int c = printableChar.intValue();
+		if( c>='a' && c<='z' )
+			c = Character.toUpperCase((char) c);
+		if( c>='A' && c<='Z' )
+			return Integer.valueOf(c & 0x1f);
+		switch( c ) {
+		case '@':
+		case ' ':
+			return Integer.valueOf(0x00);
+		case '[':
+			return Integer.valueOf(0x1b);
+		case '\\':
+			return Integer.valueOf(0x1c);
+		case ']':
+			return Integer.valueOf(0x1d);
+		case '^':
+			return Integer.valueOf(0x1e);
+		case '_':
+			return Integer.valueOf(0x1f);
+		default:
+			return null;
+		}
 	}
 
 	private boolean isConsumed;
