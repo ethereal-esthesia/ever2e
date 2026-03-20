@@ -501,6 +501,19 @@ public class KeyboardIIe extends Keyboard {
 		delayCount = 0;
 	}
 
+	public void clearTransientHostInputState() {
+		// Preserve caps-lock state, but drop host-side transient modifiers/keys.
+		modifierSet &= KEY_MASK_CAPS;
+		optionKey = false;
+		appleKey = false;
+		clearPendingKeyInputQueue();
+		clearHeldKeyState();
+		if( isHalted ) {
+			cpu.setInterruptPending(Cpu65c02.INTERRUPT_RES);
+			isHalted = false;
+		}
+	}
+
 	private void pushKeyCodeInternal(int i, boolean fromPaste, boolean suppressLiveInput) {
 		boolean suppressionTrackedPaste = fromPaste && suppressLiveInput;
 		keyQueue.add((byte) i);

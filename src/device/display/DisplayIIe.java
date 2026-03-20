@@ -2066,6 +2066,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				}
 				if( type==SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST ) {
 					windowFocused = false;
+					keyboard.clearTransientHostInputState();
 					// Stop startup anti-hide behavior once focus leaves the window so
 					// we do not fight OS/user focus changes during launch.
 					startupVisibilityGuardUntilNs = 0L;
