@@ -55,6 +55,8 @@ public class Emulator8Coordinator {
 	private static final int DISPLAY_HSCAN_CYCLES = 65;
 	private static final int DISPLAY_VSCAN_LINES = 262;
 	private static final int DISPLAY_VBL_LINES = 70;
+	private static final int SLOT6_ROM_START = 0xC600;
+	private static final int SLOT6_ROM_END = 0xC6FF;
 	private static final AtomicBoolean STARTUP_PRIMER_DONE = new AtomicBoolean(false);
 
 	private static int parseByteArg(String value, String argName) {
@@ -259,6 +261,9 @@ public class Emulator8Coordinator {
 		boolean traceSubinstructions = false;
 		boolean traceKeyValue = false;
 		Integer traceStartPc = null;
+		boolean traceOpcodeRangeDebug = false;
+		int traceOpcodeRangeStart = -1;
+		int traceOpcodeRangeEnd = -1;
 			boolean textConsole = false;
 			boolean printTextAtExit = false;
 			String lastFrameOut = null;
@@ -425,6 +430,32 @@ public class Emulator8Coordinator {
 			}
 			else if( arg.startsWith("--trace-start-pc=") ) {
 				traceStartPc = parseWordArg(arg.substring("--trace-start-pc=".length()), "--trace-start-pc");
+			}
+			else if( "--trace-call-range".equals(arg) || "--trace-op-range".equals(arg) ) {
+				String argName = "--trace-call-range".equals(arg) ? "--trace-call-range" : "--trace-op-range";
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for "+argName);
+				int[] range = parseWordRangeArg(argList[++i], argName);
+				traceOpcodeRangeStart = range[0];
+				traceOpcodeRangeEnd = range[1];
+				traceOpcodeRangeDebug = true;
+			}
+			else if( arg.startsWith("--trace-call-range=") ) {
+				int[] range = parseWordRangeArg(arg.substring("--trace-call-range=".length()), "--trace-call-range");
+				traceOpcodeRangeStart = range[0];
+				traceOpcodeRangeEnd = range[1];
+				traceOpcodeRangeDebug = true;
+			}
+			else if( arg.startsWith("--trace-op-range=") ) {
+				int[] range = parseWordRangeArg(arg.substring("--trace-op-range=".length()), "--trace-op-range");
+				traceOpcodeRangeStart = range[0];
+				traceOpcodeRangeEnd = range[1];
+				traceOpcodeRangeDebug = true;
+			}
+			else if( "--trace-slot6-calls".equals(arg) || "--trace-slot6-range".equals(arg) ) {
+				traceOpcodeRangeStart = SLOT6_ROM_START;
+				traceOpcodeRangeEnd = SLOT6_ROM_END;
+				traceOpcodeRangeDebug = true;
 			}
 			else if( "--reset-pflag-value".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -657,6 +688,11 @@ public class Emulator8Coordinator {
 
 		System.out.println(properties);
 		System.out.println("CPU Profile: "+cpuProfile);
+		if( traceOpcodeRangeDebug ) {
+			System.out.println("Opcode range trace enabled: $"+
+					Cpu65c02.getHexString(traceOpcodeRangeStart, 4)+":$"+
+					Cpu65c02.getHexString(traceOpcodeRangeEnd, 4));
+		}
 
 		// Set up machine based on layout selection
 		
@@ -887,6 +923,9 @@ public class Emulator8Coordinator {
 	   		final boolean finalTraceSubinstructions = traceSubinstructions;
 	   		final boolean finalTraceKeyValue = traceKeyValue;
 	   		final Integer finalTraceStartPc = traceStartPc;
+	   		final boolean finalTraceOpcodeRangeDebug = traceOpcodeRangeDebug;
+	   		final int finalTraceOpcodeRangeStart = traceOpcodeRangeStart;
+	   		final int finalTraceOpcodeRangeEnd = traceOpcodeRangeEnd;
 	   		final Set<Integer> finalHaltExecutions = haltExecutions;
 	   		final HeadlessVideoProbe finalHeadlessProbe = headlessProbe;
 	   		final KeyboardIIe finalKeyboard = keyboard;
@@ -903,7 +942,9 @@ public class Emulator8Coordinator {
 	   		long steps = emulator.startWithStepPhases(maxCpuSteps, cpu, (step, manager, preCycle) -> {
 	   			if( manager==cpu && preCycle )
 	   				cpuStepPreWasSub[0] = cpu.hasPendingInFlightMicroEvent();
-	   			if( finalTraceWriter==null && finalHaltExecutions.isEmpty() )
+	   			if( finalTraceOpcodeRangeDebug && manager==cpu && preCycle )
+	   				maybeLogOpcodeRangeEvent(cpu, bus, finalTraceOpcodeRangeStart, finalTraceOpcodeRangeEnd, step);
+	   			if( finalTraceWriter==null && finalHaltExecutions.isEmpty() && !finalTraceOpcodeRangeDebug )
 	   				return true;
 	   			if( !traceStarted[0] && preCycle && finalTraceStartPc!=null &&
 	   					(cpu.getPendingPC()&0xffff)==(finalTraceStartPc&0xffff) ) {
@@ -1192,7 +1233,12 @@ public class Emulator8Coordinator {
 	   	else {
 	   		final HeadlessVideoProbe finalHeadlessProbe = headlessProbe;
 	   		final boolean finalDebugLogging = debugLogging;
+	   		final boolean finalTraceOpcodeRangeDebug = traceOpcodeRangeDebug;
+	   		final int finalTraceOpcodeRangeStart = traceOpcodeRangeStart;
+	   		final int finalTraceOpcodeRangeEnd = traceOpcodeRangeEnd;
 	   		emulator.startWithStepPhases(-1, cpu, (step, manager, preCycle) -> {
+	   			if( finalTraceOpcodeRangeDebug && manager==cpu && preCycle )
+	   				maybeLogOpcodeRangeEvent(cpu, bus, finalTraceOpcodeRangeStart, finalTraceOpcodeRangeEnd, step);
 	   			return true;
 	   		});
 			System.out.println("Done");
@@ -1410,6 +1456,125 @@ public class Emulator8Coordinator {
 		else
 			value = bus.getByte(address & 0xffff);
 		return Cpu65c02.getHexString(value, 2);
+	}
+
+	private static int getByteNoSideEffects(MemoryBus8 bus, int address) {
+		if( bus instanceof MemoryBusIIe )
+			return ((MemoryBusIIe) bus).peekByteNoSideEffects(address & 0xffff) & 0xff;
+		return bus.getByte(address & 0xffff) & 0xff;
+	}
+
+	private static int getWord16NoSideEffects(MemoryBus8 bus, int address) {
+		int lo = getByteNoSideEffects(bus, address & 0xffff);
+		int hi = getByteNoSideEffects(bus, (address+1) & 0xffff);
+		return (lo | (hi<<8)) & 0xffff;
+	}
+
+	private static int estimatePendingJumpTargetAddress(Cpu65c02 cpu, MemoryBus8 bus) {
+		Opcode opcode = cpu.getPendingOpcode();
+		if( opcode==null || opcode.getMachineCode()==null )
+			return -1;
+		int pc = cpu.getPendingPC() & 0xffff;
+		int x = cpu.getRegister().getX() & 0xff;
+		int machineCode = opcode.getMachineCode().intValue() & 0xff;
+		switch( machineCode ) {
+			case 0x20: // JSR abs
+			case 0x4C: // JMP abs
+				return getWord16NoSideEffects(bus, (pc+1) & 0xffff);
+			case 0x6C: { // JMP (abs)
+				int pointer = getWord16NoSideEffects(bus, (pc+1) & 0xffff);
+				return getWord16NoSideEffects(bus, pointer);
+			}
+			case 0x7C: { // JMP (abs,X)
+				int base = getWord16NoSideEffects(bus, (pc+1) & 0xffff);
+				int pointer = (base + x) & 0xffff;
+				return getWord16NoSideEffects(bus, pointer);
+			}
+			case 0x00: // BRK vector
+				return getWord16NoSideEffects(bus, 0xFFFE);
+			default:
+				return -1;
+		}
+	}
+
+	private static int estimatePendingWriteAddress(Cpu65c02 cpu, MemoryBus8 bus) {
+		Opcode opcode = cpu.getPendingOpcode();
+		if( opcode==null || opcode.getMnemonic()==null )
+			return -1;
+		Cpu65c02.OpcodeMnemonic mnemonic = opcode.getMnemonic();
+		if( mnemonic!=Cpu65c02.OpcodeMnemonic.STA &&
+				mnemonic!=Cpu65c02.OpcodeMnemonic.STX &&
+				mnemonic!=Cpu65c02.OpcodeMnemonic.STY &&
+				mnemonic!=Cpu65c02.OpcodeMnemonic.STZ )
+			return -1;
+		int pc = cpu.getPendingPC() & 0xffff;
+		int x = cpu.getRegister().getX() & 0xff;
+		int y = cpu.getRegister().getY() & 0xff;
+		switch( opcode.getAddressMode() ) {
+			case ABS:
+				return getWord16NoSideEffects(bus, (pc+1) & 0xffff);
+			case ABS_X:
+				return (getWord16NoSideEffects(bus, (pc+1) & 0xffff) + x) & 0xffff;
+			case ABS_Y:
+				return (getWord16NoSideEffects(bus, (pc+1) & 0xffff) + y) & 0xffff;
+			case ZPG:
+				return getByteNoSideEffects(bus, (pc+1) & 0xffff) & 0xff;
+			case ZPG_X:
+				return (getByteNoSideEffects(bus, (pc+1) & 0xffff) + x) & 0xff;
+			case ZPG_Y:
+				return (getByteNoSideEffects(bus, (pc+1) & 0xffff) + y) & 0xff;
+			case IND_X: {
+				int zp = (getByteNoSideEffects(bus, (pc+1) & 0xffff) + x) & 0xff;
+				return getWord16NoSideEffects(bus, zp);
+			}
+			case IND_Y: {
+				int zp = getByteNoSideEffects(bus, (pc+1) & 0xffff) & 0xff;
+				int base = getWord16NoSideEffects(bus, zp);
+				return (base + y) & 0xffff;
+			}
+			case ZPG_IND: {
+				int zp = getByteNoSideEffects(bus, (pc+1) & 0xffff) & 0xff;
+				return getWord16NoSideEffects(bus, zp);
+			}
+			default:
+				return -1;
+		}
+	}
+
+	private static boolean inAddressRange(int address, int start, int end) {
+		return address>=start && address<=end;
+	}
+
+	private static void maybeLogOpcodeRangeEvent(Cpu65c02 cpu, MemoryBus8 bus, int rangeStart, int rangeEnd, long step) {
+		int pc = cpu.getPendingPC() & 0xffff;
+		Opcode opcode = cpu.getPendingOpcode();
+		String opcodeHex = opcode!=null && opcode.getMachineCode()!=null
+				? Cpu65c02.getHexString(opcode.getMachineCode().intValue() & 0xff, 2)
+				: "--";
+		int jumpTarget = estimatePendingJumpTargetAddress(cpu, bus);
+		if( jumpTarget>=0 && inAddressRange(jumpTarget, rangeStart, rangeEnd) ) {
+			System.out.println("range_trace type=CTRL step="+step+
+					" pc=$"+Cpu65c02.getHexString(pc, 4)+
+					" caller_pc=$"+Cpu65c02.getHexString(pc, 4)+
+					" op=$"+opcodeHex+
+					" target=$"+Cpu65c02.getHexString(jumpTarget, 4));
+		}
+		int readTarget = estimatePendingReadAddress(cpu, bus);
+		if( readTarget>=0 && inAddressRange(readTarget, rangeStart, rangeEnd) ) {
+			System.out.println("range_trace type=READ step="+step+
+					" pc=$"+Cpu65c02.getHexString(pc, 4)+
+					" reader_pc=$"+Cpu65c02.getHexString(pc, 4)+
+					" op=$"+opcodeHex+
+					" addr=$"+Cpu65c02.getHexString(readTarget, 4));
+		}
+		int writeTarget = estimatePendingWriteAddress(cpu, bus);
+		if( writeTarget>=0 && inAddressRange(writeTarget, rangeStart, rangeEnd) ) {
+			System.out.println("range_trace type=WRITE step="+step+
+					" pc=$"+Cpu65c02.getHexString(pc, 4)+
+					" writer_pc=$"+Cpu65c02.getHexString(pc, 4)+
+					" op=$"+opcodeHex+
+					" addr=$"+Cpu65c02.getHexString(writeTarget, 4));
+		}
 	}
 
 	private static boolean isHeadlessMode() {
