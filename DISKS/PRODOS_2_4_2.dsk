@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="generator" content="Bootstrap Listr">
+  <meta name="description" content="A collection of past and current Apple II FTP sites. ftp.apple.asimov.net is synced daily">
+  <meta name="keywords" content="what is the apple iigs, apple ii images, disk images, apple ii circuit, applesoft basic">
+  <title>APPLE2.ORG.ZA - Mirrors</title>
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Apple II software mirrors">
+  <meta property="og:description" content="A collection of past and current Apple II FTP sites. ftp.apple.asimov.net is synced daily.">
+  <meta property="og:site_name" content="APPLE2.ORG.ZA - Mirrors">
+  <meta property="og:url" content="https://mirrors.apple2.org.za">
+  <meta property="og:image" content="https://mirrors.apple2.org.za/a2mirrors.png">
+  <meta property="twitter:card" content="summary">
+  <meta property="twitter:title" content="Apple II software mirrors">
+  <meta property="twitter:description" content="A collection of past and current Apple II FTP sites. ftp.apple.asimov.net is synced daily.">
+  <meta property="twitter:image" content="https://mirrors.apple2.org.za/a2mirrors-twitter.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/4.5.1/lumen/bootstrap.min.css">
+  <link rel="stylesheet" href="https://mirrors.apple2.org.za//assets/css/listr.min.css">
+</head>
+<body dir="ltr">
+  <div class="container">
+    <div class="alert alert-warning alert-dismissible fade in" role="alert">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>
+      <span class="text-center"><strong>Error 404: Not found</strong><br/>The file &quot;1&quot; was not found on this server. You have been automatically forwarded to the start page.</span>
+    </div>
+      <nav class="breadcrumb" dir="ltr">
+        <a class="breadcrumb-item" rel="me" href="https://apple2.org.za/@0x3d0g"><i class="fa-brands fa-mastodon"></i> </a>
+        <a class="breadcrumb-item" href="/"><i class="fa fa-fw fa-home fa-lg"></i> </a>
+      </nav>
+    <div class="row justify-content-end">
+      <div class="col-xs-12 col-sm-5 col-md-4 col-sm-offset-7 col-md-offset-8">
+          <div class="form-group">
+            <label class="form-control-label sr-only" for="listr-search">Search</label>
+            <input type="text" id="listr-search" class="form-control" placeholder="Search">
+         </div>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table id="listr-table" class="table ">
+        <thead>
+          <tr>
+            <th class="text-left" data-sort="string">Name</th>
+            <th class="text-right " data-sort="int">Size</th>
+            <th class="text-right " data-sort="int">Modified</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" data-sort-value="dir-apple.cabi.net"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="apple.cabi.net/" ><strong>apple.cabi.net</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072955" title="2022-11-10 11:35:55">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-apple2.archive.umich.edu"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="apple2.archive.umich.edu/" ><strong>apple2.archive.umich.edu</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072900" title="2022-11-10 11:35:00">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-apple2.caltech.edu"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="apple2.caltech.edu/" ><strong>apple2.caltech.edu</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072954" title="2022-11-10 11:35:54">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-apple ii diskware"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="Apple%20II%20Diskware/" ><strong>Apple II Diskware</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668071643" title="2022-11-10 11:14:03">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-apple ii documentation project"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="Apple%20II%20Documentation%20Project/" ><strong>Apple II Documentation Project</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1763232649" title="2025-11-15 20:50:49">4 months ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-avsystems"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="AVSystems/" ><strong>AVSystems</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072955" title="2022-11-10 11:35:55">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-collection_4am"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="Collection_4am/" ><strong>Collection_4am</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1771026115" title="2026-02-14 01:41:55">1 month ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-collection_san_inc"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="Collection_san_inc/" ><strong>Collection_san_inc</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1773531627" title="2026-03-15 01:40:27">1 week ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-computist-project.net"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="computist-project.net/" ><strong>computist-project.net</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1589283501" title="2020-05-12 13:38:21">5 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-ftp.apple.asimov.net"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="ftp.apple.asimov.net/" ><strong>ftp.apple.asimov.net</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1767838320" title="2026-01-08 04:12:00">2 months ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-ftp.gno.org"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="ftp.gno.org/" ><strong>ftp.gno.org</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072955" title="2022-11-10 11:35:55">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-ftp.info.apple.com"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="ftp.info.apple.com/" ><strong>ftp.info.apple.com</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072956" title="2022-11-10 11:35:56">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-ground.icaen.uiowa.edu"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="ground.icaen.uiowa.edu/" ><strong>ground.icaen.uiowa.edu</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072956" title="2022-11-10 11:35:56">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-home.tiscali.se"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="home.tiscali.se/" ><strong>home.tiscali.se</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072958" title="2022-11-10 11:35:58">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-landover.no-ip.com"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="landover.no-ip.com/" ><strong>landover.no-ip.com</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072958" title="2022-11-10 11:35:58">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-tarnover.org"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="tarnover.org/" ><strong>tarnover.org</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072958" title="2022-11-10 11:35:58">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-www.bitsavers.org"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="www.bitsavers.org/" ><strong>www.bitsavers.org</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668071892" title="2022-11-10 11:18:12">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-www.chez.com"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="www.chez.com/" ><strong>www.chez.com</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1668072958" title="2022-11-10 11:35:58">3 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="dir-www.textfiles.com"><i class="fa fa-fw fa-folder fontawesome" aria-hidden="true"></i>&nbsp;<a href="www.textfiles.com/" ><strong>www.textfiles.com</strong></a></td>
+            <td class="text-right " data-sort-value="-1">&mdash;</td>
+            <td class="text-right " data-sort-value="1699018753" title="2023-11-03 15:39:13">2 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-apple.cabi.net-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="apple.cabi.net-complete_site.tar.gz"  data-size="449.5 MB">apple.cabi.net-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="471338745" title="471338745 bytes">449.5 MB</td>
+            <td class="text-right " data-sort-value="1478070447" title="2016-11-02 09:07:27">9 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-apple2.archive.umich.edu-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="apple2.archive.umich.edu-complete_site.tar.gz"  data-size="49.3 MB">apple2.archive.umich.edu-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="51691926" title="51691926 bytes">49.3 MB</td>
+            <td class="text-right " data-sort-value="1478070222" title="2016-11-02 09:03:42">9 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-apple2.caltech.edu-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="apple2.caltech.edu-complete_site.tar.gz"  data-size="139.53 MB">apple2.caltech.edu-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="146310136" title="146310136 bytes">139.53 MB</td>
+            <td class="text-right " data-sort-value="1478070298" title="2016-11-02 09:04:58">9 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-apple_ii_documentation_project-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="Apple_II_Documentation_Project-complete_site.tar.gz"  data-size="17.22 GB">Apple_II_Documentation_Project-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="18492995418" title="18492995418 bytes">17.22 GB</td>
+            <td class="text-right " data-sort-value="1737994348" title="2025-01-27 18:12:28">1 year ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-avsystems-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="AVSystems-complete_site.tar.gz"  data-size="41.91 MB">AVSystems-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="43946826" title="43946826 bytes">41.91 MB</td>
+            <td class="text-right " data-sort-value="1478070483" title="2016-11-02 09:08:03">9 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-computist-project.net-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="computist-project.net-complete_site.tar.gz"  data-size="2.28 GB">computist-project.net-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="2452659211" title="2452659211 bytes">2.28 GB</td>
+            <td class="text-right " data-sort-value="1590474831" title="2020-05-26 08:33:51">5 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-ground.icaen.uiowa.edu-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="ground.icaen.uiowa.edu-complete_site.tar.gz"  data-size="1.53 GB">ground.icaen.uiowa.edu-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="1643830646" title="1643830646 bytes">1.53 GB</td>
+            <td class="text-right " data-sort-value="1529479092" title="2018-06-20 09:18:12">7 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-landover.no-ip.com-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="landover.no-ip.com-complete_site.tar.gz"  data-size="43.04 MB">landover.no-ip.com-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="45129049" title="45129049 bytes">43.04 MB</td>
+            <td class="text-right " data-sort-value="1478076832" title="2016-11-02 10:53:52">9 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-tarnover.org-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="tarnover.org-complete_site.tar.gz"  data-size="1.28 GB">tarnover.org-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="1374389245" title="1374389245 bytes">1.28 GB</td>
+            <td class="text-right " data-sort-value="1478077102" title="2016-11-02 10:58:22">9 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-www.chez.com-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="www.chez.com-complete_site.tar.gz"  data-size="12.37 MB">www.chez.com-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="12968360" title="12968360 bytes">12.37 MB</td>
+            <td class="text-right " data-sort-value="1478084414" title="2016-11-02 13:00:14">9 years ago</td>
+          </tr>
+          <tr>
+            <td class="text-left" data-sort-value="file-www.textfiles.com-complete_site.tar.gz"><i class="fa fa-fw fa-archive fontawesome" aria-hidden="true"></i>&nbsp;<a  href="www.textfiles.com-complete_site.tar.gz"  data-size="9.31 MB">www.textfiles.com-complete_site.tar.gz</a></td>
+            <td class="text-right " data-sort-value="9761400" title="9761400 bytes">9.31 MB</td>
+            <td class="text-right " data-sort-value="1478084451" title="2016-11-02 13:00:51">9 years ago</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">
+              <small class="float-left text-muted" dir="ltr">19 folders and 11 files, 23.05 GB in total</small>
+                          </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div id="viewer-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="file-name" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title text-left" id="file-name">&nbsp;</h4>
+            <button type="button" class="close float-xs-right" data-dismiss="modal" aria-hidden="true">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center">
+              <span class="text-muted">Loading</span>            </div>
+          </div>
+          <div class="modal-footer justify-content-between">
+            <small id="file-meta" class="text-muted"></small>
+            <div class="float-xs-right">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+
+              <div class="btn-group">
+                <a href="#" class="btn btn-primary fullview" download>Download</a>
+                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item email-link"><i class="fa fa-fw fa-envelope" aria-hidden="true"></i> Email</a>
+                  <a class="dropdown-item facebook-link"><i class="fa fa-fw fa-facebook" aria-hidden="true"></i> Facebook</a>
+                  <a class="dropdown-item google-link"><i class="fa fa-fw fa-google-plus" aria-hidden="true"></i> Google+</a>
+                  <a class="dropdown-item twitter-link"><i class="fa fa-fw fa-twitter" aria-hidden="true"></i> Twitter</a>
+                  <a class="dropdown-item mastodon-link"><i class="fa fa-fw fa-mastodon" aria-hidden="true"></i> Mastodon</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/stupidtable/0.0.1/stupidtable.min.js" integrity="sha384-i1hs1xV885ynDTpLx248kPSNT7iUxg+8qxUH4P5Sm/5G8WDsvIHTh05JlnYudqPl" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-searcher/0.3.0/jquery.searcher.min.js" integrity="sha384-A6+kTd11VgS2MPZZJ4CYYejyK8bxtMy+adWyX15fwQz+7irAhCG8MAuX7UNzjXsH" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://mirrors.apple2.org.za//assets/js/listr.min.js"></script>
+  <a href="https://apple2.org.za/safetyghostly.php"><span style="display: none;">fortyfive-suspension</span></a>
+</body>
+</html>
