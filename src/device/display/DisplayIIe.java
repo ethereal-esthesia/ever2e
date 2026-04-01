@@ -149,6 +149,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private static final int PAL_INDEX_COLOR = 0;
 	private static final int PAL_INDEX_MONO = 48;
 	private static final int PAL_INDEX_MONO_GREEN = 2*48;
+	private static final float NO_PADDLE_NORMALIZED = 1.0f;
 	private static final int PAL_BRIGHTNESS = 160;
 	private static final int COLOR_BLACK = 0xFF000000;
 	private static final int COLOR_WHITE = 0xFFFFFFFF;
@@ -2315,8 +2316,8 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				memoryBus.setGameButton(2, false);
 			}
 			else {
-				memoryBus.setPaddleNormalized(2, 0.5f);
-				memoryBus.setPaddleNormalized(3, 0.5f);
+				memoryBus.setPaddleNormalized(2, NO_PADDLE_NORMALIZED);
+				memoryBus.setPaddleNormalized(3, NO_PADDLE_NORMALIZED);
 				memoryBus.setGameButton(0, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_SOUTH));
 				memoryBus.setGameButton(1, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_EAST));
 				memoryBus.setGameButton(2, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_LEFT_STICK));
@@ -2326,19 +2327,19 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		ensureOpenJoystickFallback();
 		if( sdlJoystick!=0L ) {
 			int axisCount = SDLJoystick.SDL_GetNumJoystickAxes(sdlJoystick);
-			float x = axisCount>0 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 0)) : 0.5f;
-			float y = axisCount>1 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 1)) : 0.5f;
+			float x = axisCount>0 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 0)) : NO_PADDLE_NORMALIZED;
+			float y = axisCount>1 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 1)) : NO_PADDLE_NORMALIZED;
 			memoryBus.setPaddleNormalized(0, x);
 			memoryBus.setPaddleNormalized(1, y);
 			if( dualJoystickMode ) {
-				float x2 = axisCount>2 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 2)) : 0.5f;
-				float y2 = axisCount>3 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 3)) : 0.5f;
+				float x2 = axisCount>2 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 2)) : NO_PADDLE_NORMALIZED;
+				float y2 = axisCount>3 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 3)) : NO_PADDLE_NORMALIZED;
 				memoryBus.setPaddleNormalized(2, x2);
 				memoryBus.setPaddleNormalized(3, y2);
 			}
 			else {
-				memoryBus.setPaddleNormalized(2, 0.5f);
-				memoryBus.setPaddleNormalized(3, 0.5f);
+				memoryBus.setPaddleNormalized(2, NO_PADDLE_NORMALIZED);
+				memoryBus.setPaddleNormalized(3, NO_PADDLE_NORMALIZED);
 			}
 			int buttonCount = SDLJoystick.SDL_GetNumJoystickButtons(sdlJoystick);
 			if( dualJoystickMode ) {
@@ -2356,10 +2357,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		memoryBus.setGameButton(0, false);
 		memoryBus.setGameButton(1, false);
 		memoryBus.setGameButton(2, false);
-		memoryBus.setPaddleNormalized(0, 0.5f);
-		memoryBus.setPaddleNormalized(1, 0.5f);
-		memoryBus.setPaddleNormalized(2, 0.5f);
-		memoryBus.setPaddleNormalized(3, 0.5f);
+		memoryBus.setPaddleNormalized(0, NO_PADDLE_NORMALIZED);
+		memoryBus.setPaddleNormalized(1, NO_PADDLE_NORMALIZED);
+		memoryBus.setPaddleNormalized(2, NO_PADDLE_NORMALIZED);
+		memoryBus.setPaddleNormalized(3, NO_PADDLE_NORMALIZED);
 	}
 
 	private void ensureOpenGamepad() {

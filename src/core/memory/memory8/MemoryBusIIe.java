@@ -17,7 +17,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 	private KeyboardIIe keyboard;
 	private VideoSignalSource monitor;
-	private final float[] paddleNormalized = new float[] {0.5f, 0.5f, 0.5f, 0.5f};
+	private final float[] paddleNormalized = new float[] {1.0f, 1.0f, 1.0f, 1.0f};
 	private final int[] paddleCountdown = new int[] {0, 0, 0, 0};
 	private final boolean[] gameButtons = new boolean[] {false, false, false};
 	private static final int PADDLE_COUNTDOWN_MIN = 2;
@@ -1304,7 +1304,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 		for( int i = 0; i<gameButtons.length; i++ )
 			gameButtons[i] = false;
 		for( int i = 0; i<paddleNormalized.length; i++ )
-			paddleNormalized[i] = 0.5f;
+			paddleNormalized[i] = 1.0f;
 		reloadPaddleCountdowns();
 		switchIteration++;
 		for( int i = 0; i<6; i++ ) 
