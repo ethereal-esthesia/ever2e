@@ -263,11 +263,13 @@ public class KeyboardIIe extends Keyboard {
 
 		default:
 			if( pasteInputSuppressed ) {
-				// If user starts typing while paste is pending, prefer live input
-				// and drop queued paste to avoid a stuck "no keys work" state.
-				clearQueuedKeys();
-				clearPendingKeyInputQueue();
-				clearHeldKeyState();
+				// Keep queued Shift+Insert paste running unless user explicitly
+				// cancels it (Esc). Ctrl+reset path already clears independently.
+				if( keyIndex==EmuKey.VK_ESCAPE ) {
+					clearQueuedKeys();
+					clearPendingKeyInputQueue();
+					clearHeldKeyState();
+				}
 			}
 			boolean effectiveShiftDown = shiftDown || (modifierSet&KEY_MASK_SHIFT)!=0;
 			// For Ctrl+printable input, prefer the host-mapped printable character
