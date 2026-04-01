@@ -939,7 +939,6 @@ public class MemoryBusIIe extends MemoryBus8 {
 		/// TODO: replace this warning with nullSwitch
 		ioSwitches.assignNextBlock(0xc000, warnSwitch);
 		ioSwitches.completeBlock();
-		// TODO: c000 - c000F actually reads keyboard not monitor
 		ioSwitches.assignBlock(0xc000, new SwitchKeyboardStrobe(null));
 		ioSwitches.assignBlock(0xc001, new SwitchSetOnlyIIe(switch80Store));
 		ioSwitches.assignBlock(0xc002, new SwitchClearOnlyIIe(switchRamRead));
