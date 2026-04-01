@@ -131,6 +131,10 @@ Windowed run (alias task):
   - Enable SDL mouse/cursor logging to stderr (`[debug] sdl_cursor ... x=.. y=..`).
 - `--start-fullscreen`
   - Start directly in fullscreen mode.
+- `--dual-joystick-mode`
+  - Map two virtual Apple joysticks from one SDL controller:
+  - `PDL0/PDL1` from left stick, `PDL2/PDL3` from right stick.
+  - `PB0` = left-stick click, `PB1` = right-stick click, `PB2` forced off.
 - `--mac-allow-process-switching`
   - macOS fullscreen opt-out for process-switch lock.
   - By default, fullscreen disables process switching (Cmd+Tab) while focused.
@@ -287,3 +291,4 @@ Override example:
 
 - Revamping sound routines
 - The only card currently supported outside of the stock 64K expansion board is a virtualized 5.25" Floppy Controller Card
+- Joystick calibration/deadzone customization is not exposed yet (current mapping is raw normalized SDL axis values)

@@ -276,6 +276,7 @@ public class Emulator8Coordinator {
 		boolean startFullscreen = false;
 		boolean startHidden = false;
 		boolean macAllowProcessSwitching = false;
+		boolean dualJoystickMode = false;
 		String textInputMode = "off";
 		String sdlFullscreenMode = "exclusive";
 		boolean sdlImeUiSelf = false;
@@ -403,6 +404,12 @@ public class Emulator8Coordinator {
 			else if( "--mac-kiosk-grab".equals(arg) ) {
 				// Backward-compatible alias: lock is now the default in fullscreen.
 				macAllowProcessSwitching = false;
+			}
+			else if( "--dual-joystick-mode".equals(arg) ) {
+				dualJoystickMode = true;
+			}
+			else if( arg.startsWith("--dual-joystick-mode=") ) {
+				dualJoystickMode = Boolean.parseBoolean(arg.substring("--dual-joystick-mode=".length()));
 			}
 			else if( "--text-input-mode".equals(arg) ) {
 				if( i+1>=argList.length )
@@ -638,12 +645,14 @@ public class Emulator8Coordinator {
 				sdlImeUiSelf,
 				debugLogging,
 				mouseDebug,
-				macAllowProcessSwitching);
+				macAllowProcessSwitching,
+				dualJoystickMode);
 		if( debugLogging ) {
 			System.err.println("[debug] launch_config windowBackend=sdl"+
 					" startFullscreen="+startFullscreen+
 					" startHidden="+startHidden+
 					" macAllowProcessSwitching="+macAllowProcessSwitching+
+					" dualJoystickMode="+dualJoystickMode+
 					" mouseDebug="+mouseDebug+
 					" sdlImeUiSelf="+sdlImeUiSelf+
 					" textInputMode="+textInputMode+

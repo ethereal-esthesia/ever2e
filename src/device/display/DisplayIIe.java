@@ -17,6 +17,8 @@ import org.lwjgl.sdl.SDLHints;
 import org.lwjgl.sdl.SDLPixels;
 import org.lwjgl.sdl.SDLRender;
 import org.lwjgl.sdl.SDLVideo;
+import org.lwjgl.sdl.SDLGamepad;
+import org.lwjgl.sdl.SDLJoystick;
 import org.lwjgl.sdl.SDL_Event;
 import org.lwjgl.sdl.SDL_FRect;
 import org.lwjgl.sdl.SDL_Rect;
@@ -42,6 +44,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private final boolean sdlTextAnchorDebug;
 	private final boolean sdlMouseDebug;
 	private final boolean macAllowProcessSwitching;
+	private final boolean dualJoystickMode;
 	private volatile Runnable closeRequestHook;
 
 	public static final class LaunchConfig {
@@ -54,6 +57,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		public final boolean sdlTextAnchorDebug;
 		public final boolean sdlMouseDebug;
 		public final boolean macAllowProcessSwitching;
+		public final boolean dualJoystickMode;
 
 		public LaunchConfig(
 				boolean keyLoggingEnabled,
@@ -64,7 +68,8 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 				boolean sdlImeUiSelfImplemented,
 				boolean sdlTextAnchorDebug,
 				boolean sdlMouseDebug,
-				boolean macAllowProcessSwitching) {
+				boolean macAllowProcessSwitching,
+				boolean dualJoystickMode) {
 			this.keyLoggingEnabled = keyLoggingEnabled;
 			this.startFullscreenOnLaunch = startFullscreenOnLaunch;
 			this.startHiddenOnLaunch = startHiddenOnLaunch;
@@ -74,10 +79,11 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 			this.sdlTextAnchorDebug = sdlTextAnchorDebug;
 			this.sdlMouseDebug = sdlMouseDebug;
 			this.macAllowProcessSwitching = macAllowProcessSwitching;
+			this.dualJoystickMode = dualJoystickMode;
 		}
 
 		public static LaunchConfig defaults() {
-			return new LaunchConfig(false, false, false, "off", "exclusive", false, false, false, false);
+			return new LaunchConfig(false, false, false, "off", "exclusive", false, false, false, false, false);
 		}
 	}
 
@@ -134,6 +140,10 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 	private boolean windowFocused = true;
 	private boolean mouseInsideWindow;
 	private boolean enforcingConfiguredFullscreenMode;
+	private long sdlGamepad;
+	private int sdlGamepadId = -1;
+	private long sdlJoystick;
+	private int sdlJoystickId = -1;
 	private final MacPresentationController macPresentation = new MacPresentationController();
 
 	private static final int PAL_INDEX_COLOR = 0;
@@ -1381,6 +1391,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		this.sdlTextAnchorDebug = effectiveConfig.sdlTextAnchorDebug;
 		this.sdlMouseDebug = effectiveConfig.sdlMouseDebug;
 		this.macAllowProcessSwitching = effectiveConfig.macAllowProcessSwitching;
+		this.dualJoystickMode = effectiveConfig.dualJoystickMode;
 		this.keyboard = keyboard;
 		
 		setMemoryBus(memoryBus);
@@ -1410,7 +1421,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		SDLHints.SDL_SetHint(SDLHints.SDL_HINT_IME_IMPLEMENTED_UI, sdlImeUiSelfImplemented ? "1" : "0");
 		if( sdlTextAnchorDebug )
 			System.err.println("[debug] sdl_init step=init_video_events");
-		if( !SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO | SDLInit.SDL_INIT_EVENTS) ) {
+		if( !SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO | SDLInit.SDL_INIT_EVENTS | SDLInit.SDL_INIT_GAMEPAD | SDLInit.SDL_INIT_JOYSTICK) ) {
 			throw new HardwareException("Unable to initialize SDL: " + SDLError.SDL_GetError());
 		}
 		if( sdlTextAnchorDebug )
@@ -1858,6 +1869,7 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		if( sdlWindow==0L )
 			return;
 		snapshotWindowedBounds();
+		updateGamepadInputState();
 		ensureStartupWindowShownAndFocused();
 		if( pendingSdlTextInputModeApply && initializationComplete ) {
 			pendingSdlTextInputModeApply = false;
@@ -2025,6 +2037,16 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 
 	private void closeSdlWindow(boolean quitSdl) {
 		applyMacPresentationLock("close_window_pre");
+		if( sdlGamepad!=0L ) {
+			SDLGamepad.SDL_CloseGamepad(sdlGamepad);
+			sdlGamepad = 0L;
+			sdlGamepadId = -1;
+		}
+		if( sdlJoystick!=0L ) {
+			SDLJoystick.SDL_CloseJoystick(sdlJoystick);
+			sdlJoystick = 0L;
+			sdlJoystickId = -1;
+		}
 		if( sdlWindow!=0L )
 			setSdlInputGrab(false, "close_window");
 		if( sdlTexture!=0L ) {
@@ -2270,6 +2292,122 @@ public class DisplayIIe extends DisplayWindow implements VideoSignalSource {
 		setSdlInputGrab(windowFocused, source+"_leave");
 		updateSdlCursorVisibility(source+"_leave");
 		applyMacPresentationLock(source+"_leave");
+	}
+
+	private void updateGamepadInputState() {
+		if( memoryBus==null )
+			return;
+		SDLGamepad.SDL_UpdateGamepads();
+		SDLJoystick.SDL_UpdateJoysticks();
+		ensureOpenGamepad();
+		if( sdlGamepad!=0L ) {
+			float leftX = normalizeGamepadAxis(SDLGamepad.SDL_GetGamepadAxis(sdlGamepad, SDLGamepad.SDL_GAMEPAD_AXIS_LEFTX));
+			float leftY = normalizeGamepadAxis(SDLGamepad.SDL_GetGamepadAxis(sdlGamepad, SDLGamepad.SDL_GAMEPAD_AXIS_LEFTY));
+			memoryBus.setPaddleNormalized(0, leftX);
+			memoryBus.setPaddleNormalized(1, leftY);
+			if( dualJoystickMode ) {
+				float rightX = normalizeGamepadAxis(SDLGamepad.SDL_GetGamepadAxis(sdlGamepad, SDLGamepad.SDL_GAMEPAD_AXIS_RIGHTX));
+				float rightY = normalizeGamepadAxis(SDLGamepad.SDL_GetGamepadAxis(sdlGamepad, SDLGamepad.SDL_GAMEPAD_AXIS_RIGHTY));
+				memoryBus.setPaddleNormalized(2, rightX);
+				memoryBus.setPaddleNormalized(3, rightY);
+				memoryBus.setGameButton(0, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_LEFT_STICK));
+				memoryBus.setGameButton(1, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_RIGHT_STICK));
+				memoryBus.setGameButton(2, false);
+			}
+			else {
+				memoryBus.setPaddleNormalized(2, 0.5f);
+				memoryBus.setPaddleNormalized(3, 0.5f);
+				memoryBus.setGameButton(0, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_SOUTH));
+				memoryBus.setGameButton(1, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_EAST));
+				memoryBus.setGameButton(2, SDLGamepad.SDL_GetGamepadButton(sdlGamepad, SDLGamepad.SDL_GAMEPAD_BUTTON_LEFT_STICK));
+			}
+			return;
+		}
+		ensureOpenJoystickFallback();
+		if( sdlJoystick!=0L ) {
+			int axisCount = SDLJoystick.SDL_GetNumJoystickAxes(sdlJoystick);
+			float x = axisCount>0 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 0)) : 0.5f;
+			float y = axisCount>1 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 1)) : 0.5f;
+			memoryBus.setPaddleNormalized(0, x);
+			memoryBus.setPaddleNormalized(1, y);
+			if( dualJoystickMode ) {
+				float x2 = axisCount>2 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 2)) : 0.5f;
+				float y2 = axisCount>3 ? normalizeGamepadAxis(SDLJoystick.SDL_GetJoystickAxis(sdlJoystick, 3)) : 0.5f;
+				memoryBus.setPaddleNormalized(2, x2);
+				memoryBus.setPaddleNormalized(3, y2);
+			}
+			else {
+				memoryBus.setPaddleNormalized(2, 0.5f);
+				memoryBus.setPaddleNormalized(3, 0.5f);
+			}
+			int buttonCount = SDLJoystick.SDL_GetNumJoystickButtons(sdlJoystick);
+			if( dualJoystickMode ) {
+				memoryBus.setGameButton(0, buttonCount>0 && SDLJoystick.SDL_GetJoystickButton(sdlJoystick, 0));
+				memoryBus.setGameButton(1, buttonCount>1 && SDLJoystick.SDL_GetJoystickButton(sdlJoystick, 1));
+				memoryBus.setGameButton(2, false);
+			}
+			else {
+				memoryBus.setGameButton(0, buttonCount>0 && SDLJoystick.SDL_GetJoystickButton(sdlJoystick, 0));
+				memoryBus.setGameButton(1, buttonCount>1 && SDLJoystick.SDL_GetJoystickButton(sdlJoystick, 1));
+				memoryBus.setGameButton(2, buttonCount>2 && SDLJoystick.SDL_GetJoystickButton(sdlJoystick, 2));
+			}
+			return;
+		}
+		memoryBus.setGameButton(0, false);
+		memoryBus.setGameButton(1, false);
+		memoryBus.setGameButton(2, false);
+		memoryBus.setPaddleNormalized(0, 0.5f);
+		memoryBus.setPaddleNormalized(1, 0.5f);
+		memoryBus.setPaddleNormalized(2, 0.5f);
+		memoryBus.setPaddleNormalized(3, 0.5f);
+	}
+
+	private void ensureOpenGamepad() {
+		if( sdlGamepad!=0L && SDLGamepad.SDL_GamepadConnected(sdlGamepad) )
+			return;
+		if( sdlGamepad!=0L ) {
+			SDLGamepad.SDL_CloseGamepad(sdlGamepad);
+			sdlGamepad = 0L;
+			sdlGamepadId = -1;
+		}
+		java.nio.IntBuffer gamepads = SDLGamepad.SDL_GetGamepads();
+		if( gamepads==null || gamepads.remaining()==0 )
+			return;
+		int gamepadId = gamepads.get(0);
+		long handle = SDLGamepad.SDL_OpenGamepad(gamepadId);
+		if( handle==0L )
+			return;
+		sdlGamepad = handle;
+		sdlGamepadId = gamepadId;
+	}
+
+	private void ensureOpenJoystickFallback() {
+		if( sdlJoystick!=0L && SDLJoystick.SDL_JoystickConnected(sdlJoystick) )
+			return;
+		if( sdlJoystick!=0L ) {
+			SDLJoystick.SDL_CloseJoystick(sdlJoystick);
+			sdlJoystick = 0L;
+			sdlJoystickId = -1;
+		}
+		java.nio.IntBuffer joysticks = SDLJoystick.SDL_GetJoysticks();
+		if( joysticks==null || joysticks.remaining()==0 )
+			return;
+		int joystickId = joysticks.get(0);
+		long handle = SDLJoystick.SDL_OpenJoystick(joystickId);
+		if( handle==0L )
+			return;
+		sdlJoystick = handle;
+		sdlJoystickId = joystickId;
+	}
+
+	private static float normalizeGamepadAxis(short value) {
+		int raw = value;
+		float normalized = (raw + 32768f) / 65535f;
+		if( normalized<0f )
+			return 0f;
+		if( normalized>1f )
+			return 1f;
+		return normalized;
 	}
 
 	private void applyMacPresentationLock(String source) {

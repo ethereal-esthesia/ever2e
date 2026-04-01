@@ -17,6 +17,11 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 	private KeyboardIIe keyboard;
 	private VideoSignalSource monitor;
+	private final float[] paddleNormalized = new float[] {0.5f, 0.5f, 0.5f, 0.5f};
+	private final int[] paddleCountdown = new int[] {0, 0, 0, 0};
+	private final boolean[] gameButtons = new boolean[] {false, false, false};
+	private static final int PADDLE_COUNTDOWN_MIN = 2;
+	private static final int PADDLE_COUNTDOWN_RANGE = 280;
 
 	private SwitchState switch80Store = new SwitchState();
 	private SwitchState switchHiRes = new SwitchState();
@@ -128,13 +133,32 @@ public class MemoryBusIIe extends MemoryBus8 {
 	private SwitchIIe paddleTimerSwitch = new SwitchIIe(null) {
 		@Override
 		public int readMem(int address) {
-			// With no active paddle countdown, Apple IIe reads return bit 7 high.
-			// Keep floating-bus bits 0-6 to match MAME readback shape.
-			return (super.readMem(address)&0x7f) | 0x80;
+			int paddleIndex = (address&0x3);
+			if( paddleIndex<0 || paddleIndex>=paddleCountdown.length )
+				return (super.readMem(address)&0x7f) | 0x80;
+			if( paddleCountdown[paddleIndex]>0 ) {
+				paddleCountdown[paddleIndex]--;
+				return (super.readMem(address)&0x7f) | 0x80;
+			}
+			return super.readMem(address)&0x7f;
 		}
 
 		@Override
 		public void writeMem(int address, int value) {
+			reloadPaddleCountdowns();
+		}
+	};
+
+	private SwitchIIe paddleStrobeSwitch = new SwitchIIe(null) {
+		@Override
+		public int readMem(int address) {
+			reloadPaddleCountdowns();
+			return super.readMem(address);
+		}
+
+		@Override
+		public void writeMem(int address, int value) {
+			reloadPaddleCountdowns();
 		}
 	};
 	
@@ -534,7 +558,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 	// Bit 7 is used to indicate if open apple or PB0 game button is pressed
 	private SwitchIIe stateOpenApple = new SwitchReadOnlyIIe(null) {
 		public int readMem( int address ) {
-			return (keyboard!=null && keyboard.isAppleKey() /* || joystick.getButton(0) */ ) ?
+			return ((keyboard!=null && keyboard.isAppleKey()) || gameButtons[0]) ?
 				super.readMem(address)|0x80 : super.readMem(address)&0x7f; }
 	};
 
@@ -542,7 +566,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 	// Bit 7 is used to indicate if open apple / option key or PB1 game button is pressed
 	private SwitchIIe stateOptionKey = new SwitchReadOnlyIIe(null) {
 		public int readMem( int address ) {
-			return (keyboard!=null && keyboard.isOptionKey() /* || joystick.getButton(1) */ ) ?
+			return ((keyboard!=null && keyboard.isOptionKey()) || gameButtons[1]) ?
 					super.readMem(address)|0x80 : super.readMem(address)&0x7f; }
 	};
 
@@ -550,7 +574,7 @@ public class MemoryBusIIe extends MemoryBus8 {
 	// Bit 7 is used to indicate if open apple or PB0 game button is pressed
 	private SwitchIIe stateShiftKey = new SwitchReadOnlyIIe(null) {
 		public int readMem( int address ) {
-			return (keyboard!=null && keyboard.isShiftKey() /* || joystick.getButton(2) */ ) ?
+			return ((keyboard!=null && keyboard.isShiftKey()) || gameButtons[2]) ?
 					super.readMem(address)|0x80 : super.readMem(address)&0x7f; }
 	};
 
@@ -1011,6 +1035,22 @@ public class MemoryBusIIe extends MemoryBus8 {
 		ioSwitches.assignBlock(0xc06e, paddleTimerSwitch);
 		ioSwitches.assignBlock(0xc06f, paddleTimerSwitch);
 		// c070 - Paddle strobe, likely - c07f as well
+		ioSwitches.assignBlock(0xc070, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc071, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc072, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc073, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc074, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc075, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc076, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc077, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc078, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc079, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc07a, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc07b, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc07c, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc07d, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc07e, paddleStrobeSwitch);
+		ioSwitches.assignBlock(0xc07f, paddleStrobeSwitch);
 		ioSwitches.assignBlock(0xc080, switchIo_c080_c084);
 		ioSwitches.assignBlock(0xc081, switchIo_c081_c085);
 		ioSwitches.assignBlock(0xc082, switchIo_c082_c086);
@@ -1152,15 +1192,15 @@ public class MemoryBusIIe extends MemoryBus8 {
 				}
 				case 0xc061:
 				case 0xc069: {
-					return (keyboard!=null && keyboard.isAppleKey()) ? 0x80 : 0x00;
+					return ((keyboard!=null && keyboard.isAppleKey()) || gameButtons[0]) ? 0x80 : 0x00;
 				}
 				case 0xc062:
 				case 0xc06a: {
-					return (keyboard!=null && keyboard.isOptionKey()) ? 0x80 : 0x00;
+					return ((keyboard!=null && keyboard.isOptionKey()) || gameButtons[1]) ? 0x80 : 0x00;
 				}
 				case 0xc063:
 				case 0xc06b: {
-					return (keyboard!=null && keyboard.isShiftKey()) ? 0x80 : 0x00;
+					return ((keyboard!=null && keyboard.isShiftKey()) || gameButtons[2]) ? 0x80 : 0x00;
 				}
 				case 0xc060:
 				case 0xc068: {
@@ -1175,8 +1215,26 @@ public class MemoryBusIIe extends MemoryBus8 {
 				case 0xc06d:
 				case 0xc06e:
 				case 0xc06f: {
-					// With no active paddle timer event, reads default to bit 7 high.
-					return 0x80;
+					int paddleIndex = address&0x3;
+					return paddleCountdown[paddleIndex]>0 ? 0x80 : 0x00;
+				}
+				case 0xc070:
+				case 0xc071:
+				case 0xc072:
+				case 0xc073:
+				case 0xc074:
+				case 0xc075:
+				case 0xc076:
+				case 0xc077:
+				case 0xc078:
+				case 0xc079:
+				case 0xc07a:
+				case 0xc07b:
+				case 0xc07c:
+				case 0xc07d:
+				case 0xc07e:
+				case 0xc07f: {
+					return 0x00;
 				}
 				default:
 					return 0x00;
@@ -1243,6 +1301,11 @@ public class MemoryBusIIe extends MemoryBus8 {
 		switchAn1.resetState();
 		switchAn2.resetState();
 		switchAn3.resetState();
+		for( int i = 0; i<gameButtons.length; i++ )
+			gameButtons[i] = false;
+		for( int i = 0; i<paddleNormalized.length; i++ )
+			paddleNormalized[i] = 0.5f;
+		reloadPaddleCountdowns();
 		switchIteration++;
 		for( int i = 0; i<6; i++ ) 
 			if( slotSwitchList[i]!=null )
@@ -1299,6 +1362,25 @@ public class MemoryBusIIe extends MemoryBus8 {
 
 	public void setDisplay( VideoSignalSource display ) {
 		this.monitor = display;
+	}
+
+	private void reloadPaddleCountdowns() {
+		for( int i = 0; i<paddleCountdown.length; i++ ) {
+			float clamped = Math.max(0f, Math.min(1f, paddleNormalized[i]));
+			paddleCountdown[i] = PADDLE_COUNTDOWN_MIN + Math.round(clamped * PADDLE_COUNTDOWN_RANGE);
+		}
+	}
+
+	public void setPaddleNormalized(int paddleIndex, float normalized) {
+		if( paddleIndex<0 || paddleIndex>=paddleNormalized.length )
+			return;
+		paddleNormalized[paddleIndex] = Math.max(0f, Math.min(1f, normalized));
+	}
+
+	public void setGameButton(int buttonIndex, boolean pressed) {
+		if( buttonIndex<0 || buttonIndex>=gameButtons.length )
+			return;
+		gameButtons[buttonIndex] = pressed;
 	}
 
 	public boolean is80Store() {

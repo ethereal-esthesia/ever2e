@@ -138,6 +138,17 @@ tasks.register('runSdlImeProbe', JavaExec) {
     }
 }
 
+tasks.register('runSdlJoystickProbe', JavaExec) {
+    group = 'application'
+    description = 'Enumerate SDL joystick/gamepad devices and print live axis/button events.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'tools.SdlJoystickProbe'
+    workingDir = projectDir
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        jvmArgs '-XstartOnFirstThread'
+    }
+}
+
 tasks.register('runAsmToBasicLoader', JavaExec) {
     group = 'application'
     description = 'Convert byte-oriented asm/listing text into an Applesoft BASIC DATA loader.'
