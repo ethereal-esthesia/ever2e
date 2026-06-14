@@ -336,7 +336,7 @@ public class Floppy525Controller extends PeripheralIIe {
 		try {
 			String fileName = this.fileName[drive].trim();
 			File file = new File(fileName);
-			readOnly[0] = !file.canWrite();
+			readOnly[drive] = !file.canWrite();
 			binStream = new FileInputStream(file);
 			String fileExt = fileName.trim().substring(fileName.lastIndexOf('.')+1).toUpperCase();
 			switch( fileExt ) {
@@ -375,6 +375,8 @@ public class Floppy525Controller extends PeripheralIIe {
 	}
 
 	private void saveImage( int drive ) {
+		if( readOnly[drive] )
+			return;
 
 		FileOutputStream binStream = null;
 		try {
