@@ -19,6 +19,7 @@ import java.util.PriorityQueue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class Floppy525ControllerTest {
 
@@ -140,6 +141,65 @@ public class Floppy525ControllerTest {
                         bus.peekByteNoSideEffects(PAYLOAD_ADDR + i));
             }
             assertEquals(0x4c, bus.peekByteNoSideEffects(PAYLOAD_LOOP));
+        } finally {
+            deleteRecursively(dir);
+        }
+    }
+
+    @Test
+    public void rejectsMissingConfiguredDiskImageBeforeInstallingSlot() throws Exception {
+        Path dir = Files.createTempDirectory("ever2e-floppy525-missing-");
+        try {
+            Path rom = dir.resolve("dummy.rom");
+            Path p6rom = dir.resolve("diskii-p6-test.rom");
+            Path emu = dir.resolve("missing.emu");
+
+            Files.write(rom, new byte[] { 0 });
+            Files.write(p6rom, buildDiskIIP6TestRom());
+            Files.writeString(emu,
+                    "machine.layout=APPLE_IIE\n" +
+                    "binary.file=dummy.rom\n" +
+                    "address.start=0xC000\n" +
+                    "machine.layout.slot.6.rom.file=" + p6rom.getFileName() + "\n" +
+                    "machine.layout.slot.6.drive.1.file=missing.nib\n",
+                    StandardCharsets.UTF_8);
+
+            try {
+                new Floppy525Controller(6, 1, new VirtualMachineProperties(emu.toString()));
+                fail("missing disk image should reject the controller during slot installation");
+            } catch (java.io.FileNotFoundException expected) {
+                assertTrue(expected.getMessage().contains("Drive 1 disk image not found"));
+            }
+        } finally {
+            deleteRecursively(dir);
+        }
+    }
+
+    @Test
+    public void rejectsDiskControllerWithNoConfiguredMedia() throws Exception {
+        Path dir = Files.createTempDirectory("ever2e-floppy525-empty-");
+        try {
+            Path rom = dir.resolve("dummy.rom");
+            Path p6rom = dir.resolve("diskii-p6-test.rom");
+            Path emu = dir.resolve("empty.emu");
+
+            Files.write(rom, new byte[] { 0 });
+            Files.write(p6rom, buildDiskIIP6TestRom());
+            Files.writeString(emu,
+                    "machine.layout=APPLE_IIE\n" +
+                    "binary.file=dummy.rom\n" +
+                    "address.start=0xC000\n" +
+                    "machine.layout.slot.6.rom.file=" + p6rom.getFileName() + "\n" +
+                    "machine.layout.slot.6.drive.1.file=\n" +
+                    "machine.layout.slot.6.drive.2.file=\n",
+                    StandardCharsets.UTF_8);
+
+            try {
+                new Floppy525Controller(6, 1, new VirtualMachineProperties(emu.toString()));
+                fail("empty disk configuration should reject the controller during slot installation");
+            } catch (java.io.FileNotFoundException expected) {
+                assertTrue(expected.getMessage().contains("No disk images configured"));
+            }
         } finally {
             deleteRecursively(dir);
         }

@@ -240,6 +240,10 @@ public class Floppy525Controller extends PeripheralIIe {
 		this.slot = slot;
 		fileName[0] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.1.file");
 		fileName[1] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.2.file");
+		if( isBlank(fileName[0]) && isBlank(fileName[1]) )
+			throw new FileNotFoundException("No disk images configured for slot "+slot);
+		validateConfiguredMedia(1, fileName[0]);
+		validateConfiguredMedia(2, fileName[1]);
 		rom256b = loadSlotRom(slot, properties);
 		driveOnPrevious = false;
 		headHalfTrack[0] = 69;
@@ -464,6 +468,18 @@ public class Floppy525Controller extends PeripheralIIe {
 		if( value==null || value.trim().isEmpty() )
 			return value;
 		return properties.resolvePath(value.trim()).toString();
+	}
+
+	private static void validateConfiguredMedia( int drive, String fileName ) throws IOException {
+		if( isBlank(fileName) )
+			return;
+		File file = new File(fileName.trim());
+		if( !file.isFile() )
+			throw new FileNotFoundException("Drive "+drive+" disk image not found: "+fileName);
+	}
+
+	private static boolean isBlank( String value ) {
+		return value==null || value.trim().isEmpty();
 	}
 	
 	@Override

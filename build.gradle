@@ -60,6 +60,7 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('run', JavaExec) {
     workingDir = projectDir
+    args 'ROMS/Apple2e.emu'
     if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
         jvmArgs '-XstartOnFirstThread'
     }
