@@ -268,12 +268,6 @@ One-command smoke task:
 ./gradlew smoke
 ```
 
-Clean Disk II P6 boot smoke:
-
-```bash
-./gradlew smokeP6Boot
-```
-
 Defaults used by `smoke`:
 - `smokeEmuFile=ROMS/Apple2e.emu`
 - `smokeSteps=250000`
