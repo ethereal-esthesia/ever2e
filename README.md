@@ -119,6 +119,12 @@ Windowed run (alias task):
   - Stop execution when PC reaches any provided address (hex `0x....` or decimal). May be repeated.
 - `--paste-file <path>`
   - Queue BASIC source text into the keyboard input queue at startup (same CR conversion as paste).
+- `--set <name=value>`
+  - Override any `.emu` property after the profile is loaded. May be repeated.
+  - Alias: `--set-property`.
+- `--disk1 <path>` / `--disk2 <path>`
+  - Override slot 6 Disk II drive 1/2 image paths for this run and enable the slot 6 Disk II controller.
+  - Aliases: `--drive1` and `--drive2`.
 - `--no-sound`
   - Disable speaker initialization and run without audio output.
 - `--debug`
@@ -143,6 +149,14 @@ Windowed run (alias task):
   - SDL text input behavior (`off` disables host text input, `offscreen` requests text input but moves caret area offscreen, `center` places caret area at window center, `normal` uses default text input area).
 - `--sdl-fullscreen-mode exclusive|desktop`
   - SDL fullscreen style (`exclusive` uses a display mode, `desktop` uses borderless desktop fullscreen mode).
+
+Examples:
+
+```bash
+./gradlew runSdl --args="ROMS/Apple2e.emu --disk1 local/disk-smoke/disks/custom-p6-boot.nib"
+./gradlew runHeadless --args="ROMS/Apple2e.emu --disk1 /path/to/boot.nib --disk2 /path/to/data.nib --steps 100000 --no-sound"
+./gradlew runSdl --args="ROMS/Apple2e.emu --set machine.layout.slot.6=drive.floppy525.Floppy525Controller --set machine.layout.slot.6.drive.1.file=/path/to/boot.nib"
+```
 
 Startup behavior:
 - With sound enabled, the emulator performs an internal silent JIT-prime pass (300000 steps) on the same object graph before normal logging begins, to reduce startup audio jitter.

@@ -66,6 +66,17 @@ public class VirtualMachineProperties {
 	public String getSlotLayout( int slot ) {
 		return slotLayout[slot-1];
 	}
+	public void setProperty( String propertyStr, String value ) {
+		if( value==null )
+			properties.remove(propertyStr);
+		else
+			properties.setProperty(propertyStr, value);
+		for( int i = 1; i<=7; i++ )
+			if( propertyStr.equals("machine.layout.slot."+i) ) {
+				slotLayout[i-1] = value==null || value.length()==0 ? null : value;
+				break;
+			}
+	}
 	public String getProperty( String propertyStr ) {
 		return properties.getProperty(propertyStr);
 	}

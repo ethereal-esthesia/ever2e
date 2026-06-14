@@ -246,6 +246,35 @@ public class Emulator8Coordinator {
 		}
 	}
 
+	private static String normalizeCliPath(String path) {
+		return Paths.get(path).toAbsolutePath().normalize().toString();
+	}
+
+	private static void applyDiskOverrides(VirtualMachineProperties properties, String disk1Override, String disk2Override) {
+		if( disk1Override==null && disk2Override==null )
+			return;
+		properties.setProperty("machine.layout.slot.6", "drive.floppy525.Floppy525Controller");
+		if( disk1Override!=null )
+			properties.setProperty("machine.layout.slot.6.drive.1.file", normalizeCliPath(disk1Override));
+		if( disk2Override!=null )
+			properties.setProperty("machine.layout.slot.6.drive.2.file", normalizeCliPath(disk2Override));
+	}
+
+	private static void applyPropertyOverride(VirtualMachineProperties properties, String assignment) {
+		int split = assignment.indexOf('=');
+		if( split<1 )
+			throw new IllegalArgumentException("--set expects name=value, got "+assignment);
+		String key = assignment.substring(0, split).trim();
+		if( key.length()==0 )
+			throw new IllegalArgumentException("--set requires a non-empty property name");
+		properties.setProperty(key, assignment.substring(split+1));
+	}
+
+	private static void applyPropertyOverrides(VirtualMachineProperties properties, List<String> assignments) {
+		for( String assignment : assignments )
+			applyPropertyOverride(properties, assignment);
+	}
+
 	private static Cpu65c02 createCpu(String cpuProfile, MemoryBusIIe bus, long unitsPerCycle) {
 		if( "cmd".equals(cpuProfile) )
 			return new Cpu65c02Cmd(bus, unitsPerCycle);
@@ -301,6 +330,9 @@ public class Emulator8Coordinator {
 		boolean startupPrimerInternal = false;
 			String pasteFile = null;
 		String pasteText = null;
+		String disk1Override = null;
+		String disk2Override = null;
+		List<String> propertyOverrides = new ArrayList<>();
 		for( int i = 0; i<argList.length; i++ ) {
 			String arg = argList[i];
 			if( "--steps".equals(arg) ) {
@@ -627,6 +659,39 @@ public class Emulator8Coordinator {
 			else if( arg.startsWith("--paste-file=") ) {
 				pasteFile = arg.substring("--paste-file=".length());
 			}
+			else if( "--set".equals(arg) || "--set-property".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for "+arg);
+				propertyOverrides.add(argList[++i]);
+			}
+			else if( arg.startsWith("--set=") ) {
+				propertyOverrides.add(arg.substring("--set=".length()));
+			}
+			else if( arg.startsWith("--set-property=") ) {
+				propertyOverrides.add(arg.substring("--set-property=".length()));
+			}
+			else if( "--disk1".equals(arg) || "--drive1".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for "+arg);
+				disk1Override = argList[++i];
+			}
+			else if( arg.startsWith("--disk1=") ) {
+				disk1Override = arg.substring("--disk1=".length());
+			}
+			else if( arg.startsWith("--drive1=") ) {
+				disk1Override = arg.substring("--drive1=".length());
+			}
+			else if( "--disk2".equals(arg) || "--drive2".equals(arg) ) {
+				if( i+1>=argList.length )
+					throw new IllegalArgumentException("Missing value for "+arg);
+				disk2Override = argList[++i];
+			}
+			else if( arg.startsWith("--disk2=") ) {
+				disk2Override = arg.substring("--disk2=".length());
+			}
+			else if( arg.startsWith("--drive2=") ) {
+				disk2Override = arg.substring("--drive2=".length());
+			}
 			else {
 				if( arg.startsWith("-") )
 					throw new IllegalArgumentException("Unknown option: "+arg);
@@ -681,6 +746,8 @@ public class Emulator8Coordinator {
 		}
 		System.out.println("Loading \""+propertiesFile+"\" into memory");
 		VirtualMachineProperties properties = new VirtualMachineProperties(propertiesFile);
+		applyDiskOverrides(properties, disk1Override, disk2Override);
+		applyPropertyOverrides(properties, propertyOverrides);
 
 		double cpuMultiplier = Double.parseDouble(properties.getProperty("machine.cpu.mult", "1")); // 1020484hz
 		// Keep keyboard manager timing at Apple IIe-like repeat cadence.
