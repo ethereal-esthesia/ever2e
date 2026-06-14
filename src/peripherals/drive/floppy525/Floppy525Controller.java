@@ -238,8 +238,8 @@ public class Floppy525Controller extends PeripheralIIe {
 	public Floppy525Controller( int slot, long unitsPerCycle, VirtualMachineProperties properties ) throws IOException, HardwareException {
 		super(unitsPerCycle);
 		this.slot = slot;
-		fileName[0] = properties.getProperty("machine.layout.slot."+slot+".drive.1.file", null);
-		fileName[1] = properties.getProperty("machine.layout.slot."+slot+".drive.2.file", null);
+		fileName[0] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.1.file");
+		fileName[1] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.2.file");
 		rom256b = loadSlotRom(slot, properties);
 		driveOnPrevious = false;
 		headHalfTrack[0] = 69;
@@ -457,6 +457,13 @@ public class Floppy525Controller extends PeripheralIIe {
 		System.arraycopy(label, 0, rom, 0x10, label.length);
 		rom[0xff] = 0x00;
 		return rom;
+	}
+
+	private static String resolveOptionalPath( VirtualMachineProperties properties, String propertyName ) {
+		String value = properties.getProperty(propertyName, null);
+		if( value==null || value.trim().isEmpty() )
+			return value;
+		return properties.resolvePath(value.trim()).toString();
 	}
 	
 	@Override
