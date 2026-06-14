@@ -869,8 +869,8 @@ public class Emulator8Coordinator {
 		if( bus instanceof MemoryBusIIe )
 			for( int slot = 1; slot<=7; slot++ ) {
 				PeripheralIIe card = null;
+				String peripheralClass = properties.getSlotLayout(slot);
 				try {
-					String peripheralClass = properties.getSlotLayout(slot);
 					if( peripheralClass!=null )
 						peripheralClass = "peripherals."+peripheralClass;
 					PeripheralIIe peripheralCard = peripheralClass==null ? null :
@@ -888,6 +888,8 @@ public class Emulator8Coordinator {
 							(e.getLocalizedMessage()==null?"":":\n"+e.getLocalizedMessage()));
 					((MemoryBusIIe) bus).resetSlot(slot);
 					((MemoryBusIIe) bus).setSlotRom(slot, null);
+					if( peripheralClass!=null )
+						throw new HardwareException("Unable to load peripheral class for slot "+slot, e);
 				} finally {
 					System.out.println("Slot "+slot+": "+(card==null?"empty":card));
 				}

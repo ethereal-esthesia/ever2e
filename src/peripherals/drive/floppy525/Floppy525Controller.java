@@ -5,9 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import peripherals.PeripheralIIe;
 import core.emulator.VirtualMachineProperties;
@@ -438,28 +436,11 @@ public class Floppy525Controller extends PeripheralIIe {
 	private static byte[] loadSlotRom( int slot, VirtualMachineProperties properties ) throws IOException, HardwareException {
 		String romFileName = properties.getProperty("machine.layout.slot."+slot+".rom.file", null);
 		if( romFileName==null || romFileName.trim().isEmpty() )
-			return buildFallbackRom();
+			throw new HardwareException("Slot "+slot+" ROM is required: machine.layout.slot."+slot+".rom.file");
 
 		byte[] rom = Files.readAllBytes(properties.resolvePath(romFileName.trim()).toPath());
 		if( rom.length!=SLOT_ROM_SIZE )
 			throw new HardwareException("Slot "+slot+" ROM must be exactly 256 bytes: "+romFileName);
-		return rom;
-	}
-
-	private static byte[] buildFallbackRom() {
-		byte[] rom = new byte[SLOT_ROM_SIZE];
-		Arrays.fill(rom, (byte) 0xea);
-		byte[] prefix = new byte[] {
-				(byte) 0xa2, 0x20,       // LDX #$20
-				(byte) 0xa0, 0x00,       // LDY #$00
-				(byte) 0xa2, 0x03,       // LDX #$03
-				(byte) 0x86, 0x3c,       // STX $3C
-				(byte) 0x4c, 0x08, (byte) 0xc6 // JMP $C608
-		};
-		System.arraycopy(prefix, 0, rom, 0, prefix.length);
-		byte[] label = "EVER2E P6 TEST ROM".getBytes(StandardCharsets.US_ASCII);
-		System.arraycopy(label, 0, rom, 0x10, label.length);
-		rom[0xff] = 0x00;
 		return rom;
 	}
 

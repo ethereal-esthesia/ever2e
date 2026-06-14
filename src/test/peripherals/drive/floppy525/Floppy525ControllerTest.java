@@ -147,6 +147,35 @@ public class Floppy525ControllerTest {
     }
 
     @Test
+    public void rejectsDiskControllerWithNoConfiguredSlotRom() throws Exception {
+        Path dir = Files.createTempDirectory("ever2e-floppy525-missing-rom-");
+        try {
+            Path nib = dir.resolve("scratch.nib");
+            Path rom = dir.resolve("dummy.rom");
+            Path emu = dir.resolve("missing-rom.emu");
+
+            Files.write(nib, filled(TRACK_TOTAL * TRACK_BYTES, (byte) 0xff));
+            Files.write(rom, new byte[] { 0 });
+            Files.writeString(emu,
+                    "machine.layout=APPLE_IIE\n" +
+                    "binary.file=dummy.rom\n" +
+                    "address.start=0xC000\n" +
+                    "machine.layout.slot.6.rom.file=\n" +
+                    "machine.layout.slot.6.drive.1.file=" + nib + "\n",
+                    StandardCharsets.UTF_8);
+
+            try {
+                new Floppy525Controller(6, 1, new VirtualMachineProperties(emu.toString()));
+                fail("missing slot ROM should reject the controller during slot installation");
+            } catch (core.exception.HardwareException expected) {
+                assertTrue(expected.getMessage().contains("Slot 6 ROM is required"));
+            }
+        } finally {
+            deleteRecursively(dir);
+        }
+    }
+
+    @Test
     public void rejectsMissingConfiguredDiskImageBeforeInstallingSlot() throws Exception {
         Path dir = Files.createTempDirectory("ever2e-floppy525-missing-");
         try {

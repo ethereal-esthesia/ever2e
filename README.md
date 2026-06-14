@@ -126,6 +126,7 @@ Windowed run (alias task):
 - `--disk1 <path>` / `--disk2 <path>`
   - Override slot 6 Disk II drive 1/2 image paths for this run and enable the slot 6 Disk II controller.
   - Aliases: `--drive1` and `--drive2`.
+  - A 256-byte slot ROM is still required via `machine.layout.slot.6.rom.file`.
 - `--no-sound`
   - Disable speaker initialization and run without audio output.
 - `--debug`
@@ -154,9 +155,9 @@ Windowed run (alias task):
 Examples:
 
 ```bash
-./gradlew runSdl --args="ROMS/Apple2e.emu --disk1 local/disk-smoke/disks/custom-p6-boot.nib"
-./gradlew runHeadless --args="ROMS/Apple2e.emu --disk1 /path/to/boot.nib --disk2 /path/to/data.nib --steps 100000 --no-sound"
-./gradlew runSdl --args="ROMS/Apple2e.emu --set machine.layout.slot.6=drive.floppy525.Floppy525Controller --set machine.layout.slot.6.drive.1.file=/path/to/boot.nib"
+./gradlew runSdl --args="ROMS/Apple2e.emu --set machine.layout.slot.6.rom.file=local/disk-smoke/roms/DISKII_P6_CUSTOM.rom --disk1 local/disk-smoke/disks/custom-p6-boot.nib"
+./gradlew runHeadless --args="ROMS/Apple2e.emu --set machine.layout.slot.6.rom.file=/path/to/slot6.rom --disk1 /path/to/boot.nib --disk2 /path/to/data.nib --steps 100000 --no-sound"
+./gradlew runSdl --args="ROMS/Apple2e.emu --set machine.layout.slot.6=drive.floppy525.Floppy525Controller --set machine.layout.slot.6.rom.file=/path/to/slot6.rom --set machine.layout.slot.6.drive.1.file=/path/to/boot.nib"
 ```
 
 Startup behavior:
