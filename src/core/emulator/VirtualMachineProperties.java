@@ -24,8 +24,20 @@ public class VirtualMachineProperties {
 	private String[] slotLayout = new String[7];
 	private int programStart;
 	private byte[] program;
+
+	private static String expandHomePath( String fileName ) {
+		if( fileName==null || !fileName.startsWith("~") )
+			return fileName;
+		if( fileName.length()>1 && fileName.charAt(1)!='/' && fileName.charAt(1)!='\\' )
+			return fileName;
+		String home = System.getProperty("user.home");
+		if( home==null || home.length()==0 )
+			return fileName;
+		return fileName.length()==1 ? home : home + fileName.substring(1);
+	}
 	
 	public VirtualMachineProperties( String propertiesFileName ) throws IOException {
+		propertiesFileName = expandHomePath(propertiesFileName);
 		if( !propertiesFileName.substring(propertiesFileName.length()-4).equalsIgnoreCase(EMU_EXTENSION) )
 			propertiesFileName += EMU_EXTENSION;
 		properties = new Properties();
@@ -36,11 +48,7 @@ public class VirtualMachineProperties {
 		this.programStart = Integer.decode(properties.getProperty("address.start"));
 		FileInputStream binStream;
 		String fileName = properties.getProperty("binary.file");
-		try {
-			binStream = new FileInputStream(propertiesFile.getParent()+"/"+fileName);
-		} catch ( FileNotFoundException e ) {
-			binStream = new FileInputStream(fileName);
-		}
+		binStream = new FileInputStream(resolvePath(fileName));
 		try {
 			program = new byte[0x10000];
 			int len = binStream.read(program, 0, 0x10000);
@@ -84,10 +92,11 @@ public class VirtualMachineProperties {
 		return properties.getProperty(propertyStr, defaultStr);
 	}
 	public File resolvePath( String fileName ) {
-		File file = new File(fileName);
+		String expandedFileName = expandHomePath(fileName);
+		File file = new File(expandedFileName);
 		if( file.isAbsolute() || propertiesDirectory==null )
 			return file;
-		File relativeFile = new File(propertiesDirectory, fileName);
+		File relativeFile = new File(propertiesDirectory, expandedFileName);
 		return relativeFile.exists() ? relativeFile : file;
 	}
 	

@@ -122,6 +122,7 @@ Windowed run (alias task):
 - `--set <name=value>`
   - Override any `.emu` property after the profile is loaded. May be repeated.
   - Alias: `--set-property`.
+  - Path properties support `~` / `~/...` expansion.
 - `--disk1 <path>` / `--disk2 <path>`
   - Override slot 6 Disk II drive 1/2 image paths for this run and enable the slot 6 Disk II controller.
   - Aliases: `--drive1` and `--drive2`.

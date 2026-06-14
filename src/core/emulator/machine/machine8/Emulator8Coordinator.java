@@ -247,6 +247,11 @@ public class Emulator8Coordinator {
 	}
 
 	private static String normalizeCliPath(String path) {
+		if( path.startsWith("~") && (path.length()==1 || path.charAt(1)=='/' || path.charAt(1)=='\\') ) {
+			String home = System.getProperty("user.home");
+			if( home!=null && home.length()>0 )
+				path = path.length()==1 ? home : home + path.substring(1);
+		}
 		return Paths.get(path).toAbsolutePath().normalize().toString();
 	}
 
