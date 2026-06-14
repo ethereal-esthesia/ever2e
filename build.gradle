@@ -116,6 +116,16 @@ tasks.register('smoke', JavaExec) {
     args smokeArgs
 }
 
+tasks.register('smokeP6Boot', Test) {
+    group = 'verification'
+    description = 'Run the proprietary-free generated Disk II P6 custom boot smoke test.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    filter {
+        includeTestsMatching 'test.peripherals.drive.floppy525.Floppy525ControllerTest.bootsGeneratedCustomDiskThroughP6Rom'
+    }
+}
+
 tasks.register('runSdl', JavaExec) {
     group = 'application'
     description = 'Run Emulator8Coordinator (SDL window backend).'

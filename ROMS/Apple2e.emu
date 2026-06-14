@@ -18,5 +18,5 @@ machine.layout.slot.6=drive.floppy525.Floppy525Controller
 machine.layout.slot.7=
 
 machine.layout.slot.6.rom.file=../local/disk-smoke/roms/DISKII_P6_CUSTOM.rom
-machine.layout.slot.6.drive.1.file=DISKS/TEST.NIB
-machine.layout.slot.6.drive.2.file=DISKS/BLANK.NIB
+machine.layout.slot.6.drive.1.file=../local/disk-smoke/disks/custom-p6-boot.nib
+machine.layout.slot.6.drive.2.file=
