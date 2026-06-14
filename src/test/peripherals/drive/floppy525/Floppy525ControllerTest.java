@@ -20,6 +20,7 @@ public class Floppy525ControllerTest {
     private static final int INITIAL_TRACK = 34;
     private static final int FIRST_WRITTEN_BYTE_OFFSET = INITIAL_TRACK * TRACK_BYTES + 1;
     private static final int PAYLOAD_SIZE = 768;
+    private static final int SLOT_ROM_SIZE = 0x100;
 
     @Test
     public void writesDeterministicRandomBytesThroughDiskSwitches() throws Exception {
@@ -27,14 +28,17 @@ public class Floppy525ControllerTest {
         try {
             Path nib = dir.resolve("scratch.nib");
             Path rom = dir.resolve("dummy.rom");
+            Path p6rom = dir.resolve("diskii-p6-test.rom");
             Path emu = dir.resolve("scratch.emu");
 
             Files.write(nib, filled(TRACK_TOTAL * TRACK_BYTES, (byte) 0xff));
             Files.write(rom, new byte[] { 0 });
+            Files.write(p6rom, buildDiskIIP6TestRom());
             Files.writeString(emu,
                     "machine.layout=APPLE_IIE\n" +
                     "binary.file=dummy.rom\n" +
                     "address.start=0xC000\n" +
+                    "machine.layout.slot.6.rom.file=" + p6rom.getFileName() + "\n" +
                     "machine.layout.slot.6.drive.1.file=" + nib + "\n",
                     StandardCharsets.UTF_8);
 
@@ -42,6 +46,7 @@ public class Floppy525ControllerTest {
                     new Floppy525Controller(6, 1, new VirtualMachineProperties(emu.toString()));
             SwitchSet8 switches = controller.getSwitchSet();
             byte[] payload = deterministicPayload();
+            assertArrayEquals(buildDiskIIP6TestRom(), controller.getRom256b());
 
             switches.writeMem(0x09, 0x00); // drive on
             switches.writeMem(0x0f, 0x00); // write mode
@@ -82,6 +87,22 @@ public class Floppy525ControllerTest {
         byte[] data = new byte[size];
         Arrays.fill(data, value);
         return data;
+    }
+
+    private static byte[] buildDiskIIP6TestRom() {
+        byte[] rom = filled(SLOT_ROM_SIZE, (byte) 0xea);
+        byte[] prefix = new byte[] {
+                (byte) 0xa2, 0x20,
+                (byte) 0xa0, 0x00,
+                (byte) 0xa2, 0x03,
+                (byte) 0x86, 0x3c,
+                (byte) 0x4c, 0x08, (byte) 0xc6
+        };
+        System.arraycopy(prefix, 0, rom, 0, prefix.length);
+        byte[] label = "EVER2E P6 TEST ROM".getBytes(StandardCharsets.US_ASCII);
+        System.arraycopy(label, 0, rom, 0x10, label.length);
+        rom[0xff] = 0x00;
+        return rom;
     }
 
     private static void deleteRecursively(Path path) throws Exception {

@@ -19,6 +19,7 @@ public class VirtualMachineProperties {
 	private static final String EMU_EXTENSION = ".emu";
 
 	private Properties properties;
+	private File propertiesDirectory;
 	private MachineLayoutType layout;
 	private String[] slotLayout = new String[7];
 	private int programStart;
@@ -29,6 +30,7 @@ public class VirtualMachineProperties {
 			propertiesFileName += EMU_EXTENSION;
 		properties = new Properties();
 		File propertiesFile = new File(propertiesFileName);
+		propertiesDirectory = propertiesFile.getParentFile();
 		properties.load(new FileInputStream(propertiesFile));
 		this.layout = MachineLayoutType.valueOf(properties.getProperty("machine.layout"));
 		this.programStart = Integer.decode(properties.getProperty("address.start"));
@@ -69,6 +71,13 @@ public class VirtualMachineProperties {
 	}
 	public String getProperty( String propertyStr, String defaultStr ) {
 		return properties.getProperty(propertyStr, defaultStr);
+	}
+	public File resolvePath( String fileName ) {
+		File file = new File(fileName);
+		if( file.isAbsolute() || propertiesDirectory==null )
+			return file;
+		File relativeFile = new File(propertiesDirectory, fileName);
+		return relativeFile.exists() ? relativeFile : file;
 	}
 	
 	@Override

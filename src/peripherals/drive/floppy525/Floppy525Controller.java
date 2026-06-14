@@ -5,6 +5,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
 
 import peripherals.PeripheralIIe;
 import core.emulator.VirtualMachineProperties;
@@ -34,30 +37,7 @@ public class Floppy525Controller extends PeripheralIIe {
 	
 	private static final byte[] PRODOS_ORDER_SECTORS = { 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15 };
 	
-	private static final byte[] ROM = parseHexBinary(
-				"A220A000A203863C8A0A243CF010053C49FF297EB0084AD0FB989D5603C8E810"+
-				"E52058FFBABD00010A0A0A0A852BAABD8EC0BD8CC0BD8AC0BD89C0A050BD80C0"+
-				"9829030A052BAABD81C0A95620A8FC8810EB8526853D8541A90885271808BD8C"+
-			"C010FB49D5D0F7BD8CC010FBC9AAD0F3EABD8CC010FBC996F0092890DF49ADF0"+
-			"25D0D9A0038540BD8CC010FB2A853CBD8CC010FB253C88D0EC28C53DD0BEA540"+
-			"C541D0B8B0B7A056843CBC8CC010FB59D602A43C88990003D0EE843CBC8CC010"+
-				"FB59D602A43C9126C8D0EFBC8CC010FB59D602D087A000A256CA30FBB1265E00"+
-				"032A5E00032A9126C8D0EEE627E63DA53DCD0008A62B90DB4C01080000000000");
-
-	private static byte[] parseHexBinary(String hex) {
-		int len = hex.length();
-		if( (len & 1) != 0 )
-			throw new IllegalArgumentException("Hex string must have an even length");
-		byte[] out = new byte[len / 2];
-		for( int i = 0; i < len; i += 2 ) {
-			int hi = Character.digit(hex.charAt(i), 16);
-			int lo = Character.digit(hex.charAt(i + 1), 16);
-			if( hi < 0 || lo < 0 )
-				throw new IllegalArgumentException("Invalid hex digit in ROM data at index " + i);
-			out[i / 2] = (byte) ((hi << 4) | lo);
-		}
-		return out;
-	}
+	private static final int SLOT_ROM_SIZE = 0x100;
 
 	private static final String EXT_PRODOS_ORDER = "PO";
 	private static final String EXT_DOS_ORDER = "DSK";
@@ -113,6 +93,7 @@ public class Floppy525Controller extends PeripheralIIe {
 
 	private boolean[] readOnly = new boolean[2];
 	private byte[][] diskImage;
+	private byte[] rom256b;
 
 //	private int[] dataShift = new int[2];
 //	private int[] dataSelect = new int[2];
@@ -259,6 +240,7 @@ public class Floppy525Controller extends PeripheralIIe {
 		this.slot = slot;
 		fileName[0] = properties.getProperty("machine.layout.slot."+slot+".drive.1.file", null);
 		fileName[1] = properties.getProperty("machine.layout.slot."+slot+".drive.2.file", null);
+		rom256b = loadSlotRom(slot, properties);
 		driveOnPrevious = false;
 		headHalfTrack[0] = 69;
 		headHalfTrack[1] = 69;
@@ -446,7 +428,35 @@ public class Floppy525Controller extends PeripheralIIe {
 
 	@Override
 	public byte[] getRom256b(){
-		return ROM;
+		return rom256b.clone();
+	}
+
+	private static byte[] loadSlotRom( int slot, VirtualMachineProperties properties ) throws IOException, HardwareException {
+		String romFileName = properties.getProperty("machine.layout.slot."+slot+".rom.file", null);
+		if( romFileName==null || romFileName.trim().isEmpty() )
+			return buildFallbackRom();
+
+		byte[] rom = Files.readAllBytes(properties.resolvePath(romFileName.trim()).toPath());
+		if( rom.length!=SLOT_ROM_SIZE )
+			throw new HardwareException("Slot "+slot+" ROM must be exactly 256 bytes: "+romFileName);
+		return rom;
+	}
+
+	private static byte[] buildFallbackRom() {
+		byte[] rom = new byte[SLOT_ROM_SIZE];
+		Arrays.fill(rom, (byte) 0xea);
+		byte[] prefix = new byte[] {
+				(byte) 0xa2, 0x20,       // LDX #$20
+				(byte) 0xa0, 0x00,       // LDY #$00
+				(byte) 0xa2, 0x03,       // LDX #$03
+				(byte) 0x86, 0x3c,       // STX $3C
+				(byte) 0x4c, 0x08, (byte) 0xc6 // JMP $C608
+		};
+		System.arraycopy(prefix, 0, rom, 0, prefix.length);
+		byte[] label = "EVER2E P6 TEST ROM".getBytes(StandardCharsets.US_ASCII);
+		System.arraycopy(label, 0, rom, 0x10, label.length);
+		rom[0xff] = 0x00;
+		return rom;
 	}
 	
 	@Override
