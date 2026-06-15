@@ -14,9 +14,9 @@ machine.layout.slot.2=
 machine.layout.slot.3=
 machine.layout.slot.4=
 machine.layout.slot.5=
-machine.layout.slot.6=
+machine.layout.slot.6=drive.floppy525
 machine.layout.slot.7=
 
-machine.layout.slot.6.rom.file=
+machine.layout.slot.6.rom.file=/Users/shane/Project/ever2e-jvm/local/disk-smoke/roms/DISKII_P6_CUSTOM.rom
 machine.layout.slot.6.drive.1.file=
 machine.layout.slot.6.drive.2.file=
