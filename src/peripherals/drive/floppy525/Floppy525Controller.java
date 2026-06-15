@@ -428,10 +428,13 @@ public class Floppy525Controller extends PeripheralIIe {
 			return;
 		if( driveOn ) {
 			killDrive();
+			driveOffRequest = -1;
 			driveSelect = drive-1;
 			startDrive();
-		} else
+		} else {
+			driveOffRequest = -1;
 			driveSelect = drive-1;
+		}
 	}
 
 	public int getDrive() {
@@ -451,6 +454,7 @@ public class Floppy525Controller extends PeripheralIIe {
 		if( !driveOn )
 			return;
 		driveOn = false;
+		driveOffRequest = -1;
 		displayDriveStatus();
 		if( !driveWrite )
 			return;

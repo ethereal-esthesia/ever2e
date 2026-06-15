@@ -29,6 +29,7 @@ public class Floppy525ControllerTest {
     private static final int FIRST_WRITTEN_BYTE_OFFSET = INITIAL_TRACK * TRACK_BYTES + 1;
     private static final int PAYLOAD_SIZE = 768;
     private static final int SLOT_ROM_SIZE = 0x100;
+    private static final int DRIVE_OFF_BYTE_DELAY = (0x40000 >> 3) + 2;
     private static final int MEMORY_SIZE = 0x20000;
     private static final int SYSTEM_ROM_SIZE = 0x4000;
     private static final int PAYLOAD_ADDR = 0x0800;
@@ -74,7 +75,7 @@ public class Floppy525ControllerTest {
 
             switches.writeMem(0x0e, 0x00); // read mode
             switches.writeMem(0x08, 0x00); // drive off
-            for (int i = 0; i < ((0x40000 >> 3) + 2); i++)
+            for (int i = 0; i < DRIVE_OFF_BYTE_DELAY; i++)
                 controller.cycle();
 
             byte[] image = Files.readAllBytes(nib);
@@ -83,6 +84,64 @@ public class Floppy525ControllerTest {
                     image,
                     FIRST_WRITTEN_BYTE_OFFSET,
                     FIRST_WRITTEN_BYTE_OFFSET + payload.length));
+        } finally {
+            deleteRecursively(dir);
+        }
+    }
+
+    @Test
+    public void driveSelectCancelsPreviousIdleSpinDown() throws Exception {
+        Path dir = Files.createTempDirectory("ever2e-floppy525-spindown-");
+        try {
+            Path drive1 = dir.resolve("drive1.nib");
+            Path drive2 = dir.resolve("drive2.nib");
+            Path rom = dir.resolve("dummy.rom");
+            Path p6rom = dir.resolve("diskii-p6-test.rom");
+            Path emu = dir.resolve("spindown.emu");
+
+            Files.write(drive1, filled(TRACK_TOTAL * TRACK_BYTES, (byte) 0x11));
+            Files.write(drive2, filled(TRACK_TOTAL * TRACK_BYTES, (byte) 0xff));
+            Files.write(rom, new byte[] { 0 });
+            Files.write(p6rom, buildDiskIIP6TestRom());
+            Files.writeString(emu,
+                    "machine.layout=APPLE_IIE\n" +
+                    "binary.file=dummy.rom\n" +
+                    "address.start=0xC000\n" +
+                    "machine.layout.slot.6.rom.file=" + p6rom.getFileName() + "\n" +
+                    "machine.layout.slot.6.disk.byte.cycle.period=32\n" +
+                    "machine.layout.slot.6.drive.1.file=" + drive1 + "\n" +
+                    "machine.layout.slot.6.drive.2.file=" + drive2 + "\n",
+                    StandardCharsets.UTF_8);
+
+            Floppy525Controller controller =
+                    new Floppy525Controller(6, 1, new VirtualMachineProperties(emu.toString()));
+            SwitchSet8 switches = controller.getSwitchSet();
+
+            switches.writeMem(0x09, 0x00); // drive 1 on
+            switches.writeMem(0x08, 0x00); // request delayed spin-down
+            switches.writeMem(0x0b, 0x00); // selecting drive 2 immediately stops drive 1
+
+            for (int i = 0; i < DRIVE_OFF_BYTE_DELAY; i++)
+                controller.cycle();
+
+            switches.writeMem(0x0f, 0x00); // write mode; should still be on drive 2
+            switches.writeMem(0x0d, 0x6b);
+            switches.writeMem(0x0c, 0x00);
+            controller.cycle();
+
+            switches.writeMem(0x0e, 0x00); // read mode
+            switches.writeMem(0x08, 0x00); // drive off
+            for (int i = 0; i < DRIVE_OFF_BYTE_DELAY; i++)
+                controller.cycle();
+
+            byte[] drive1Image = Files.readAllBytes(drive1);
+            byte[] drive2Image = Files.readAllBytes(drive2);
+            int expectedWriteOffset =
+                    INITIAL_TRACK * TRACK_BYTES + ((DRIVE_OFF_BYTE_DELAY % TRACK_BYTES) + 1);
+            assertEquals(TRACK_TOTAL * TRACK_BYTES, drive1Image.length);
+            assertEquals(TRACK_TOTAL * TRACK_BYTES, drive2Image.length);
+            assertEquals(0x11, drive1Image[expectedWriteOffset] & 0xff);
+            assertEquals(0x6b, drive2Image[expectedWriteOffset] & 0xff);
         } finally {
             deleteRecursively(dir);
         }
