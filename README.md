@@ -122,11 +122,14 @@ Windowed run (alias task):
 - `--set <name=value>`
   - Override any `.emu` property after the profile is loaded. May be repeated.
   - Alias: `--set-property`.
+  - Bare `name=value` arguments are also accepted after the profile path.
   - Path properties support `~` / `~/...` expansion.
 - `--disk1 <path>` / `--disk2 <path>`
   - Override slot 6 Disk II drive 1/2 image paths for this run and enable the slot 6 Disk II controller.
   - Aliases: `--drive1` and `--drive2`.
   - A 256-byte slot ROM is still required via `machine.layout.slot.6.rom.file`.
+- `machine.layout.slot.<n>.disk.byte.cycle.period=<cycles>`
+  - Optional Disk II byte clock override. The default is `31`, closer to 300 RPM than the old `32`.
 - `--no-sound`
   - Disable speaker initialization and run without audio output.
 - `--debug`

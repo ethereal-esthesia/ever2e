@@ -280,6 +280,15 @@ public class Emulator8Coordinator {
 			applyPropertyOverride(properties, assignment);
 	}
 
+	private static boolean isPropertyAssignmentArg(String arg) {
+		if( arg==null || arg.startsWith("-") )
+			return false;
+		int split = arg.indexOf('=');
+		if( split<1 )
+			return false;
+		return arg.substring(0, split).trim().length()>0;
+	}
+
 	private static Cpu65c02 createCpu(String cpuProfile, MemoryBusIIe bus, long unitsPerCycle) {
 		if( "cmd".equals(cpuProfile) )
 			return new Cpu65c02Cmd(bus, unitsPerCycle);
@@ -700,7 +709,10 @@ public class Emulator8Coordinator {
 			else {
 				if( arg.startsWith("-") )
 					throw new IllegalArgumentException("Unknown option: "+arg);
-				propertiesFile = arg;
+				if( isPropertyAssignmentArg(arg) )
+					propertyOverrides.add(arg);
+				else
+					propertiesFile = arg;
 			}
 		}
 		Emulator.setBlockingDebugEnabled(debugLogging);

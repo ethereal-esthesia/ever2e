@@ -105,6 +105,7 @@ public class Floppy525ControllerTest {
                     "binary.file=dummy.rom\n" +
                     "address.start=0xC000\n" +
                     "machine.layout.slot.6.rom.file=" + p6rom.getFileName() + "\n" +
+                    "machine.layout.slot.6.disk.byte.cycle.period=32\n" +
                     "machine.layout.slot.6.drive.1.file=" + nib + "\n",
                     StandardCharsets.UTF_8);
 

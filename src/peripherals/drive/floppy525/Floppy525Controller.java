@@ -46,6 +46,7 @@ public class Floppy525Controller extends PeripheralIIe {
 	private static final int SECTOR_TOTAL = 16;
 	private static final int SECTOR_BYTES = 416;
 	private static final int TRACK_BYTES = SECTOR_BYTES*SECTOR_TOTAL;
+	private static final int DEFAULT_DISKII_BYTE_CYCLE_PERIOD = 31;
 
 	private static final int PHASE0_MASK = 0x01;
 	private static final int PHASE1_MASK = 0x02;
@@ -88,6 +89,7 @@ public class Floppy525Controller extends PeripheralIIe {
 	private int[] phase = new int[2];	
 	private int[] headHalfTrack = new int[2];
 	private int[] headSectorByte = new int[2];
+	private int diskByteCyclePeriod;
 
 	private boolean[] readOnly = new boolean[2];
 	private byte[][] diskImage;
@@ -238,6 +240,7 @@ public class Floppy525Controller extends PeripheralIIe {
 		this.slot = slot;
 		fileName[0] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.1.file");
 		fileName[1] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.2.file");
+		diskByteCyclePeriod = resolveDiskByteCyclePeriod(slot, properties);
 		if( isBlank(fileName[0]) && isBlank(fileName[1]) )
 			throw new FileNotFoundException("No disk images configured for slot "+slot);
 		validateConfiguredMedia(1, fileName[0]);
@@ -295,7 +298,7 @@ public class Floppy525Controller extends PeripheralIIe {
 			}
 		}
 
-		incSleepCycles(dataRegister==0xff||writeRegister==0xff ? 32/*36*/:32);
+		incSleepCycles(diskByteCyclePeriod);
 
 		if( writeRegister>=0 ) {
 			diskImage[headHalfTrack[driveSelect]>>1][headSectorByte[driveSelect]] =
@@ -311,6 +314,19 @@ public class Floppy525Controller extends PeripheralIIe {
 			}
 		}
 
+	}
+
+	private static int resolveDiskByteCyclePeriod( int slot, VirtualMachineProperties properties ) throws HardwareException {
+		String propertyName = "machine.layout.slot."+slot+".disk.byte.cycle.period";
+		String value = properties.getProperty(propertyName, Integer.toString(DEFAULT_DISKII_BYTE_CYCLE_PERIOD));
+		try {
+			int parsed = Integer.decode(value.trim());
+			if( parsed>0 && parsed<100000 )
+				return parsed;
+		} catch (NumberFormatException e) {
+			// Fall through to the clearer HardwareException below.
+		}
+		throw new HardwareException(propertyName+" must be a positive integer, got "+value);
 	}
 	
 	private void loadImage( int drive ) {
