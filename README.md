@@ -129,7 +129,9 @@ Windowed run (alias task):
   - Aliases: `--drive1` and `--drive2`.
   - A 256-byte slot ROM is still required via `machine.layout.slot.6.rom.file`.
 - `machine.layout.slot.<n>.disk.byte.cycle.period=<cycles>`
-  - Optional Disk II byte clock override. The default is `31`, closer to 300 RPM than the old `32`.
+  - Optional Disk II read byte clock override. The default is `31`, closer to 300 RPM than the old `32`.
+- `machine.layout.slot.<n>.disk.write.byte.cycle.period=<cycles>`
+  - Optional Disk II write byte clock override. The default is `32`, matching formatter write loops.
 - `--no-sound`
   - Disable speaker initialization and run without audio output.
 - `--debug`

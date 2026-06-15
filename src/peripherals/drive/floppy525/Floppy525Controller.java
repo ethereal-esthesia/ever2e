@@ -46,7 +46,8 @@ public class Floppy525Controller extends PeripheralIIe {
 	private static final int SECTOR_TOTAL = 16;
 	private static final int SECTOR_BYTES = 416;
 	private static final int TRACK_BYTES = SECTOR_BYTES*SECTOR_TOTAL;
-	private static final int DEFAULT_DISKII_BYTE_CYCLE_PERIOD = 31;
+	private static final int DEFAULT_DISKII_READ_BYTE_CYCLE_PERIOD = 31;
+	private static final int DEFAULT_DISKII_WRITE_BYTE_CYCLE_PERIOD = 32;
 
 	private static final int PHASE0_MASK = 0x01;
 	private static final int PHASE1_MASK = 0x02;
@@ -89,7 +90,8 @@ public class Floppy525Controller extends PeripheralIIe {
 	private int[] phase = new int[2];	
 	private int[] headHalfTrack = new int[2];
 	private int[] headSectorByte = new int[2];
-	private int diskByteCyclePeriod;
+	private int diskReadByteCyclePeriod;
+	private int diskWriteByteCyclePeriod;
 
 	private boolean[] readOnly = new boolean[2];
 	private byte[][] diskImage;
@@ -240,7 +242,16 @@ public class Floppy525Controller extends PeripheralIIe {
 		this.slot = slot;
 		fileName[0] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.1.file");
 		fileName[1] = resolveOptionalPath(properties, "machine.layout.slot."+slot+".drive.2.file");
-		diskByteCyclePeriod = resolveDiskByteCyclePeriod(slot, properties);
+		diskReadByteCyclePeriod = resolveDiskByteCyclePeriod(
+				slot,
+				properties,
+				"machine.layout.slot."+slot+".disk.byte.cycle.period",
+				DEFAULT_DISKII_READ_BYTE_CYCLE_PERIOD);
+		diskWriteByteCyclePeriod = resolveDiskByteCyclePeriod(
+				slot,
+				properties,
+				"machine.layout.slot."+slot+".disk.write.byte.cycle.period",
+				DEFAULT_DISKII_WRITE_BYTE_CYCLE_PERIOD);
 		if( isBlank(fileName[0]) && isBlank(fileName[1]) )
 			throw new FileNotFoundException("No disk images configured for slot "+slot);
 		validateConfiguredMedia(1, fileName[0]);
@@ -298,7 +309,7 @@ public class Floppy525Controller extends PeripheralIIe {
 			}
 		}
 
-		incSleepCycles(diskByteCyclePeriod);
+		incSleepCycles(writeOn ? diskWriteByteCyclePeriod : diskReadByteCyclePeriod);
 
 		if( writeRegister>=0 ) {
 			diskImage[headHalfTrack[driveSelect]>>1][headSectorByte[driveSelect]] =
@@ -316,9 +327,12 @@ public class Floppy525Controller extends PeripheralIIe {
 
 	}
 
-	private static int resolveDiskByteCyclePeriod( int slot, VirtualMachineProperties properties ) throws HardwareException {
-		String propertyName = "machine.layout.slot."+slot+".disk.byte.cycle.period";
-		String value = properties.getProperty(propertyName, Integer.toString(DEFAULT_DISKII_BYTE_CYCLE_PERIOD));
+	private static int resolveDiskByteCyclePeriod(
+			int slot,
+			VirtualMachineProperties properties,
+			String propertyName,
+			int defaultValue ) throws HardwareException {
+		String value = properties.getProperty(propertyName, Integer.toString(defaultValue));
 		try {
 			int parsed = Integer.decode(value.trim());
 			if( parsed>0 && parsed<100000 )
